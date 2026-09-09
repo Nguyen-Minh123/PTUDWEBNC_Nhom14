@@ -47,10 +47,5 @@ Backend được chia thành 4 tầng ranh giới nghiêm ngặt[cite: 2]:
 *   [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Hoặc Docker Engine trên Linux)[cite: 2]
 *   IDE khuyên dùng: Visual Studio 2022 (v17.12+), Rider 2024+, hoặc VS Code[cite: 2].
 
-## ⚙️ Hướng dẫn Cài đặt & Chạy dự án (Getting Started)
 
-**Bước 1: Khởi chạy Hạ tầng (Services)**
-Hệ thống yêu cầu PostgreSQL, Redis và MinIO. Khởi chạy tất cả qua Docker Compose[cite: 2]:
-```bash
-docker-compose up -d
 
