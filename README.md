@@ -48,4 +48,15 @@ Backend được chia thành 4 tầng ranh giới nghiêm ngặt[cite: 2]:
 *   IDE khuyên dùng: Visual Studio 2022 (v17.12+), Rider 2024+, hoặc VS Code[cite: 2].
 
 
+Tuần 1: Khởi tạo, Setup Môi trường & Làm quen Kiến trúc 
+Mục tiêu: Bất kỳ máy tính của ai trong nhóm cũng phải chạy được toàn bộ project. Mọi người bắt đầu làm quen với code base.
+
+DevOps & Database Setup: Tạo file docker-compose.yml để chạy PostgreSQL, Redis, MinIO (những service bắt buộc theo tài liệu). Viết file README hướng dẫn cả nhóm gõ lệnh để chạy DB.
+
+Backend Base: Khởi tạo project .NET 10 Minimal APIs với Clean Architecture. Cấu hình kết nối Entity Framework Core tới PostgreSQL mà phần DevOps & Database Setup đã dựng. Viết 1 API "Hello World" đơn giản.
+
+Frontend Base: Khởi tạo project Next.js App Router (TypeScript). Thiết lập thư mục, cài đặt Tailwind CSS. Viết 1 trang giao diện gọi thử API "Hello World" của phần Backend Base .
+
+Kiểm thử & Review: Nghiên cứu các "Ràng buộc thiết kế" (từ CONS-001 đến CONS-010 trong tài liệu). Trực tiếp clone code của cả 3 người kia về máy mình, test thử xem hệ thống có chạy thông suốt không. Hỗ trợ fix lỗi môi trường cho các thành viên khác.
+
 
