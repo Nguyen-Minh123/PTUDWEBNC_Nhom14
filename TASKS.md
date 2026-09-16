@@ -1,7 +1,7 @@
 * **Full-Stack Vertical Slicing:** Mỗi thành viên tự đảm nhận trọn vẹn luồng dữ liệu (Database $\rightarrow$ API $\rightarrow$ Frontend UI) cho tính năng được giao, tránh tình trạng chia cứng riêng Backend/Frontend[cite: 4].
 * **Chéo Code Review:** Người làm Backend tính năng A phải review Code Frontend của tính năng đó và ngược lại.
 * **Mock Defense Nội Bộ:** Cuối mỗi tuần, nhóm dành 30 phút luân phiên đóng vai "Thầy cô phản biện" để kiểm tra kiến thức lẫn nhau về luồng dữ liệu, database và xử lý lỗi.
-* 
+
 ## 🗓️ Lộ Trình Phân Công Chi Tiết 
 
 ### 📌 Tuần 1: Khởi Tạo Nền Tảng & Môi Trường 
