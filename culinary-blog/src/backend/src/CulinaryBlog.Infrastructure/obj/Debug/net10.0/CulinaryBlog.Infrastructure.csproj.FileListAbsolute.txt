@@ -16,3 +16,5 @@ D:\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.Infrastructure\ob
 D:\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.Infrastructure\obj\Debug\net10.0\refint\CulinaryBlog.Infrastructure.dll
 D:\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.Infrastructure\obj\Debug\net10.0\CulinaryBlog.Infrastructure.pdb
 D:\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.Infrastructure\obj\Debug\net10.0\ref\CulinaryBlog.Infrastructure.dll
+D:\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.Infrastructure\bin\Debug\net10.0\CulinaryBlog.Infrastructure.runtimeconfig.json
+D:\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.Infrastructure\obj\Debug\net10.0\CulinaryBlog.Infrastructure.genruntimeconfig.cache
