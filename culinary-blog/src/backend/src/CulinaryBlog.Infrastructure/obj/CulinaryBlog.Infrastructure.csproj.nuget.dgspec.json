@@ -13,6 +13,7 @@
         "packagesPath": "C:\\Users\\admin\\.nuget\\packages\\",
         "outputPath": "D:\\PTUDWEBNC_Nhom14\\culinary-blog\\src\\backend\\src\\CulinaryBlog.Application\\obj\\",
         "projectStyle": "PackageReference",
+        "centralPackageVersionsManagementEnabled": true,
         "configFilePaths": [
           "C:\\Users\\admin\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
@@ -49,6 +50,39 @@
         "net10.0": {
           "framework": "net10.0",
           "targetAlias": "net10.0",
+          "dependencies": {
+            "Mapster": {
+              "target": "Package",
+              "version": "[7.4.0, )",
+              "versionCentrallyManaged": true
+            },
+            "Mapster.DependencyInjection": {
+              "target": "Package",
+              "version": "[1.0.1, )",
+              "versionCentrallyManaged": true
+            },
+            "MediatR": {
+              "target": "Package",
+              "version": "[12.2.0, )",
+              "versionCentrallyManaged": true
+            }
+          },
+          "centralPackageVersions": {
+            "coverlet.collector": "6.0.2",
+            "FluentValidation.DependencyInjectionExtensions": "11.9.0",
+            "Mapster": "7.4.0",
+            "Mapster.DependencyInjection": "1.0.1",
+            "MediatR": "12.2.0",
+            "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "9.0.0",
+            "Microsoft.EntityFrameworkCore": "9.0.0",
+            "Microsoft.EntityFrameworkCore.Design": "9.0.0",
+            "Microsoft.Extensions.Identity.Stores": "9.0.0",
+            "Microsoft.NET.Test.Sdk": "17.9.0",
+            "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.0",
+            "Scalar.AspNetCore": "2.0.18",
+            "xunit": "2.7.0",
+            "xunit.runner.visualstudio": "2.5.7"
+          },
           "imports": [
             "net461",
             "net462",
@@ -352,6 +386,7 @@
         "packagesPath": "C:\\Users\\admin\\.nuget\\packages\\",
         "outputPath": "D:\\PTUDWEBNC_Nhom14\\culinary-blog\\src\\backend\\src\\CulinaryBlog.Domain\\obj\\",
         "projectStyle": "PackageReference",
+        "centralPackageVersionsManagementEnabled": true,
         "configFilePaths": [
           "C:\\Users\\admin\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
@@ -387,8 +422,25 @@
           "dependencies": {
             "Microsoft.Extensions.Identity.Stores": {
               "target": "Package",
-              "version": "[10.0.12, )"
+              "version": "[9.0.0, )",
+              "versionCentrallyManaged": true
             }
+          },
+          "centralPackageVersions": {
+            "coverlet.collector": "6.0.2",
+            "FluentValidation.DependencyInjectionExtensions": "11.9.0",
+            "Mapster": "7.4.0",
+            "Mapster.DependencyInjection": "1.0.1",
+            "MediatR": "12.2.0",
+            "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "9.0.0",
+            "Microsoft.EntityFrameworkCore": "9.0.0",
+            "Microsoft.EntityFrameworkCore.Design": "9.0.0",
+            "Microsoft.Extensions.Identity.Stores": "9.0.0",
+            "Microsoft.NET.Test.Sdk": "17.9.0",
+            "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.0",
+            "Scalar.AspNetCore": "2.0.18",
+            "xunit": "2.7.0",
+            "xunit.runner.visualstudio": "2.5.7"
           },
           "imports": [
             "net461",
@@ -693,6 +745,7 @@
         "packagesPath": "C:\\Users\\admin\\.nuget\\packages\\",
         "outputPath": "D:\\PTUDWEBNC_Nhom14\\culinary-blog\\src\\backend\\src\\CulinaryBlog.Infrastructure\\obj\\",
         "projectStyle": "PackageReference",
+        "centralPackageVersionsManagementEnabled": true,
         "configFilePaths": [
           "C:\\Users\\admin\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
@@ -732,22 +785,42 @@
           "dependencies": {
             "Microsoft.AspNetCore.Identity.EntityFrameworkCore": {
               "target": "Package",
-              "version": "[10.0.12, )"
+              "version": "[9.0.0, )",
+              "versionCentrallyManaged": true
             },
             "Microsoft.EntityFrameworkCore": {
               "target": "Package",
-              "version": "[10.0.12, )"
+              "version": "[9.0.0, )",
+              "versionCentrallyManaged": true
             },
             "Microsoft.EntityFrameworkCore.Design": {
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
               "suppressParent": "All",
               "target": "Package",
-              "version": "[10.0.12, )"
+              "version": "[9.0.0, )",
+              "versionCentrallyManaged": true
             },
             "Npgsql.EntityFrameworkCore.PostgreSQL": {
               "target": "Package",
-              "version": "[10.0.3, )"
+              "version": "[9.0.0, )",
+              "versionCentrallyManaged": true
             }
+          },
+          "centralPackageVersions": {
+            "coverlet.collector": "6.0.2",
+            "FluentValidation.DependencyInjectionExtensions": "11.9.0",
+            "Mapster": "7.4.0",
+            "Mapster.DependencyInjection": "1.0.1",
+            "MediatR": "12.2.0",
+            "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "9.0.0",
+            "Microsoft.EntityFrameworkCore": "9.0.0",
+            "Microsoft.EntityFrameworkCore.Design": "9.0.0",
+            "Microsoft.Extensions.Identity.Stores": "9.0.0",
+            "Microsoft.NET.Test.Sdk": "17.9.0",
+            "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.0",
+            "Scalar.AspNetCore": "2.0.18",
+            "xunit": "2.7.0",
+            "xunit.runner.visualstudio": "2.5.7"
           },
           "imports": [
             "net461",

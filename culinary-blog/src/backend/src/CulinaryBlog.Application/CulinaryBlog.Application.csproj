@@ -2,6 +2,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CulinaryBlog.Domain\CulinaryBlog.Domain.csproj" />
+    <PackageReference Include="MediatR" />
+  <PackageReference Include="Mapster" />
+  <PackageReference Include="Mapster.DependencyInjection" />
   </ItemGroup>
 
   <PropertyGroup>

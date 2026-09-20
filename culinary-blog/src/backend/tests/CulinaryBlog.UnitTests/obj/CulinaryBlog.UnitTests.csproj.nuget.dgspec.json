@@ -13,6 +13,7 @@
         "packagesPath": "C:\\Users\\admin\\.nuget\\packages\\",
         "outputPath": "D:\\PTUDWEBNC_Nhom14\\culinary-blog\\src\\backend\\tests\\CulinaryBlog.UnitTests\\obj\\",
         "projectStyle": "PackageReference",
+        "centralPackageVersionsManagementEnabled": true,
         "configFilePaths": [
           "C:\\Users\\admin\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
@@ -48,20 +49,40 @@
           "dependencies": {
             "Microsoft.NET.Test.Sdk": {
               "target": "Package",
-              "version": "[17.14.1, )"
+              "version": "[17.9.0, )",
+              "versionCentrallyManaged": true
             },
             "coverlet.collector": {
               "target": "Package",
-              "version": "[6.0.4, )"
+              "version": "[6.0.2, )",
+              "versionCentrallyManaged": true
             },
             "xunit": {
               "target": "Package",
-              "version": "[2.9.3, )"
+              "version": "[2.7.0, )",
+              "versionCentrallyManaged": true
             },
             "xunit.runner.visualstudio": {
               "target": "Package",
-              "version": "[3.1.4, )"
+              "version": "[2.5.7, )",
+              "versionCentrallyManaged": true
             }
+          },
+          "centralPackageVersions": {
+            "coverlet.collector": "6.0.2",
+            "FluentValidation.DependencyInjectionExtensions": "11.9.0",
+            "Mapster": "7.4.0",
+            "Mapster.DependencyInjection": "1.0.1",
+            "MediatR": "12.2.0",
+            "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "9.0.0",
+            "Microsoft.EntityFrameworkCore": "9.0.0",
+            "Microsoft.EntityFrameworkCore.Design": "9.0.0",
+            "Microsoft.Extensions.Identity.Stores": "9.0.0",
+            "Microsoft.NET.Test.Sdk": "17.9.0",
+            "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.0",
+            "Scalar.AspNetCore": "2.0.18",
+            "xunit": "2.7.0",
+            "xunit.runner.visualstudio": "2.5.7"
           },
           "imports": [
             "net461",
