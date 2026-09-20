@@ -14,38 +14,49 @@
 | **Bùi Trung Hiếu** | Dựng Frontend Skeleton (Next.js 15 App Router + TypeScript + Tailwind CSS), dựng Layout chung (Header, Footer, Nav)[cite: 4]. | Khung UI cơ bản responsive trên trình duyệt[cite: 4]. |
 | **Phan Thành Huy** | Cấu hình `docker-compose.yml` tổng hợp (Nginx, Postgres, Redis, MinIO), viết API Client Base (Fetch/Axios) phía Frontend[cite: 4]. | Môi trường Docker local khởi chạy trơn tru với 1 câu lệnh[cite: 4]. |
 
+# Phân công nhiệm vụ Lab 1: Kiến trúc Web và RESTful API
+
+**Mục tiêu:** Khởi tạo nền tảng Clean Architecture, thiết lập CQRS với MediatR, tạo API CRUD có phân trang và tích hợp OpenAPI (Scalar) cho dự án Culinary Blog.
+
+## 🧑‍💻 Chi tiết phân công (Sprint 1)
+
+### 1. Nguyễn Nhất Minh (Trưởng nhóm - Backend API & CQRS)
+**Nhánh làm việc:** `feature/lab1-cqrs-api`
+- **Application Layer:** 
+  - Khởi tạo Use Cases cho `Category` và `Recipe` bằng MediatR (tạo các thư mục Commands, Queries).
+  - Viết `CreateRecipeCommand`, `GetRecipesQuery` (hỗ trợ phân trang, lọc theo độ khó `Difficulty`, `CategoryId`) và `GetRecipeByIdQuery`.
+- **DTO & Mapping:** 
+  - Tạo các model `CategoryDto`, `RecipeDetailDto`, `PaginatedResult`.
+  - Cấu hình `Mapster` để ánh xạ dữ liệu, tối ưu truy vấn bằng `ProjectToType<T>()`.
+- **API Layer:**
+  - Thiết kế Minimal APIs (`CategoryEndpoints.cs`, `RecipeEndpoints.cs`) hỗ trợ đầy đủ RESTful CRUD.
+  - Triển khai nested resource: `GET /api/v1/categories/{id}/recipes` lấy danh sách công thức theo danh mục.
+  - Cấu hình Scalar UI để tự động tạo tài liệu OpenAPI với đầy đủ summary, description và response types.
+
+### 2. Nguyễn Thế Khải (Database & Infrastructure)
+**Nhánh làm việc:** `feature/lab1-recipe-entity`
+- **Domain Layer:** 
+  - Hoàn thiện Entity `Category` với Factory method `Create()` và `Update()`.
+  - Tạo Entity `Recipe` với đầy đủ thuộc tính nghiệp vụ: `Title`, `Description`, `Instructions`, `PrepTimeMinutes`, `CookTimeMinutes`, `Servings`, `Difficulty` (enum), `CategoryId`, `AuthorId`.
+- **Infrastructure Layer:**
+  - Cấu hình ràng buộc dữ liệu Fluent API qua `IEntityTypeConfiguration<Recipe>` và `Category`.
+  - Khai báo các bảng (`DbSet`) vào `ApplicationDbContext`.
+- **Cơ sở dữ liệu:** Chạy lệnh tạo EF Core Migration và cập nhật cấu trúc bảng xuống PostgreSQL.
+
+### 3. Phan Thành Huy (DevOps & Testing)
+**Nhánh làm việc:** `task/lab1-api-testing`
+- **Quản trị Local:** Đảm bảo hệ thống Docker Compose (PostgreSQL, Redis, MinIO) hoạt động mượt mà trên máy của tất cả thành viên.
+- **Kiểm thử API:** 
+  - Viết các kịch bản kiểm thử bằng file `.http` (hoặc curl) cho tất cả các endpoint API.
+  - Kiểm thử chuyên sâu các query string nâng cao như phân trang, sắp xếp và bộ lọc custom (lọc theo `minCookTime`, `maxCookTime`, mức độ khó).
+
+### 4. Bùi Trung Hiếu (Frontend Next.js)
+**Nhánh làm việc:** `feature/lab1-frontend-types`
+- **Đồng bộ Data Model:** Định nghĩa các TypeScript types/interfaces (`Category.ts`, `Recipe.ts`, `PaginatedResult.ts`) sao cho khớp chính xác với chuẩn response JSON của Backend.
+- **API Client:** Thiết lập các hàm `fetch` hoặc Axios services chuẩn bị gọi đến các endpoint `/api/v1/categories` và `/api/v1/recipes`.
+
 ---
-
-### 📌 Tuần 2: Xác Thực (Auth) & Quản Lý Danh Mục 
-> **Mục tiêu:** Nắm vững luồng xác thực JWT Stateless, Refresh Token Rotation và xử lý CRUD cơ bản[cite: 4].
-
-| Thành viên | Tasks Backend & Database | Tasks Frontend (UI & Integration) |
-| :--- | :--- | :--- |
-| **Nguyễn Nhất Minh** | **FR-AUTH-001/002:** API Register, Login Local (PBKDF2 Hash, JWT Access/Refresh Token)[cite: 4]. | Tích hợp Auth Context / Custom Hook lưu trữ JWT Token phía Client[cite: 4]. |
-| **Nguyễn Thế Khải** | **FR-AUTH-004/005:** API Refresh Token (Token Rotation) và API Logout[cite: 4]. | Dựng Form Login (`/auth/login`) và Register (`/auth/register`) bằng React Hook Form[cite: 4]. |
-| **Bùi Trung Hiếu** | **FR-CAT-001/002/003:** API CRUD Category (Tạo, Sửa, Lấy danh sách) + Cấu hình MemoryCache[cite: 4]. | Dựng trang hiển thị danh sách Danh mục công thức cho người dùng[cite: 4]. |
-| **Phan Thành Huy** | **FR-AUTH-006/007 & FR-CAT-004/005:** API View/Update Profile & API Xóa Category (Admin)[cite: 4]. | Dựng trang cá nhân (`/profile`) và Dashboard quản lý Category cho Admin[cite: 4]. |
-
----
-
-### 📌 Tuần 3: Quản Lý Công Thức Nấu Ăn & Upload File 
-> **Mục tiêu:** Xử lý Aggregate Root phức tạp (Recipe, Steps, Ingredients) và Upload File trên MinIO S3[cite: 4].
-
-| Thành viên | Tasks Backend & Database | Tasks Frontend (UI & Integration) |
-| :--- | :--- | :--- |
-| **Nguyễn Nhất Minh** | **FR-RCP-001/002/003:** API Tạo Recipe (Draft), Lấy danh sách/Chi tiết. Xử lý Optimistic Concurrency (`RowVersion`)[cite: 4]. | Dựng trang Chi tiết công thức (`/recipes/[slug]`) render thông tin dinh dưỡng, các bước nấu[cite: 4]. |
-| **Nguyễn Thế Khải** | **FR-RCP-004/007:** API Cập nhật & Xóa Recipe (Hard Delete + Cascade Delete)[cite: 4]. | Dựng Form Wizard tạo/chỉnh sửa công thức nấu ăn[cite: 4]. |
-| **Bùi Trung Hiếu** | **FR-FILE-001/002 & FR-RCP-008:** API Upload ảnh lên MinIO. Validate Magic Bytes & File Size $\le 5\text{MB}$[cite: 4]. | Dựng Component Upload ảnh drag-and-drop, chọn ảnh chính (Primary Image)[cite: 4]. |
-| **Phan Thành Huy** | **FR-RCP-009/010:** API CRUD Nguyên liệu (RecipeIngredient) & Các bước thực hiện (RecipeStep)[cite: 4]. | Dựng Component Dynamic Form cho phép Thêm/Sửa/Xóa/Reorder các bước & nguyên liệu[cite: 4]. |
-
----
-
-### 📌 Tuần 4: Tìm Kiếm, Phân Quyền Strict RBAC & Tối Ưu 
-> **Mục tiêu:** Cấu hình PostgreSQL Full-Text Search, Redis Cache, Strict RBAC và đóng gói chuẩn bị báo cáo[cite: 4].
-
-| Thành viên | Tasks Kỹ Thuật Nâng Cao | Chuẩn Bị Phản Biện & Báo Cáo |
-| :--- | :--- | :--- |
-| **Nguyễn Nhất Minh** | **FR-SRCH-001:** Query PostgreSQL Full-Text Search (`tsvector`, `tsquery`, `unaccent` tiếng Việt không dấu)[cite: 4]. | Tối ưu SQL Query, giải thích cơ chế FTS cho cả nhóm[cite: 4]. |
-| **Nguyễn Thế Khải** | **FR-SRCH-002/003/004:** Lọc đa tiêu chí, Sắp xếp, Phân trang + Cấu hình Short-TTL Redis Cache (5 phút)[cite: 4]. | Dựng UI Trang Tìm kiếm (`/search`) kết hợp Bộ lọc live. Giải thích chiến lược Cache cho cả nhóm[cite: 4]. |
-| **Bùi Trung Hiếu** | **FR-AUTH-008 (Strict RBAC):** API Admin phê duyệt/gán quyền Author cho Reader. Middleware chặn Reader đăng bài (`403 Forbidden`)[cite: 4]. | Dựng UI Dashboard Admin (`/dashboard/users`) duyệt Tác giả. Viết tài liệu quy trình phân quyền 4 lớp[cite: 4]. |
-| **Phan Thành Huy** | **FR-RCP-005/006:** API Publish/Unpublish/Archive Recipe. Cấu hình CORS, Rate Limiting, Error Handling chuẩn RFC 7807[cite: 4]. | Tổng hợp Postman Collection / Scalar API Specs. Kiểm thử toàn bộ 5 Luồng Critical Flows (E2E)[cite: 4]. |
+**Quy định Pull Request:**
+* Tuyệt đối không đẩy code trực tiếp lên `main`.
+* Khi xong task, mở Pull Request từ nhánh cá nhân vào `main`.
+* Cần ít nhất 1 thành viên khác (có quyền Write) vào xem tab *Files changed*, chọn **Approve** trước khi gộp nhánh.
