@@ -13,6 +13,7 @@
     <PackageVersion Include="coverlet.collector" Version="6.0.2" />
     <PackageVersion Include="Mapster" Version="7.4.0" />
     <PackageVersion Include="Mapster.DependencyInjection" Version="1.0.1" />
-    <PackageVersion Include="Scalar.AspNetCore" Version="2.0.18" />
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="9.0.0" /> <!-- Sửa thành 10.0.0 nếu bạn dùng bản pre-release -->
+    <PackageVersion Include="Scalar.AspNetCore" Version="1.2.3" />
 </ItemGroup>
 </Project>

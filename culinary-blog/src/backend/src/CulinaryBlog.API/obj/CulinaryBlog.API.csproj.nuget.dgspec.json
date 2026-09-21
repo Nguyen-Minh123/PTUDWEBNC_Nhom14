@@ -54,6 +54,11 @@
           "framework": "net10.0",
           "targetAlias": "net10.0",
           "dependencies": {
+            "Microsoft.AspNetCore.OpenApi": {
+              "target": "Package",
+              "version": "[9.0.0, )",
+              "versionCentrallyManaged": true
+            },
             "Microsoft.EntityFrameworkCore.Design": {
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
               "suppressParent": "All",
@@ -68,7 +73,7 @@
             },
             "Scalar.AspNetCore": {
               "target": "Package",
-              "version": "[2.0.18, )",
+              "version": "[1.2.3, )",
               "versionCentrallyManaged": true
             }
           },
@@ -79,12 +84,13 @@
             "Mapster.DependencyInjection": "1.0.1",
             "MediatR": "12.2.0",
             "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "9.0.0",
+            "Microsoft.AspNetCore.OpenApi": "9.0.0",
             "Microsoft.EntityFrameworkCore": "9.0.0",
             "Microsoft.EntityFrameworkCore.Design": "9.0.0",
             "Microsoft.Extensions.Identity.Stores": "9.0.0",
             "Microsoft.NET.Test.Sdk": "17.9.0",
             "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.0",
-            "Scalar.AspNetCore": "2.0.18",
+            "Scalar.AspNetCore": "1.2.3",
             "xunit": "2.7.0",
             "xunit.runner.visualstudio": "2.5.7"
           },
@@ -595,12 +601,13 @@
             "Mapster.DependencyInjection": "1.0.1",
             "MediatR": "12.2.0",
             "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "9.0.0",
+            "Microsoft.AspNetCore.OpenApi": "9.0.0",
             "Microsoft.EntityFrameworkCore": "9.0.0",
             "Microsoft.EntityFrameworkCore.Design": "9.0.0",
             "Microsoft.Extensions.Identity.Stores": "9.0.0",
             "Microsoft.NET.Test.Sdk": "17.9.0",
             "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.0",
-            "Scalar.AspNetCore": "2.0.18",
+            "Scalar.AspNetCore": "1.2.3",
             "xunit": "2.7.0",
             "xunit.runner.visualstudio": "2.5.7"
           },
@@ -954,12 +961,13 @@
             "Mapster.DependencyInjection": "1.0.1",
             "MediatR": "12.2.0",
             "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "9.0.0",
+            "Microsoft.AspNetCore.OpenApi": "9.0.0",
             "Microsoft.EntityFrameworkCore": "9.0.0",
             "Microsoft.EntityFrameworkCore.Design": "9.0.0",
             "Microsoft.Extensions.Identity.Stores": "9.0.0",
             "Microsoft.NET.Test.Sdk": "17.9.0",
             "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.0",
-            "Scalar.AspNetCore": "2.0.18",
+            "Scalar.AspNetCore": "1.2.3",
             "xunit": "2.7.0",
             "xunit.runner.visualstudio": "2.5.7"
           },
@@ -1334,12 +1342,13 @@
             "Mapster.DependencyInjection": "1.0.1",
             "MediatR": "12.2.0",
             "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "9.0.0",
+            "Microsoft.AspNetCore.OpenApi": "9.0.0",
             "Microsoft.EntityFrameworkCore": "9.0.0",
             "Microsoft.EntityFrameworkCore.Design": "9.0.0",
             "Microsoft.Extensions.Identity.Stores": "9.0.0",
             "Microsoft.NET.Test.Sdk": "17.9.0",
             "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.0",
-            "Scalar.AspNetCore": "2.0.18",
+            "Scalar.AspNetCore": "1.2.3",
             "xunit": "2.7.0",
             "xunit.runner.visualstudio": "2.5.7"
           },
