@@ -60,3 +60,35 @@
 * Tuyệt đối không đẩy code trực tiếp lên `main`.
 * Khi xong task, mở Pull Request từ nhánh cá nhân vào `main`.
 * Cần ít nhất 1 thành viên khác (có quyền Write) vào xem tab *Files changed*, chọn **Approve** trước khi gộp nhánh.
+
+
+
+## 🚀 Lab 2: Data Seeding & Entity Relationships (Bogus)
+
+### 🎯 Mục tiêu
+- **Mở rộng cấu trúc Domain:** Bổ sung thực thể `Ingredient` (Nguyên liệu) và `RecipeStep` (Bước thực hiện).
+- **Thiết lập quan hệ:** Sử dụng Fluent API trong Entity Framework Core để nối bảng.
+- **Tạo dữ liệu giả (Data Seeding):** Tích hợp thư viện `Bogus` để tự động sinh dữ liệu mẫu phục vụ kiểm thử.
+- **Quy mô dữ liệu seed:** 20 Danh mục (Categories), 100 Công thức (Recipes) - trong đó mỗi công thức đi kèm 10 nguyên liệu và 5 bước thực hiện.
+
+### 👥 Phân công nhiệm vụ (Nhóm 14)
+
+| Thành viên | Vai trò | Nhiệm vụ chi tiết |
+| :--- | :--- | :--- |
+| **Nguyễn Nhất Minh** (Nhóm trưởng) | Package & Startup | Cấu hình thư viện tập trung `Directory.Packages.props`, cài đặt `Bogus` vào tầng Infrastructure, đăng ký DI và gọi hàm Seeder tại `Program.cs`. |
+| **Nguyễn Thế Khải** | Domain & Seeder Logic | Thiết kế `Ingredient.cs`, `RecipeStep.cs`, cấu hình DB Context. Viết logic sinh dữ liệu giả bằng `Bogus` trong file `DataSeeder.cs`. |
+| **Phan Thành Huy** | Database & API Testing | Xác minh cấu trúc bảng và dữ liệu seed trực tiếp trên PostgreSQL. Dùng Scalar UI kiểm thử các endpoint để xác nhận luồng dữ liệu trả về. |
+| **Bùi Trung Hiếu** | Frontend Sync | Chuyển đổi cấu trúc Entity mới thành các TypeScript Interfaces tương ứng bên dự án Next.js để chuẩn bị ghép API. |
+
+### 🛠 Kỹ thuật & Thư viện
+- **Framework:** .NET 10 (Minimal APIs) theo chuẩn Clean Architecture.
+- **Database:** PostgreSQL.
+- **Thư viện Fake Data:** Bogus.
+- **API UI:** Scalar.AspNetCore.
+
+### ⚙️ Hướng dẫn khởi chạy (Local)
+
+1. Cập nhật nhánh mới nhất và chuyển sang nhánh Lab 2:
+   ```bash
+   git pull origin main --rebase
+   git checkout feature/lab2-data-seeding
