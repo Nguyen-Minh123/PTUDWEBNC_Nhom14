@@ -63,32 +63,51 @@
 
 
 
-## 🚀 Lab 2: Data Seeding & Entity Relationships (Bogus)
 
-### 🎯 Mục tiêu
-- **Mở rộng cấu trúc Domain:** Bổ sung thực thể `Ingredient` (Nguyên liệu) và `RecipeStep` (Bước thực hiện).
-- **Thiết lập quan hệ:** Sử dụng Fluent API trong Entity Framework Core để nối bảng.
-- **Tạo dữ liệu giả (Data Seeding):** Tích hợp thư viện `Bogus` để tự động sinh dữ liệu mẫu phục vụ kiểm thử.
-- **Quy mô dữ liệu seed:** 20 Danh mục (Categories), 100 Công thức (Recipes) - trong đó mỗi công thức đi kèm 10 nguyên liệu và 5 bước thực hiện.
 
-### 👥 Phân công nhiệm vụ (Nhóm 14)
+# 🍲 Culinary Blog API - Nhóm 14 (Lab 2: Chuẩn hóa SRS & Nâng cao)
 
-| Thành viên | Vai trò | Nhiệm vụ chi tiết |
+Dự án phát triển hệ thống Backend cho nền tảng Blog ẩm thực theo kiến trúc **Clean Architecture**, tuân thủ nghiêm ngặt các tiêu chuẩn kỹ thuật SRS v1.0.0, sử dụng **.NET 10 (Minimal APIs)**, **PostgreSQL**, **Redis**, và **MinIO**.
+
+---
+
+## 🚀 Mục tiêu Lab 2 (Theo Kế hoạch Chuẩn hóa SRS)
+* Áp dụng mô hình **Soft Delete Pattern** cho các Aggregate chính (Recipe, Category) kết hợp Global Query Filters[cite: 12].
+* Chuẩn hóa bảo mật **Refresh Token Hashing (SHA-256)** và cơ chế Token Rotation[cite: 12].
+* Hoàn thiện Business Rules khắt khe cho việc xuất bản công thức ($\ge 1$ nguyên liệu, $\ge 1$ bước)[cite: 12].
+* Đồng bộ 6 chỉ số dinh dưỡng (Owned Entity), tự động hóa số thứ tự bước thực hiện (`StepNumber` renumbering) và cấu hình Quantity/Unit Nullable cho nguyên liệu[cite: 12].
+* Thống nhất cú pháp sắp xếp (`?sort=-field`) và định dạng lỗi chuẩn RFC 7807 (`VALIDATION_ERROR` - HTTP 400)[cite: 12].
+
+---
+
+## 👥 Phân công nhiệm vụ chi tiết theo Giai đoạn Sprint
+
+| Thành viên | Phụ trách chính | Các Module & Nhiệm vụ Cốt lõi |
 | :--- | :--- | :--- |
-| **Nguyễn Nhất Minh** (Nhóm trưởng) | Package & Startup | Cấu hình thư viện tập trung `Directory.Packages.props`, cài đặt `Bogus` vào tầng Infrastructure, đăng ký DI và gọi hàm Seeder tại `Program.cs`. |
-| **Nguyễn Thế Khải** | Domain & Seeder Logic | Thiết kế `Ingredient.cs`, `RecipeStep.cs`, cấu hình DB Context. Viết logic sinh dữ liệu giả bằng `Bogus` trong file `DataSeeder.cs`. |
-| **Phan Thành Huy** | Database & API Testing | Xác minh cấu trúc bảng và dữ liệu seed trực tiếp trên PostgreSQL. Dùng Scalar UI kiểm thử các endpoint để xác nhận luồng dữ liệu trả về. |
-| **Bùi Trung Hiếu** | Frontend Sync | Chuyển đổi cấu trúc Entity mới thành các TypeScript Interfaces tương ứng bên dự án Next.js để chuẩn bị ghép API. |
+| **Nguyễn Nhất Minh** *(Nhóm trưởng)* | TV1: Auth & Security | Chuẩn hóa cơ chế mã hóa Refresh Token SHA-256, `JwtService` Token Rotation và chống Reuse Attack[cite: 12]. |
+| **Nguyễn Thế Khải** | TV2: Media & Caching | Xây dựng Soft Delete Interceptor, tích hợp MinIO Async File Deletion (Hangfire) và chiến lược Caching (TTL 30m/15m)[cite: 12]. |
+| **Phan Thành Huy** | TV3: Recipe & Domain Rules | Hiện thực hóa Domain Rules xuất bản công thức, cấu hình 6 chỉ số dinh dưỡng, tự động hóa `StepNumber` và xử lý nguyên liệu Nullable[cite: 12]. |
+| **Bùi Trung Hiếu** | TV4: Search & Validation | Chuẩn hóa cú pháp tham số sắp xếp `?sort=-field`, đồng bộ MediatR ValidationBehavior trả về RFC 7807 (HTTP 400) và kiểm thử tổng hợp[cite: 12]. |
 
-### 🛠 Kỹ thuật & Thư viện
-- **Framework:** .NET 10 (Minimal APIs) theo chuẩn Clean Architecture.
-- **Database:** PostgreSQL.
-- **Thư viện Fake Data:** Bogus.
-- **API UI:** Scalar.AspNetCore.
+---
 
-### ⚙️ Hướng dẫn khởi chạy (Local)
+## ⚙️ Hướng dẫn Khởi chạy Nhanh
 
-1. Cập nhật nhánh mới nhất và chuyển sang nhánh Lab 2:
+1. Cập nhật mã nguồn mới nhất từ nhánh chung:
    ```bash
    git pull origin main --rebase
-   git checkout feature/lab2-data-seeding
+   git checkout feature/lab2-srs-standardization
+Khôi phục các gói thư viện dự án:
+
+Bash
+dotnet restore
+Khởi chạy hệ thống cơ sở dữ liệu qua Docker Compose (PostgreSQL, Redis, MinIO):
+
+Bash
+docker compose up -d
+Chạy ứng dụng Backend:
+
+Bash
+dotnet watch run --project src/CulinaryBlog.API
+Truy cập giao diện tài liệu API Scalar:
+👉 http://localhost:5075/scalar/v1
