@@ -38,6 +38,10 @@
           }
         },
         "warningProperties": {
+          "noWarn": [
+            "NU1603",
+            "NU1903"
+          ],
           "warnAsError": [
             "NU1605"
           ]
@@ -54,9 +58,39 @@
           "framework": "net10.0",
           "targetAlias": "net10.0",
           "dependencies": {
+            "Carter": {
+              "target": "Package",
+              "version": "[9.0.0, )",
+              "versionCentrallyManaged": true
+            },
             "Microsoft.AspNetCore.OpenApi": {
               "target": "Package",
               "version": "[9.0.0, )",
+              "versionCentrallyManaged": true
+            },
+            "Microsoft.CodeAnalysis.CSharp": {
+              "target": "Package",
+              "version": "[4.11.0, )",
+              "versionCentrallyManaged": true
+            },
+            "Microsoft.CodeAnalysis.CSharp.Workspaces": {
+              "target": "Package",
+              "version": "[4.11.0, )",
+              "versionCentrallyManaged": true
+            },
+            "Microsoft.CodeAnalysis.Common": {
+              "target": "Package",
+              "version": "[4.11.0, )",
+              "versionCentrallyManaged": true
+            },
+            "Microsoft.CodeAnalysis.Workspaces.Common": {
+              "target": "Package",
+              "version": "[4.11.0, )",
+              "versionCentrallyManaged": true
+            },
+            "Microsoft.CodeAnalysis.Workspaces.MSBuild": {
+              "target": "Package",
+              "version": "[4.11.0, )",
               "versionCentrallyManaged": true
             },
             "Microsoft.EntityFrameworkCore.Design": {
@@ -78,19 +112,27 @@
             }
           },
           "centralPackageVersions": {
+            "Carter": "9.0.0",
             "coverlet.collector": "6.0.2",
             "FluentValidation.DependencyInjectionExtensions": "11.9.0",
             "Mapster": "7.4.0",
             "Mapster.DependencyInjection": "1.0.1",
             "MediatR": "12.2.0",
+            "Microsoft.AspNetCore.Authentication.JwtBearer": "9.0.0",
             "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "9.0.0",
             "Microsoft.AspNetCore.OpenApi": "9.0.0",
+            "Microsoft.CodeAnalysis.Common": "4.11.0",
+            "Microsoft.CodeAnalysis.CSharp": "4.11.0",
+            "Microsoft.CodeAnalysis.CSharp.Workspaces": "4.11.0",
+            "Microsoft.CodeAnalysis.Workspaces.Common": "4.11.0",
+            "Microsoft.CodeAnalysis.Workspaces.MSBuild": "4.11.0",
             "Microsoft.EntityFrameworkCore": "9.0.0",
             "Microsoft.EntityFrameworkCore.Design": "9.0.0",
             "Microsoft.Extensions.Identity.Stores": "9.0.0",
             "Microsoft.NET.Test.Sdk": "17.9.0",
             "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.0",
             "Scalar.AspNetCore": "1.2.3",
+            "System.IdentityModel.Tokens.Jwt": "8.23.0",
             "xunit": "2.7.0",
             "xunit.runner.visualstudio": "2.5.7"
           },
@@ -592,22 +634,35 @@
               "target": "Package",
               "version": "[12.2.0, )",
               "versionCentrallyManaged": true
+            },
+            "Microsoft.EntityFrameworkCore": {
+              "target": "Package",
+              "version": "[9.0.0, )",
+              "versionCentrallyManaged": true
             }
           },
           "centralPackageVersions": {
+            "Carter": "9.0.0",
             "coverlet.collector": "6.0.2",
             "FluentValidation.DependencyInjectionExtensions": "11.9.0",
             "Mapster": "7.4.0",
             "Mapster.DependencyInjection": "1.0.1",
             "MediatR": "12.2.0",
+            "Microsoft.AspNetCore.Authentication.JwtBearer": "9.0.0",
             "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "9.0.0",
             "Microsoft.AspNetCore.OpenApi": "9.0.0",
+            "Microsoft.CodeAnalysis.Common": "4.11.0",
+            "Microsoft.CodeAnalysis.CSharp": "4.11.0",
+            "Microsoft.CodeAnalysis.CSharp.Workspaces": "4.11.0",
+            "Microsoft.CodeAnalysis.Workspaces.Common": "4.11.0",
+            "Microsoft.CodeAnalysis.Workspaces.MSBuild": "4.11.0",
             "Microsoft.EntityFrameworkCore": "9.0.0",
             "Microsoft.EntityFrameworkCore.Design": "9.0.0",
             "Microsoft.Extensions.Identity.Stores": "9.0.0",
             "Microsoft.NET.Test.Sdk": "17.9.0",
             "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.0",
             "Scalar.AspNetCore": "1.2.3",
+            "System.IdentityModel.Tokens.Jwt": "8.23.0",
             "xunit": "2.7.0",
             "xunit.runner.visualstudio": "2.5.7"
           },
@@ -955,19 +1010,27 @@
             }
           },
           "centralPackageVersions": {
+            "Carter": "9.0.0",
             "coverlet.collector": "6.0.2",
             "FluentValidation.DependencyInjectionExtensions": "11.9.0",
             "Mapster": "7.4.0",
             "Mapster.DependencyInjection": "1.0.1",
             "MediatR": "12.2.0",
+            "Microsoft.AspNetCore.Authentication.JwtBearer": "9.0.0",
             "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "9.0.0",
             "Microsoft.AspNetCore.OpenApi": "9.0.0",
+            "Microsoft.CodeAnalysis.Common": "4.11.0",
+            "Microsoft.CodeAnalysis.CSharp": "4.11.0",
+            "Microsoft.CodeAnalysis.CSharp.Workspaces": "4.11.0",
+            "Microsoft.CodeAnalysis.Workspaces.Common": "4.11.0",
+            "Microsoft.CodeAnalysis.Workspaces.MSBuild": "4.11.0",
             "Microsoft.EntityFrameworkCore": "9.0.0",
             "Microsoft.EntityFrameworkCore.Design": "9.0.0",
             "Microsoft.Extensions.Identity.Stores": "9.0.0",
             "Microsoft.NET.Test.Sdk": "17.9.0",
             "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.0",
             "Scalar.AspNetCore": "1.2.3",
+            "System.IdentityModel.Tokens.Jwt": "8.23.0",
             "xunit": "2.7.0",
             "xunit.runner.visualstudio": "2.5.7"
           },
@@ -1312,6 +1375,11 @@
           "framework": "net10.0",
           "targetAlias": "net10.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Authentication.JwtBearer": {
+              "target": "Package",
+              "version": "[9.0.0, )",
+              "versionCentrallyManaged": true
+            },
             "Microsoft.AspNetCore.Identity.EntityFrameworkCore": {
               "target": "Package",
               "version": "[9.0.0, )",
@@ -1333,22 +1401,35 @@
               "target": "Package",
               "version": "[9.0.0, )",
               "versionCentrallyManaged": true
+            },
+            "System.IdentityModel.Tokens.Jwt": {
+              "target": "Package",
+              "version": "[8.23.0, )",
+              "versionCentrallyManaged": true
             }
           },
           "centralPackageVersions": {
+            "Carter": "9.0.0",
             "coverlet.collector": "6.0.2",
             "FluentValidation.DependencyInjectionExtensions": "11.9.0",
             "Mapster": "7.4.0",
             "Mapster.DependencyInjection": "1.0.1",
             "MediatR": "12.2.0",
+            "Microsoft.AspNetCore.Authentication.JwtBearer": "9.0.0",
             "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "9.0.0",
             "Microsoft.AspNetCore.OpenApi": "9.0.0",
+            "Microsoft.CodeAnalysis.Common": "4.11.0",
+            "Microsoft.CodeAnalysis.CSharp": "4.11.0",
+            "Microsoft.CodeAnalysis.CSharp.Workspaces": "4.11.0",
+            "Microsoft.CodeAnalysis.Workspaces.Common": "4.11.0",
+            "Microsoft.CodeAnalysis.Workspaces.MSBuild": "4.11.0",
             "Microsoft.EntityFrameworkCore": "9.0.0",
             "Microsoft.EntityFrameworkCore.Design": "9.0.0",
             "Microsoft.Extensions.Identity.Stores": "9.0.0",
             "Microsoft.NET.Test.Sdk": "17.9.0",
             "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.0",
             "Scalar.AspNetCore": "1.2.3",
+            "System.IdentityModel.Tokens.Jwt": "8.23.0",
             "xunit": "2.7.0",
             "xunit.runner.visualstudio": "2.5.7"
           },

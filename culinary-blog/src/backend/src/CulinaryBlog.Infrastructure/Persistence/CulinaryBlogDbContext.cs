@@ -1,21 +1,28 @@
+using CulinaryBlog.Application.Contracts.Persistence;
 using CulinaryBlog.Domain.Entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace CulinaryBlog.Infrastructure.Persistence;
 
-public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser>
+public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplicationDbContext
 {
-    public CulinaryBlogDbContext(DbContextOptions<CulinaryBlogDbContext> options) 
-        : base(options)
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
     {
     }
+
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
         
-        // Tùy chỉnh tên bảng mặc định của Identity (tùy chọn)
-        builder.Entity<ApplicationUser>().ToTable("AspNetUsers");
+        // Cấu hình Fluent API bổ sung nếu cần
+        builder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasKey(rt => rt.Id);
+            entity.Property(rt => rt.TokenHash).HasMaxLength(64).IsRequired();
+            entity.HasIndex(rt => rt.TokenHash);
+        });
     }
 }
