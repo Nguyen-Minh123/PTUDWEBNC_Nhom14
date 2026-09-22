@@ -1,6 +1,6 @@
 using CulinaryBlog.Application.Authentication.Contracts;
 using CulinaryBlog.Domain.Shared;
-// Giả định ApplicationUser nằm trong namespace này, bạn hãy điều chỉnh nếu Khải đặt ở nơi khác
+using CulinaryBlog.Application.Contracts.Services;
 using CulinaryBlog.Domain.Entities; 
 using MediatR;
 using Microsoft.AspNetCore.Identity;
@@ -11,11 +11,13 @@ namespace CulinaryBlog.Application.Authentication.Commands.Register;
 internal sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<AuthResponse>>
 {
     private readonly UserManager<ApplicationUser> _userManager;
-    // private readonly IJwtTokenGenerator _jwtTokenGenerator; // (Sẽ tiêm interface sinh token ở bước sau)
+    private readonly IJwtService _jwtService;
 
-    public RegisterCommandHandler(UserManager<ApplicationUser> userManager)
+    // SỬA LỖI: Tiêm IJwtService vào tham số của hàm khởi tạo
+    public RegisterCommandHandler(UserManager<ApplicationUser> userManager, IJwtService jwtService)
     {
         _userManager = userManager;
+        _jwtService = jwtService; // Gán vào biến nội bộ
     }
 
     public async Task<Result<AuthResponse>> Handle(RegisterCommand request, CancellationToken cancellationToken)
@@ -46,9 +48,19 @@ internal sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, 
             return Result<AuthResponse>.Failure($"Lỗi tạo tài khoản: {errors}");
         }
 
-        // 4. Sinh JWT Token (Tạm thời gán chuỗi giả lập, bạn sẽ code logic sinh token thực tế sau)
-        var accessToken = "mock-jwt-access-token";
-        var refreshToken = "mock-refresh-token";
+        // ==========================================
+        // 4. SINH JWT TOKEN THỰC TẾ
+        // ==========================================
+        // Thiết lập danh sách quyền cơ bản (Role) cho người mới đăng ký
+        var roles = new List<string> { "User" };
+
+        // Gọi IJwtService để tạo Access Token thật
+        var accessToken = _jwtService.GenerateAccessToken(user, roles);
+
+        // Gọi IJwtService để lấy cặp Refresh Token (Chuỗi gốc gửi đi, Chuỗi băm lưu DB)
+        var (rawRefreshToken, refreshTokenHash) = _jwtService.GenerateRefreshToken();
+
+        // (Sau này thành viên phụ trách Refresh Token sẽ viết code lưu refreshTokenHash xuống Database tại đây)
 
         // 5. Đóng gói kết quả trả về cho Endpoint
         var response = new AuthResponse(
@@ -57,7 +69,7 @@ internal sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, 
             user.LastName,
             user.Email,
             accessToken,
-            refreshToken
+            rawRefreshToken // Gửi chuỗi Token gốc cho Next.js lưu vào cookie/local storage
         );
 
         return Result<AuthResponse>.Success(response);
