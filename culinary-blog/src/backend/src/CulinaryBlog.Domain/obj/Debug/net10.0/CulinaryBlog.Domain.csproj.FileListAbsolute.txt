@@ -11,3 +11,16 @@ D:\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.Domain\obj\Debug\
 D:\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.Domain\obj\Debug\net10.0\CulinaryBlog.Domain.pdb
 D:\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.Domain\obj\Debug\net10.0\ref\CulinaryBlog.Domain.dll
 D:\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.Domain\obj\Debug\net10.0\CulinaryBlog.Domain.csproj.AssemblyReference.cache
+D:\Homework\Web\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.Domain\bin\Debug\net10.0\CulinaryBlog.Domain.deps.json
+D:\Homework\Web\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.Domain\bin\Debug\net10.0\CulinaryBlog.Domain.dll
+D:\Homework\Web\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.Domain\bin\Debug\net10.0\CulinaryBlog.Domain.pdb
+D:\Homework\Web\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.Domain\obj\Debug\net10.0\CulinaryBlog.Domain.csproj.AssemblyReference.cache
+D:\Homework\Web\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.Domain\obj\Debug\net10.0\CulinaryBlog.Domain.GeneratedMSBuildEditorConfig.editorconfig
+D:\Homework\Web\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.Domain\obj\Debug\net10.0\CulinaryBlog.Domain.AssemblyInfoInputs.cache
+D:\Homework\Web\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.Domain\obj\Debug\net10.0\CulinaryBlog.Domain.AssemblyInfo.cs
+D:\Homework\Web\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.Domain\obj\Debug\net10.0\CulinaryBlog.Domain.csproj.CoreCompileInputs.cache
+D:\Homework\Web\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.Domain\obj\Debug\net10.0\CulinaryBlog.Domain.sourcelink.json
+D:\Homework\Web\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.Domain\obj\Debug\net10.0\CulinaryBlog.Domain.dll
+D:\Homework\Web\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.Domain\obj\Debug\net10.0\refint\CulinaryBlog.Domain.dll
+D:\Homework\Web\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.Domain\obj\Debug\net10.0\CulinaryBlog.Domain.pdb
+D:\Homework\Web\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.Domain\obj\Debug\net10.0\ref\CulinaryBlog.Domain.dll

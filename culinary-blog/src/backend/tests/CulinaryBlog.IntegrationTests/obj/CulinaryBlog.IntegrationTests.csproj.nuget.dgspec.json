@@ -1,26 +1,33 @@
 {
   "format": 1,
   "restore": {
-    "D:\\PTUDWEBNC_Nhom14\\culinary-blog\\src\\backend\\tests\\CulinaryBlog.IntegrationTests\\CulinaryBlog.IntegrationTests.csproj": {}
+    "D:\\Homework\\Web\\PTUDWEBNC_Nhom14\\culinary-blog\\src\\backend\\tests\\CulinaryBlog.IntegrationTests\\CulinaryBlog.IntegrationTests.csproj": {}
   },
   "projects": {
-    "D:\\PTUDWEBNC_Nhom14\\culinary-blog\\src\\backend\\tests\\CulinaryBlog.IntegrationTests\\CulinaryBlog.IntegrationTests.csproj": {
+    "D:\\Homework\\Web\\PTUDWEBNC_Nhom14\\culinary-blog\\src\\backend\\tests\\CulinaryBlog.IntegrationTests\\CulinaryBlog.IntegrationTests.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\PTUDWEBNC_Nhom14\\culinary-blog\\src\\backend\\tests\\CulinaryBlog.IntegrationTests\\CulinaryBlog.IntegrationTests.csproj",
+        "projectUniqueName": "D:\\Homework\\Web\\PTUDWEBNC_Nhom14\\culinary-blog\\src\\backend\\tests\\CulinaryBlog.IntegrationTests\\CulinaryBlog.IntegrationTests.csproj",
         "projectName": "CulinaryBlog.IntegrationTests",
-        "projectPath": "D:\\PTUDWEBNC_Nhom14\\culinary-blog\\src\\backend\\tests\\CulinaryBlog.IntegrationTests\\CulinaryBlog.IntegrationTests.csproj",
-        "packagesPath": "C:\\Users\\admin\\.nuget\\packages\\",
-        "outputPath": "D:\\PTUDWEBNC_Nhom14\\culinary-blog\\src\\backend\\tests\\CulinaryBlog.IntegrationTests\\obj\\",
+        "projectPath": "D:\\Homework\\Web\\PTUDWEBNC_Nhom14\\culinary-blog\\src\\backend\\tests\\CulinaryBlog.IntegrationTests\\CulinaryBlog.IntegrationTests.csproj",
+        "packagesPath": "C:\\Users\\ntkha\\.nuget\\packages\\",
+        "outputPath": "D:\\Homework\\Web\\PTUDWEBNC_Nhom14\\culinary-blog\\src\\backend\\tests\\CulinaryBlog.IntegrationTests\\obj\\",
         "projectStyle": "PackageReference",
         "centralPackageVersionsManagementEnabled": true,
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "C:\\Users\\admin\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\ntkha\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {

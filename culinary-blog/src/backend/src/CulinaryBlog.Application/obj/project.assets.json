@@ -702,25 +702,33 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\admin\\.nuget\\packages\\": {}
+    "C:\\Users\\ntkha\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\PTUDWEBNC_Nhom14\\culinary-blog\\src\\backend\\src\\CulinaryBlog.Application\\CulinaryBlog.Application.csproj",
+      "projectUniqueName": "D:\\Homework\\Web\\PTUDWEBNC_Nhom14\\culinary-blog\\src\\backend\\src\\CulinaryBlog.Application\\CulinaryBlog.Application.csproj",
       "projectName": "CulinaryBlog.Application",
-      "projectPath": "D:\\PTUDWEBNC_Nhom14\\culinary-blog\\src\\backend\\src\\CulinaryBlog.Application\\CulinaryBlog.Application.csproj",
-      "packagesPath": "C:\\Users\\admin\\.nuget\\packages\\",
-      "outputPath": "D:\\PTUDWEBNC_Nhom14\\culinary-blog\\src\\backend\\src\\CulinaryBlog.Application\\obj\\",
+      "projectPath": "D:\\Homework\\Web\\PTUDWEBNC_Nhom14\\culinary-blog\\src\\backend\\src\\CulinaryBlog.Application\\CulinaryBlog.Application.csproj",
+      "packagesPath": "C:\\Users\\ntkha\\.nuget\\packages\\",
+      "outputPath": "D:\\Homework\\Web\\PTUDWEBNC_Nhom14\\culinary-blog\\src\\backend\\src\\CulinaryBlog.Application\\obj\\",
       "projectStyle": "PackageReference",
       "centralPackageVersionsManagementEnabled": true,
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
       "configFilePaths": [
-        "C:\\Users\\admin\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\ntkha\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
         "net10.0"
       ],
       "sources": {
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "C:\\Program Files\\dotnet\\library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -728,8 +736,8 @@
           "framework": "net10.0",
           "targetAlias": "net10.0",
           "projectReferences": {
-            "D:\\PTUDWEBNC_Nhom14\\culinary-blog\\src\\backend\\src\\CulinaryBlog.Domain\\CulinaryBlog.Domain.csproj": {
-              "projectPath": "D:\\PTUDWEBNC_Nhom14\\culinary-blog\\src\\backend\\src\\CulinaryBlog.Domain\\CulinaryBlog.Domain.csproj"
+            "D:\\Homework\\Web\\PTUDWEBNC_Nhom14\\culinary-blog\\src\\backend\\src\\CulinaryBlog.Domain\\CulinaryBlog.Domain.csproj": {
+              "projectPath": "D:\\Homework\\Web\\PTUDWEBNC_Nhom14\\culinary-blog\\src\\backend\\src\\CulinaryBlog.Domain\\CulinaryBlog.Domain.csproj"
             }
           }
         }
