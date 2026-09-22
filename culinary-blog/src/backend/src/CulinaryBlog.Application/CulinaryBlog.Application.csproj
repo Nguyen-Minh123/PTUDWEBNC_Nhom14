@@ -1,10 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\CulinaryBlog.Domain\CulinaryBlog.Domain.csproj" />
     <PackageReference Include="MediatR" />
-  <PackageReference Include="Mapster" />
-  <PackageReference Include="Mapster.DependencyInjection" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="Mapster" />
+    <PackageReference Include="Mapster.DependencyInjection" />
   </ItemGroup>
 
   <PropertyGroup>
