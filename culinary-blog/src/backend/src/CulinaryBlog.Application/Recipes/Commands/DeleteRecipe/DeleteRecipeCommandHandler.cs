@@ -61,15 +61,20 @@ public sealed class DeleteRecipeCommandHandler : IRequestHandler<DeleteRecipeCom
         }
 
         await _cacheService.RemoveByPrefixAsync(CacheKeys.RecipesInvalidatePrefix, cancellationToken);
-        await _cacheService.RemoveByPrefixAsync(CacheKeys.CategoriesInvalidatePrefix, cancellationToken);
-        await _cacheService.RemoveAsync(CacheKeys.RecipeById(recipe.Id), cancellationToken);
+        await _cacheService.RemoveByPrefixAsync(CacheKeys.SearchInvalidatePrefix, cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(recipe.Slug))
         {
             await _cacheService.RemoveAsync(CacheKeys.RecipeBySlug(recipe.Slug), cancellationToken);
         }
 
-        _logger.LogInformation("Recipe deleted. RecipeId={RecipeId}", recipe.Id);
+        await _cacheService.RemoveAsync(CacheKeys.RecipeById(recipe.Id), cancellationToken);
+
+        _logger.LogInformation(
+            "Recipe deleted. RecipeId={RecipeId}, Slug={Slug}, ImageCount={ImageCount}",
+            recipe.Id,
+            recipe.Slug,
+            imageUrls.Length);
 
         return Unit.Value;
     }

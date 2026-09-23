@@ -268,3 +268,8 @@ D:\Homework\Web\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.API\
 D:\Homework\Web\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.API\obj\Debug\net10.0\CulinaryBlog.API.pdb
 D:\Homework\Web\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.API\obj\Debug\net10.0\CulinaryBlog.API.genruntimeconfig.cache
 D:\Homework\Web\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.API\obj\Debug\net10.0\ref\CulinaryBlog.API.dll
+D:\Homework\Web\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.API\bin\Debug\net10.0\AWSSDK.Core.dll
+D:\Homework\Web\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.API\bin\Debug\net10.0\AWSSDK.S3.dll
+D:\Homework\Web\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.API\bin\Debug\net10.0\Microsoft.Extensions.Caching.StackExchangeRedis.dll
+D:\Homework\Web\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.API\bin\Debug\net10.0\Pipelines.Sockets.Unofficial.dll
+D:\Homework\Web\PTUDWEBNC_Nhom14\culinary-blog\src\backend\src\CulinaryBlog.API\bin\Debug\net10.0\StackExchange.Redis.dll

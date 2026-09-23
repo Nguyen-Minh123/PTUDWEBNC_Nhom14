@@ -1,23 +1,12 @@
-using System.Net.Mime;
-using System.Reflection;
-using System.Text;
-using System.Text.Json;
+using Amazon.S3;
+using CulinaryBlog.Application.Common.Caching;
 using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Infrastructure.Caching;
 using CulinaryBlog.Infrastructure.Persistence;
 using CulinaryBlog.Infrastructure.Persistence.Interceptors;
+using CulinaryBlog.Infrastructure.Services;
 using CulinaryBlog.Infrastructure.Storage;
-//using Hangfire;
-//using Hangfire.PostgreSql;
-//using Microsoft.AspNetCore.Authentication.JwtBearer;
-//using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-//using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-//using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
-//using Serilog;
-//using Serilog.Events;
-//using Minio;
 using Scalar.AspNetCore; // Cần thêm using này để dùng được Scalar
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,6 +22,7 @@ builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddProblemDetails();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("DefaultCors", policy =>
@@ -43,47 +33,73 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Database
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-{
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-        ?? throw new InvalidOperationException("Missing connection string: DefaultConnection");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Missing connection string: DefaultConnection");
 
-    options.UseNpgsql(connectionString);
+builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
+{
+    options.UseNpgsql(connectionString, npgsql =>
+    {
+        npgsql.MigrationsAssembly(typeof(CulinaryBlogDbContext).Assembly.FullName);
+    });
 });
 
 builder.Services.AddScoped<SoftDeleteInterceptor>();
 
-// OpenAPI + Scalar
-// 1. Đăng ký dịch vụ sinh tài liệu OpenAPI
 builder.Services.AddOpenApi();
+
+// HttpContext / Current user
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+// Cache (build-safe fallback)
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddScoped<ICacheService, RedisCacheService>();
+
+// MinIO via AWS SDK
+builder.Services.AddSingleton<IAmazonS3>(_ =>
+{
+    var endpoint = builder.Configuration["Minio:Endpoint"]
+        ?? throw new InvalidOperationException("Missing Minio:Endpoint.");
+
+    var accessKey = builder.Configuration["Minio:AccessKey"]
+        ?? throw new InvalidOperationException("Missing Minio:AccessKey.");
+
+    var secretKey = builder.Configuration["Minio:SecretKey"]
+        ?? throw new InvalidOperationException("Missing Minio:SecretKey.");
+
+    var normalizedEndpoint = NormalizeServiceUrl(endpoint);
+
+    var config = new AmazonS3Config
+    {
+        ServiceURL = normalizedEndpoint,
+        ForcePathStyle = true
+    };
+
+    return new AmazonS3Client(accessKey, secretKey, config);
+});
+
+builder.Services.AddScoped<IFileStorageService, MinioStorageService>();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    app.MapScalarApiReference(); // Chỉ giữ đúng 1 dòng này!
-    
-    app.MapGet("/", () => "Hello World! Culinary Blog Backend is running on .NET 10.");
-}
-
 // =====================================================
-// App
+// Middleware
 // =====================================================
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    app.MapScalarApiReference();
-}
-
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
 app.UseCors("DefaultCors");
 
+// OpenAPI / Scalar
+app.MapOpenApi();
+app.MapScalarApiReference();
+
+// =====================================================
+// Routes
+// =====================================================
 app.MapControllers();
 
-//app.MapGet("/", () => Results.Redirect("/scalar"));
+app.MapGet("/", () => Results.Redirect("/scalar"));
 
 app.MapGet("/health", () => Results.Ok(new
 {
@@ -105,6 +121,29 @@ app.MapGet("/health/ready", () => Results.Ok(new
     timestampUtc = DateTime.UtcNow
 }));
 
-//-----------------------------------------------------------------
-
 app.Run();
+
+static string NormalizeServiceUrl(string endpoint)
+{
+    var value = endpoint.Trim();
+
+    if (!value.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+        !value.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+    {
+        value = "http://" + value.TrimStart('/');
+    }
+
+    return value.TrimEnd('/');
+}
+
+//-----------------------------------------------------------------
+// var app = builder.Build();
+
+// if (app.Environment.IsDevelopment())
+// {
+//     app.MapOpenApi();
+//     app.MapScalarApiReference(); // Chỉ giữ đúng 1 dòng này!
+    
+//     app.MapGet("/", () => "Hello World! Culinary Blog Backend is running on .NET 10.");
+// }
+// app.Run();

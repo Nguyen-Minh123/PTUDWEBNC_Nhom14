@@ -6,7 +6,7 @@ namespace CulinaryBlog.Infrastructure.Persistence.Interceptors;
 
 /// <summary>
 /// EF Core SaveChanges interceptor để chuyển thao tác xóa vật lý
-/// thành xóa mềm cho các entity implement ISoftDelete.
+/// thành xóa mềm cho các entity kế thừa BaseEntity.
 /// </summary>
 public sealed class SoftDeleteInterceptor : SaveChangesInterceptor
 {
@@ -36,26 +36,21 @@ public sealed class SoftDeleteInterceptor : SaveChangesInterceptor
 
         var utcNow = DateTime.UtcNow;
 
-        var softDeleteEntries = context.ChangeTracker
-            .Entries<ISoftDelete>()
+        var entries = context.ChangeTracker
+            .Entries<BaseEntity>()
             .Where(entry => entry.State == EntityState.Deleted)
             .ToList();
 
-        foreach (var entry in softDeleteEntries)
+        foreach (var entry in entries)
         {
-            // Chuyển từ Deleted sang Unchanged để tránh EF phát sinh DELETE.
-            entry.State = EntityState.Unchanged;
+            // Đổi DELETE thành UPDATE
+            entry.State = EntityState.Modified;
 
-            entry.Property(nameof(ISoftDelete.IsDeleted)).CurrentValue = true;
-            entry.Property(nameof(ISoftDelete.IsDeleted)).IsModified = true;
+            // Đánh dấu xóa mềm
+            entry.Entity.IsDeleted = true;
 
-            entry.Property(nameof(ISoftDelete.DeletedAt)).CurrentValue = utcNow;
-            entry.Property(nameof(ISoftDelete.DeletedAt)).IsModified = true;
-
-            // Tạm thời không gán DeletedBy để tránh kéo thêm phụ thuộc tầng ngoài
-            // và tránh xung đột kiểu dữ liệu giữa các lớp hiện tại.
-            entry.Property(nameof(ISoftDelete.DeletedBy)).CurrentValue = null;
-            entry.Property(nameof(ISoftDelete.DeletedBy)).IsModified = true;
+            // Nếu BaseEntity có UpdatedAt thì cập nhật thời gian sửa gần nhất
+            entry.Entity.UpdatedAt = utcNow;
         }
     }
 }

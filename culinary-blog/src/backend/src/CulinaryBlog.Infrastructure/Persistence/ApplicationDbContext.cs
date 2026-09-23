@@ -1,4 +1,3 @@
-using CulinaryBlog.Domain.Common;
 using CulinaryBlog.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -14,6 +13,7 @@ public class ApplicationDbContext
     {
     }
 
+    public DbSet<Category> Categories => Set<Category>();
     public DbSet<Recipe> Recipes => Set<Recipe>();
     public DbSet<RecipeStep> RecipeSteps => Set<RecipeStep>();
     public DbSet<RecipeIngredient> RecipeIngredients => Set<RecipeIngredient>();
@@ -24,6 +24,7 @@ public class ApplicationDbContext
         base.OnModelCreating(modelBuilder);
 
         ConfigureIdentityTables(modelBuilder);
+        ConfigureCategory(modelBuilder);
         ConfigureRecipe(modelBuilder);
         ConfigureRecipeStep(modelBuilder);
         ConfigureRecipeIngredient(modelBuilder);
@@ -39,6 +40,56 @@ public class ApplicationDbContext
         modelBuilder.Entity<IdentityUserLogin<string>>().ToTable("AspNetUserLogins");
         modelBuilder.Entity<IdentityRoleClaim<string>>().ToTable("AspNetRoleClaims");
         modelBuilder.Entity<IdentityUserToken<string>>().ToTable("AspNetUserTokens");
+    }
+
+    private static void ConfigureCategory(ModelBuilder modelBuilder)
+    {
+        var entity = modelBuilder.Entity<Category>();
+
+        entity.ToTable("Categories");
+        entity.HasKey(x => x.Id);
+
+        entity.Property(x => x.Id)
+            .ValueGeneratedNever();
+
+        entity.Property(x => x.Name)
+            .HasMaxLength(100)
+            .IsRequired();
+
+        entity.HasIndex(x => x.Name)
+            .IsUnique();
+
+        entity.Property(x => x.Slug)
+            .HasMaxLength(120)
+            .IsRequired();
+
+        entity.HasIndex(x => x.Slug)
+            .IsUnique();
+
+        entity.Property(x => x.Description)
+            .HasColumnType("text")
+            .IsRequired(false);
+
+        entity.Property(x => x.ImageUrl)
+            .HasMaxLength(500)
+            .IsRequired(false);
+
+        entity.Property(x => x.OrderIndex)
+            .HasDefaultValue(0)
+            .IsRequired();
+
+        entity.Property(x => x.CreatedAt)
+            .IsRequired();
+
+        entity.Property(x => x.UpdatedAt)
+            .IsRequired(false);
+
+        entity.Property(x => x.IsDeleted)
+            .HasDefaultValue(false)
+            .IsRequired();
+
+        entity.Property(x => x.RowVersion)
+            .IsRowVersion();
     }
 
     private static void ConfigureRecipe(ModelBuilder modelBuilder)
@@ -63,9 +114,11 @@ public class ApplicationDbContext
             .IsUnique();
 
         entity.Property(x => x.Description)
+            .HasMaxLength(2000)
             .IsRequired();
 
         entity.Property(x => x.Instructions)
+            .HasColumnType("text")
             .IsRequired();
 
         entity.Property(x => x.PrepTime)
@@ -79,10 +132,12 @@ public class ApplicationDbContext
 
         entity.Property(x => x.Difficulty)
             .HasConversion<int>()
+            .HasDefaultValue(1)
             .IsRequired();
 
         entity.Property(x => x.Status)
             .HasConversion<int>()
+            .HasDefaultValue(0)
             .IsRequired();
 
         entity.Property(x => x.CategoryId)
@@ -107,6 +162,22 @@ public class ApplicationDbContext
 
         entity.Property(x => x.RowVersion)
             .IsRowVersion();
+
+        entity.HasIndex(x => x.CategoryId);
+        entity.HasIndex(x => x.AuthorId);
+        entity.HasIndex(x => x.Status);
+        entity.HasIndex(x => x.PublishedAt);
+        entity.HasIndex(x => x.Difficulty);
+
+        entity.HasOne<Category>()
+            .WithMany()
+            .HasForeignKey(x => x.CategoryId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        entity.HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(x => x.AuthorId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         entity.OwnsOne(x => x.Nutrition, nutrition =>
         {
@@ -135,21 +206,6 @@ public class ApplicationDbContext
                 .HasPrecision(8, 2);
         });
 
-        entity.HasMany(x => x.Steps)
-            .WithOne(x => x.Recipe)
-            .HasForeignKey(x => x.RecipeId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        entity.HasMany(x => x.Ingredients)
-            .WithOne(x => x.Recipe)
-            .HasForeignKey(x => x.RecipeId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        entity.HasMany(x => x.Images)
-            .WithOne(x => x.Recipe)
-            .HasForeignKey(x => x.RecipeId)
-            .OnDelete(DeleteBehavior.Cascade);
-
         entity.HasQueryFilter(x => !x.IsDeleted);
     }
 
@@ -174,6 +230,7 @@ public class ApplicationDbContext
             .IsRequired();
 
         entity.Property(x => x.Description)
+            .HasColumnType("text")
             .IsRequired();
 
         entity.Property(x => x.TimerMinutes)
@@ -186,7 +243,20 @@ public class ApplicationDbContext
         entity.HasIndex(x => new { x.RecipeId, x.StepNumber })
             .IsUnique();
 
-        entity.HasQueryFilter(x => !x.IsDeleted);
+        entity.HasIndex(x => x.RecipeId);
+
+        entity.Property(x => x.IsDeleted)
+            .HasDefaultValue(false)
+            .IsRequired();
+
+        entity.Property(x => x.CreatedAt)
+            .IsRequired();
+
+        entity.Property(x => x.UpdatedAt)
+            .IsRequired(false);
+
+        entity.Property(x => x.RowVersion)
+            .IsRowVersion();
     }
 
     private static void ConfigureRecipeIngredient(ModelBuilder modelBuilder)
@@ -207,6 +277,7 @@ public class ApplicationDbContext
             .IsRequired();
 
         entity.Property(x => x.Quantity)
+            .HasPrecision(10, 3)
             .IsRequired(false);
 
         entity.Property(x => x.Unit)
@@ -214,15 +285,29 @@ public class ApplicationDbContext
             .IsRequired(false);
 
         entity.Property(x => x.Notes)
-            .HasMaxLength(500)
+            .HasColumnType("text")
             .IsRequired(false);
 
         entity.Property(x => x.OrderIndex)
+            .HasDefaultValue(0)
             .IsRequired();
 
         entity.HasIndex(x => new { x.RecipeId, x.OrderIndex });
 
-        entity.HasQueryFilter(x => !x.IsDeleted);
+        entity.HasIndex(x => x.RecipeId);
+
+        entity.Property(x => x.IsDeleted)
+            .HasDefaultValue(false)
+            .IsRequired();
+
+        entity.Property(x => x.CreatedAt)
+            .IsRequired();
+
+        entity.Property(x => x.UpdatedAt)
+            .IsRequired(false);
+
+        entity.Property(x => x.RowVersion)
+            .IsRowVersion();
     }
 
     private static void ConfigureRecipeImage(ModelBuilder modelBuilder)
@@ -259,10 +344,23 @@ public class ApplicationDbContext
             .IsRequired();
 
         entity.Property(x => x.OrderIndex)
+            .HasDefaultValue(0)
             .IsRequired();
 
         entity.HasIndex(x => new { x.RecipeId, x.OrderIndex });
+        entity.HasIndex(x => x.RecipeId);
 
-        entity.HasQueryFilter(x => !x.IsDeleted);
+        entity.Property(x => x.IsDeleted)
+            .HasDefaultValue(false)
+            .IsRequired();
+
+        entity.Property(x => x.CreatedAt)
+            .IsRequired();
+
+        entity.Property(x => x.UpdatedAt)
+            .IsRequired(false);
+
+        entity.Property(x => x.RowVersion)
+            .IsRowVersion();
     }
 }

@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using CulinaryBlog.Domain.Common;
 
@@ -8,8 +6,7 @@ namespace CulinaryBlog.Domain.Entities;
 /// <summary>
 /// Recipe là aggregate root của hệ thống.
 /// Một Recipe thuộc về một Category và một Author,
-/// đồng thời chứa các collection con như Steps, Ingredients, Images
-/// và owned entity Nutrition.
+/// đồng thời chứa Steps, Ingredients, Images và Nutrition.
 /// </summary>
 public class Recipe : BaseEntity
 {
@@ -17,16 +14,10 @@ public class Recipe : BaseEntity
     private readonly List<RecipeIngredient> _ingredients = new();
     private readonly List<RecipeImage> _images = new();
 
-    /// <summary>
-    /// Constructor rỗng cho EF Core.
-    /// </summary>
     private Recipe()
     {
     }
 
-    /// <summary>
-    /// Khởi tạo một Recipe mới ở trạng thái Draft.
-    /// </summary>
     public Recipe(
         string title,
         string slug,
@@ -41,9 +32,9 @@ public class Recipe : BaseEntity
         RecipeNutrition? nutrition = null)
     {
         Title = NormalizeRequiredText(title, 200, nameof(title));
-        Slug = NormalizeRequiredText(slug, 220, nameof(slug));
+        Slug = NormalizeSlug(slug ?? title, 220);
         Description = NormalizeDescription(description);
-        Instructions = NormalizeRequiredText(instructions, int.MaxValue, nameof(instructions));
+        Instructions = NormalizeRequiredText(instructions, nameof(instructions));
 
         if (prepTime <= 0)
         {
@@ -65,13 +56,17 @@ public class Recipe : BaseEntity
             throw new ArgumentException("CategoryId cannot be empty.", nameof(categoryId));
         }
 
-        AuthorId = NormalizeRequiredText(authorId, 450, nameof(authorId));
+        if (string.IsNullOrWhiteSpace(authorId))
+        {
+            throw new ArgumentException("AuthorId cannot be empty.", nameof(authorId));
+        }
 
         PrepTime = prepTime;
         CookTime = cookTime;
         Servings = servings;
         Difficulty = difficulty;
         CategoryId = categoryId;
+        AuthorId = authorId.Trim();
         Status = RecipeStatus.Draft;
         Nutrition = nutrition ?? new RecipeNutrition();
     }
@@ -82,6 +77,7 @@ public class Recipe : BaseEntity
     [MaxLength(220)]
     public string Slug { get; private set; } = string.Empty;
 
+    [MaxLength(2000)]
     public string Description { get; private set; } = string.Empty;
 
     public string Instructions { get; private set; } = string.Empty;
@@ -103,24 +99,12 @@ public class Recipe : BaseEntity
 
     public DateTimeOffset? PublishedAt { get; private set; }
 
-    /// <summary>
-    /// Owned entity lưu thông tin dinh dưỡng.
-    /// </summary>
     public RecipeNutrition Nutrition { get; private set; } = new();
 
-    /// <summary>
-    /// Các bước thực hiện chi tiết.
-    /// </summary>
     public IReadOnlyCollection<RecipeStep> Steps => _steps.AsReadOnly();
 
-    /// <summary>
-    /// Danh sách nguyên liệu.
-    /// </summary>
     public IReadOnlyCollection<RecipeIngredient> Ingredients => _ingredients.AsReadOnly();
 
-    /// <summary>
-    /// Danh sách hình ảnh minh họa.
-    /// </summary>
     public IReadOnlyCollection<RecipeImage> Images => _images.AsReadOnly();
 
     public void UpdateDetails(
@@ -137,9 +121,9 @@ public class Recipe : BaseEntity
         EnsureSlugCanChange(slug);
 
         Title = NormalizeRequiredText(title, 200, nameof(title));
-        Slug = NormalizeRequiredText(slug, 220, nameof(slug));
+        Slug = NormalizeSlug(slug ?? title, 220);
         Description = NormalizeDescription(description);
-        Instructions = NormalizeRequiredText(instructions, int.MaxValue, nameof(instructions));
+        Instructions = NormalizeRequiredText(instructions, nameof(instructions));
 
         if (prepTime <= 0)
         {
@@ -168,6 +152,21 @@ public class Recipe : BaseEntity
         CategoryId = categoryId;
     }
 
+    public void SetCategory(Guid categoryId)
+    {
+        if (categoryId == Guid.Empty)
+        {
+            throw new ArgumentException("CategoryId cannot be empty.", nameof(categoryId));
+        }
+
+        CategoryId = categoryId;
+    }
+
+    public void SetNutrition(RecipeNutrition nutrition)
+    {
+        Nutrition = nutrition ?? throw new ArgumentNullException(nameof(nutrition));
+    }
+
     public void Publish(DateTimeOffset? publishedAt = null)
     {
         Status = RecipeStatus.Published;
@@ -179,19 +178,112 @@ public class Recipe : BaseEntity
         Status = RecipeStatus.Archived;
     }
 
-    public void SetNutrition(RecipeNutrition nutrition)
+    public void AddStep(RecipeStep step)
     {
-        Nutrition = nutrition ?? throw new ArgumentNullException(nameof(nutrition));
-    }
-
-    public void SetCategory(Guid categoryId)
-    {
-        if (categoryId == Guid.Empty)
+        if (step is null)
         {
-            throw new ArgumentException("CategoryId cannot be empty.", nameof(categoryId));
+            throw new ArgumentNullException(nameof(step));
         }
 
-        CategoryId = categoryId;
+        if (step.RecipeId != Id)
+        {
+            throw new InvalidOperationException("RecipeStep does not belong to this recipe.");
+        }
+
+        if (_steps.Any(x => x.StepNumber == step.StepNumber))
+        {
+            throw new InvalidOperationException($"StepNumber '{step.StepNumber}' already exists for this recipe.");
+        }
+
+        _steps.Add(step);
+    }
+
+    public void RemoveStep(RecipeStep step)
+    {
+        if (step is null)
+        {
+            throw new ArgumentNullException(nameof(step));
+        }
+
+        _steps.Remove(step);
+    }
+
+    public void AddIngredient(RecipeIngredient ingredient)
+    {
+        if (ingredient is null)
+        {
+            throw new ArgumentNullException(nameof(ingredient));
+        }
+
+        if (ingredient.RecipeId != Id)
+        {
+            throw new InvalidOperationException("RecipeIngredient does not belong to this recipe.");
+        }
+
+        _ingredients.Add(ingredient);
+    }
+
+    public void RemoveIngredient(RecipeIngredient ingredient)
+    {
+        if (ingredient is null)
+        {
+            throw new ArgumentNullException(nameof(ingredient));
+        }
+
+        _ingredients.Remove(ingredient);
+    }
+
+    public void AddImage(RecipeImage image)
+    {
+        if (image is null)
+        {
+            throw new ArgumentNullException(nameof(image));
+        }
+
+        if (image.RecipeId != Id)
+        {
+            throw new InvalidOperationException("RecipeImage does not belong to this recipe.");
+        }
+
+        if (image.IsPrimary)
+        {
+            foreach (var other in _images)
+            {
+                other.UnmarkAsPrimary();
+            }
+        }
+
+        _images.Add(image);
+    }
+
+    public void RemoveImage(RecipeImage image)
+    {
+        if (image is null)
+        {
+            throw new ArgumentNullException(nameof(image));
+        }
+
+        _images.Remove(image);
+    }
+
+    public void SetPrimaryImage(RecipeImage image)
+    {
+        if (image is null)
+        {
+            throw new ArgumentNullException(nameof(image));
+        }
+
+        if (image.RecipeId != Id)
+        {
+            throw new InvalidOperationException("RecipeImage does not belong to this recipe.");
+        }
+
+        foreach (var other in _images)
+        {
+            other.UnmarkAsPrimary();
+        }
+
+        image.MarkAsPrimary();
     }
 
     private void EnsureSlugCanChange(string newSlug)
@@ -220,6 +312,16 @@ public class Recipe : BaseEntity
         return normalized;
     }
 
+    private static string NormalizeRequiredText(string? value, string paramName)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new ArgumentException($"{paramName} cannot be empty.", paramName);
+        }
+
+        return value.Trim();
+    }
+
     private static string NormalizeDescription(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -236,41 +338,31 @@ public class Recipe : BaseEntity
 
         return normalized;
     }
+
+    private static string NormalizeSlug(string value, int maxLength)
+    {
+        var slug = NormalizeRequiredText(value, maxLength, nameof(value))
+            .ToLowerInvariant()
+            .Replace(' ', '-')
+            .Replace('_', '-');
+
+        while (slug.Contains("--", StringComparison.Ordinal))
+        {
+            slug = slug.Replace("--", "-", StringComparison.Ordinal);
+        }
+
+        return slug.Trim('-');
+    }
 }
 
 public sealed class RecipeNutrition
 {
     public decimal? Calories { get; set; }
-
     public decimal? Protein { get; set; }
-
     public decimal? Carbohydrates { get; set; }
-
     public decimal? Fat { get; set; }
-
     public decimal? Fiber { get; set; }
-
     public decimal? Sodium { get; set; }
-
-    public RecipeNutrition()
-    {
-    }
-
-    public RecipeNutrition(
-        decimal? calories,
-        decimal? protein,
-        decimal? carbohydrates,
-        decimal? fat,
-        decimal? fiber,
-        decimal? sodium)
-    {
-        Calories = calories;
-        Protein = protein;
-        Carbohydrates = carbohydrates;
-        Fat = fat;
-        Fiber = fiber;
-        Sodium = sodium;
-    }
 }
 
 public enum RecipeDifficulty
