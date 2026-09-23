@@ -62,7 +62,7 @@ docker-compose up -d
 ### 2. Chạy Backend (.NET API)
 cd backend
 dotnet restore
-dotnet run --project src/Presentation
+dotnet run --project src/CulinaryBlog.API
 
 ### 3. Chạy Frontend (Next.js)
 cd frontend
