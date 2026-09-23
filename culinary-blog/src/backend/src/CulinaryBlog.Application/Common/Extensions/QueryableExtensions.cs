@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using System.Reflection;
+using CulinaryBlog.Application.Common.Models;
 
 namespace CulinaryBlog.Application.Common.Extensions;
 
@@ -103,5 +104,42 @@ public static class QueryableExtensions
         params string[] allowedFields)
     {
         return source.ApplySort(sort, null, allowedFields);
+    }
+
+    /// <summary>
+    /// Áp dụng phân trang (Skip/Take) trên IQueryable nguồn theo pageNumber và pageSize.
+    /// </summary>
+    /// <typeparam name="T">Kiểu thực thể</typeparam>
+    /// <param name="source">IQueryable nguồn</param>
+    /// <param name="pageNumber">Số thứ tự trang (>= 1)</param>
+    /// <param name="pageSize">Số phần tử trên mỗi trang (>= 1)</param>
+    /// <returns>IQueryable đã được phân trang</returns>
+    public static IQueryable<T> ApplyPagination<T>(
+        this IQueryable<T> source,
+        int pageNumber,
+        int pageSize)
+    {
+        var validPageNumber = pageNumber < 1 ? 1 : pageNumber;
+        var validPageSize = pageSize < 1 ? 10 : pageSize;
+
+        return source
+            .Skip((validPageNumber - 1) * validPageSize)
+            .Take(validPageSize);
+    }
+
+    /// <summary>
+    /// Phân trang và đóng gói kết quả truy vấn thành đối tượng PagedResult chứa dữ liệu cùng metadata.
+    /// </summary>
+    /// <typeparam name="T">Kiểu thực thể</typeparam>
+    /// <param name="source">IQueryable nguồn</param>
+    /// <param name="pageNumber">Số thứ tự trang</param>
+    /// <param name="pageSize">Số phần tử trên mỗi trang</param>
+    /// <returns>Đối tượng PagedResult chứa danh sách phần tử và thông tin phân trang</returns>
+    public static PagedResult<T> ToPagedResult<T>(
+        this IQueryable<T> source,
+        int pageNumber,
+        int pageSize)
+    {
+        return PagedResult<T>.Create(source, pageNumber, pageSize);
     }
 }
