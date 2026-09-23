@@ -1,70 +1,54 @@
-# Culinary Blog - Nền tảng Chia sẻ Ẩm thực và Nấu ăn
+# 🍲 Culinary Blog - Nhóm 14
 
-**Nhóm 14:**
-* Nguyễn Nhất Minh - 2312690
-* Nguyễn Thế Khải - 2312640
-* Bùi Trung Hiếu - 2312611
-* Phan Thành Huy - 2312634
+Dự án phát triển hệ thống Full-Stack cho nền tảng Blog ẩm thực (**Culinary Blog**) theo tiêu chuẩn kiến trúc **Clean Architecture** và tài liệu đặc tả **SRS v1.0.0**. Hệ thống sử dụng **.NET 10 (Minimal APIs)**, **Next.js (App Router)**, **PostgreSQL 16**, **Redis 7**, và **MinIO**.
 
-Culinary Blog là một hệ thống ứng dụng web Full-Stack cho phép người dùng chia sẻ, khám phá và lưu trữ các công thức nấu ăn từ nhiều nền ẩm thực khác nhau. Hệ thống được thiết kế theo mô hình API-Driven Architecture, tối ưu hóa hiệu năng và thân thiện với chuẩn SEO.
-
----
-
-## 🚀 Công nghệ sử dụng (Tech Stack)
-
-Dự án được xây dựng dựa trên các công nghệ hiện đại, phân tách rõ ràng giữa Frontend và Backend:
-
-### Backend
-* **Framework:** .NET 10 Minimal APIs, ngôn ngữ C#.
-* **Kiến trúc:** Clean Architecture kết hợp mô hình CQRS (thư viện MediatR).
-* **Xác thực:** JWT (Access Token & Refresh Token Rotation), Google OAuth 2.0, ASP.NET Core Identity.
-* **Background Jobs:** Hangfire (xử lý gửi email, tạo thumbnail ảnh, sinh sitemap).
-* **Observability:** Serilog (Structured Logging), OpenTelemetry (Distributed Tracing & Metrics).
-
-### Frontend
-* **Framework:** Next.js 14+ App Router, TypeScript.
-* **Styling & State:** Tailwind CSS, React Hook Form, TanStack Query.
-* **Rendering:** Áp dụng SSR (Server-Side Rendering) và ISR (Incremental Static Regeneration) để tối ưu Core Web Vitals.
-
-### Cơ sở dữ liệu & Hạ tầng (Infrastructure)
-* **Database:** PostgreSQL 16 (sử dụng EF Core 10 Code-First) tích hợp Full-Text Search.
-* **Caching:** Redis 7 (Distributed Cache).
-* **Object Storage:** MinIO (Tương thích S3) dùng để lưu trữ file ảnh.
-* **Deployment:** Docker, Docker Compose và Nginx (Reverse Proxy).
+## 🎯 Mục tiêu Lab & Chuẩn hóa SRS
+* **Kiến trúc Nền tảng (Lab 1):** Khởi tạo Clean Architecture 4 tầng, thiết lập CQRS với MediatR, xây dựng API CRUD có phân trang và tích hợp Scalar UI làm tài liệu OpenAPI[cite: 4].
+* **Soft Delete Pattern (Lab 2):** Áp dụng xóa mềm (`IsDeleted = true`) cho các thực thể cốt lõi (Recipe, Category) kết hợp Global Query Filters trong EF Core[cite: 12].
+* **Bảo mật Nâng cao (Chương 2):** Mã hóa Refresh Token bằng SHA-256 (`TokenHash varchar(64)`), hiện thực hóa Token Rotation và chống Reuse Attack[cite: 10, 12].
+* **Business Rules Khắt khe:** Ràng buộc công thức phải có ít nhất 1 Nguyên liệu và 1 Bước thực hiện mới được phép xuất bản (`RECIPE_PUBLISH_INCOMPLETE`)[cite: 12].
+* **Cấu trúc Dữ liệu & Sắp xếp:** Chuẩn hóa Owned Entity cho 6 chỉ số dinh dưỡng, tự động hóa số thứ tự bước (`StepNumber` renumbering), cú pháp sắp xếp linh hoạt (`?sort=-field`) và định dạng lỗi chuẩn RFC 7807[cite: 12].
 
 ---
 
-## 🏗️ Cấu trúc Kiến trúc Hệ thống (Clean Architecture)
+## 🛠 Công nghệ Sử dụng
+* **Backend:** .NET 10 Minimal APIs, C#, EF Core 10, ASP.NET Core Identity[cite: 10, 13]
+* **Frontend:** Next.js App Router, TypeScript, Tailwind CSS, TanStack Query
+* **Database & Caching:** PostgreSQL 16, Redis 7[cite: 13]
+* **Storage & Background Jobs:** MinIO (S3-compatible Object Storage), Hangfire[cite: 13]
+* **API Documentation:** Scalar UI (`/scalar/v1`)
 
-Backend được chia thành 4 tầng ranh giới nghiêm ngặt:
-1. **Domain Layer:** Chứa các Entities (Recipe, Category, ApplicationUser, v.v.), Value Objects và Interfaces cốt lõi.
-2. **Application Layer:** Chứa các logic nghiệp vụ (Commands/Queries), DTOs, FluentValidation và cấu hình MediatR Pipeline.
-3. **Infrastructure Layer:** Giao tiếp với DB (EF Core), JWT Service, MinIO Service, Email Service và cấu hình Redis/Hangfire.
-4. **Presentation Layer (API):** Chứa các Minimal API Endpoints (`/api/v1`), Middlewares xử lý lỗi toàn cục và OpenAPI (Scalar UI).
+---
+
+## 👥 Phân công Nhiệm vụ 
+
+| Thành viên | Vai trò chuyên trách | Nhiệm vụ cốt lõi |
+| :--- | :--- | :--- |
+| **Nguyễn Nhất Minh** *(Nhóm trưởng)* | Backend & Security (TV1) | Dựng Backend Skeleton (.NET 10), thiết lập CQRS/MediatR cho Category/Recipe, chuẩn hóa mã hóa Refresh Token SHA-256 và Token Rotation[cite: 4, 12]. |
+| **Nguyễn Thế Khải** | Database & Infrastructure (TV2) | Khởi tạo EF Core Migrations, định nghĩa `BaseEntity`, `ApplicationUser`, cấu hình PostgreSQL 16 trên Docker, xây dựng Soft Delete Interceptor và tích hợp MinIO Async File Deletion[cite: 4, 12]. |
+| **Phan Thành Huy** | DevOps & Testing (TV3) | Cấu hình `docker-compose.yml` tổng hợp (Nginx, Postgres, Redis, MinIO), kiểm thử API nâng cao và hiện thực hóa Domain Rules xuất bản công thức, cấu hình 6 chỉ số dinh dưỡng[cite: 4, 12]. |
+| **Bùi Trung Hiếu** | Frontend Next.js (TV4) | Dựng Frontend Skeleton (Next.js 15 App Router + Tailwind CSS), đồng bộ TypeScript Interfaces, chuẩn hóa cú pháp sắp xếp (`?sort=-field`) và Validation Behavior[cite: 4, 12, 13]. |
 
 ---
 
-## 🛠️ Yêu cầu Hệ thống (Prerequisites)
-
-Để chạy dự án ở môi trường phát triển (Local Development), các thành viên cần cài đặt:
-* **.NET 10 SDK**
-* **Node.js 20+ LTS** và **npm 10+**
-* **Docker Desktop** (Hoặc Docker Engine trên Linux)
-* **IDE khuyến dùng:** Visual Studio 2022 (v17.12+), Rider 2024+, hoặc VS Code.
-
----
-## 🚀 Hướng dẫn khởi chạy (Quick Start)
+## ⚙️ Hướng dẫn Khởi chạy Hệ thống (Local Development)
 ```bash
-### 1. Khởi chạy Infrastructure (PostgreSQL, Redis, MinIO)
-docker-compose up -d
+### Bước 1: Khởi động Hạ tầng (Docker Compose)
+Đảm bảo ứng dụng **Docker Desktop** trên máy tính đã được bật và chạy ổn định. Mở Terminal tại thư mục gốc của dự án (`culinary-blog`) và chạy[cite: 13, 15]:
 
+docker compose up -d
 
-### 2. Chạy Backend (.NET API)
-cd backend
+### Bước 2: Khởi chạy Backend API (.NET 10)
+
+cd src/backend
 dotnet restore
-dotnet run --project src/Presentation
+dotnet watch run --project src/CulinaryBlog.API
 
-### 3. Chạy Frontend (Next.js)
-cd frontend
+Tài liệu API Scalar UI: Truy cập trực tiếp tại trình duyệt:
+👉 http://localhost:5075/scalar/v1
+
+### Bước 3: Khởi chạy Frontend (Next.js)
+
+cd src/frontend
 npm install
 npm run dev
