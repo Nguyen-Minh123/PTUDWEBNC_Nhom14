@@ -52,3 +52,23 @@ Tài liệu API Scalar UI: Truy cập trực tiếp tại trình duyệt:
 cd src/frontend
 npm install
 npm run dev
+```
+
+### Kiểm tra Infrastructure
+
+Compose tự kiểm tra health của PostgreSQL, Redis và MinIO trước khi khởi chạy
+các tác vụ phụ thuộc. MinIO Console có tại http://localhost:9001 với thông tin
+đăng nhập mặc định trong `.env.example`; bucket `culinary-images` được tạo tự
+động bởi service `minio-init`.
+
+Sao lưu được thực hiện định kỳ bởi service `backup`. Mỗi bản sao lưu gồm dump
+PostgreSQL, snapshot Redis và archive dữ liệu MinIO, lưu trong volume
+`backup_data`. Có thể điều chỉnh chu kỳ và thời gian giữ bản sao lưu bằng
+`BACKUP_INTERVAL_SECONDS` và `BACKUP_RETENTION_DAYS` trong file `.env`.
+
+Để xem trạng thái service:
+
+```bash
+docker compose ps
+docker compose logs minio-init backup
+```
