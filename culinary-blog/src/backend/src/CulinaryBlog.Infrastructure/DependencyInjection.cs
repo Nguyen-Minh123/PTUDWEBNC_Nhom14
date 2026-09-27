@@ -83,9 +83,17 @@ public static class DependencyInjection
         services.AddScoped<IRecipeRepository, CulinaryBlog.Infrastructure.Persistence.Repositories.RecipeRepository>();
         services.AddScoped<IUnitOfWork, CulinaryBlog.Infrastructure.Persistence.Repositories.UnitOfWork>();
 
+        services.AddScoped<CulinaryBlog.Application.Common.Caching.ICacheService, CulinaryBlog.Infrastructure.Caching.RedisCacheService>();
+        services.AddSingleton<CulinaryBlog.Application.Common.Interfaces.IBackgroundJobQueue, CulinaryBlog.Infrastructure.BackgroundJobs.BackgroundJobQueue>();
+
+        services.AddDistributedMemoryCache();
+        services.AddScoped<CulinaryBlog.Infrastructure.Persistence.Interceptors.SoftDeleteInterceptor>();
         return services;
     }
 }
+
+
+
 
 
 
