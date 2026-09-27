@@ -4,10 +4,10 @@ using Microsoft.AspNetCore.Identity;
 namespace CulinaryBlog.Domain.Entities;
 
 /// <summary>
-/// Người dùng hệ thống.
-/// Kế thừa IdentityUser<string> theo SRS.
+/// Ngu?i d�ng h? th?ng.
+/// K? th?a IdentityUser<string> theo SRS.
 /// </summary>
-public class ApplicationUser : IdentityUser<string>
+public class ApplicationUser : IdentityUser
 {
     private ApplicationUser()
     {
@@ -34,8 +34,11 @@ public class ApplicationUser : IdentityUser<string>
         DisplayName = NormalizeRequiredText(displayName, 100, nameof(displayName));
     }
 
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+
     /// <summary>
-    /// Tên hiển thị công khai.
+    /// T�n hi?n th? c�ng khai.
     /// </summary>
     [MaxLength(100)]
     public string DisplayName { get; private set; } = string.Empty;
@@ -47,17 +50,17 @@ public class ApplicationUser : IdentityUser<string>
     public string? AvatarUrl { get; private set; }
 
     /// <summary>
-    /// Tiểu sử ngắn của tác giả, nullable.
+    /// Ti?u s? ng?n c?a t�c gi?, nullable.
     /// </summary>
     public string? Bio { get; private set; }
 
     /// <summary>
-    /// Trạng thái tài khoản.
+    /// Tr?ng th�i t�i kho?n.
     /// </summary>
     public bool IsActive { get; private set; } = true;
 
     /// <summary>
-    /// Ngày tạo tài khoản.
+    /// Ng�y t?o t�i kho?n.
     /// </summary>
     public DateTimeOffset CreatedAt { get; private set; } = DateTimeOffset.UtcNow;
 
@@ -92,7 +95,7 @@ public class ApplicationUser : IdentityUser<string>
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            throw new ArgumentException($"{paramName} cannot be empty.", paramName);
+            throw new ArgumentException($" cannot be empty.", paramName);
         }
 
         var normalized = value.Trim();
@@ -101,7 +104,7 @@ public class ApplicationUser : IdentityUser<string>
         {
             throw new ArgumentOutOfRangeException(
                 paramName,
-                $"The value of {paramName} exceeds the maximum length of {maxLength}.");
+                $"The value of  exceeds the maximum length of .");
         }
 
         return normalized;
@@ -120,9 +123,10 @@ public class ApplicationUser : IdentityUser<string>
         {
             throw new ArgumentOutOfRangeException(
                 nameof(value),
-                $"The value exceeds the maximum length of {maxLength}.");
+                $"The value exceeds the maximum length of .");
         }
 
         return normalized;
     }
 }
+

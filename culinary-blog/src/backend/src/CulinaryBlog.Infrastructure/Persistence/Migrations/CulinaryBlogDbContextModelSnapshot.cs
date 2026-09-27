@@ -56,8 +56,16 @@ namespace CulinaryBlog.Infrastructure.Persistence.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");
@@ -172,9 +180,6 @@ namespace CulinaryBlog.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("CategoryId1")
-                        .HasColumnType("uuid");
-
                     b.Property<int>("CookTime")
                         .HasColumnType("integer");
 
@@ -238,8 +243,6 @@ namespace CulinaryBlog.Infrastructure.Persistence.Migrations
                     b.HasIndex("AuthorId");
 
                     b.HasIndex("CategoryId");
-
-                    b.HasIndex("CategoryId1");
 
                     b.HasIndex("Difficulty");
 
@@ -424,6 +427,45 @@ namespace CulinaryBlog.Infrastructure.Persistence.Migrations
                     b.ToTable("RecipeSteps", (string)null);
                 });
 
+            modelBuilder.Entity("CulinaryBlog.Domain.Entities.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsRevoked")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ReplacedByTokenHash")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<string>", b =>
                 {
                     b.Property<string>("Id")
@@ -565,14 +607,10 @@ namespace CulinaryBlog.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.HasOne("CulinaryBlog.Domain.Entities.Category", null)
-                        .WithMany()
+                        .WithMany("Recipes")
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("CulinaryBlog.Domain.Entities.Category", null)
-                        .WithMany("Recipes")
-                        .HasForeignKey("CategoryId1");
 
                     b.OwnsOne("CulinaryBlog.Domain.Entities.RecipeNutrition", "Nutrition", b1 =>
                         {
@@ -652,6 +690,17 @@ namespace CulinaryBlog.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Recipe");
+                });
+
+            modelBuilder.Entity("CulinaryBlog.Domain.Entities.RefreshToken", b =>
+                {
+                    b.HasOne("CulinaryBlog.Domain.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

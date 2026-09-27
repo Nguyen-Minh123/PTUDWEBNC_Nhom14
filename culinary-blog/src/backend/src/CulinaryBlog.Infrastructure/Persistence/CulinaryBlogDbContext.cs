@@ -1,3 +1,5 @@
+using CulinaryBlog.Application.Contracts.Persistence;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using CulinaryBlog.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -5,8 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CulinaryBlog.Infrastructure.Persistence;
 
-public class CulinaryBlogDbContext
-    : IdentityDbContext<ApplicationUser, IdentityRole<string>, string>
+public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, IdentityRole<string>, string>, IApplicationDbContext
 {
     public CulinaryBlogDbContext(DbContextOptions<CulinaryBlogDbContext> options)
         : base(options)
@@ -18,10 +19,17 @@ public class CulinaryBlogDbContext
     public DbSet<RecipeStep> RecipeSteps => Set<RecipeStep>();
     public DbSet<RecipeIngredient> RecipeIngredients => Set<RecipeIngredient>();
     public DbSet<RecipeImage> RecipeImages => Set<RecipeImage>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasKey(rt => rt.Id);
+            entity.Property(rt => rt.TokenHash).HasMaxLength(64).IsRequired();
+            entity.HasIndex(rt => rt.TokenHash);
+        });
 
         ConfigureIdentityTables(modelBuilder);
         ConfigureCategory(modelBuilder);
@@ -171,8 +179,9 @@ public class CulinaryBlogDbContext
         entity.HasIndex(x => x.PublishedAt);
         entity.HasIndex(x => x.Difficulty);
 
-        entity.HasOne<Category>()
-            .WithMany()
+        modelBuilder.Entity<Category>()
+            .HasMany(x => x.Recipes)
+            .WithOne()
             .HasForeignKey(x => x.CategoryId)
             .OnDelete(DeleteBehavior.Restrict);
 
@@ -387,3 +396,7 @@ public class CulinaryBlogDbContext
         entity.HasQueryFilter(x => !x.IsDeleted);
     }
 }
+
+
+
+
