@@ -30,7 +30,7 @@ public static class DependencyInjection
 
         // 2. Cấu hình ASP.NET Core Identity với PBKDF2
         services
-            .AddIdentity<ApplicationUser, IdentityRole>(options =>
+            .AddIdentity<ApplicationUser, IdentityRole<string>>(options =>
             {
                 options.Password.RequiredLength = 8;
                 options.Password.RequireDigit = true;
@@ -91,6 +91,7 @@ public static class DependencyInjection
         return services;
     }
 }
+
 
 
 

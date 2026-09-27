@@ -101,6 +101,12 @@ app.MapGet("/health", () => Results.Ok(new { status = "Healthy", timestampUtc = 
 app.MapGet("/health/live", () => Results.Ok(new { status = "Healthy", probe = "live", timestampUtc = DateTime.UtcNow }));
 app.MapGet("/health/ready", () => Results.Ok(new { status = "Healthy", probe = "ready", timestampUtc = DateTime.UtcNow }));
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<CulinaryBlog.Infrastructure.Persistence.CulinaryBlogDbContext>();
+    db.Database.Migrate();
+}
+
 app.Run();
 
 static string NormalizeServiceUrl(string endpoint)
@@ -115,4 +121,5 @@ static string NormalizeServiceUrl(string endpoint)
 
     return value.TrimEnd('/');
 }
+
 

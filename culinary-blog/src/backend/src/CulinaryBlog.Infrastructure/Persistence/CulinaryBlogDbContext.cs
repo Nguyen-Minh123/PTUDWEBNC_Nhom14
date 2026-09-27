@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CulinaryBlog.Infrastructure.Persistence;
 
-public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser>, IApplicationDbContext
+public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, IdentityRole<string>, string>, IApplicationDbContext
 {
     public CulinaryBlogDbContext(DbContextOptions<CulinaryBlogDbContext> options)
         : base(options)
@@ -179,8 +179,9 @@ public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser>, IApplic
         entity.HasIndex(x => x.PublishedAt);
         entity.HasIndex(x => x.Difficulty);
 
-        entity.HasOne<Category>()
-            .WithMany()
+        modelBuilder.Entity<Category>()
+            .HasMany(x => x.Recipes)
+            .WithOne()
             .HasForeignKey(x => x.CategoryId)
             .OnDelete(DeleteBehavior.Restrict);
 
@@ -395,6 +396,7 @@ public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser>, IApplic
         entity.HasQueryFilter(x => !x.IsDeleted);
     }
 }
+
 
 
 
