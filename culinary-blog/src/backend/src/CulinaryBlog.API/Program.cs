@@ -1,78 +1,62 @@
-using Microsoft.OpenApi.Models;
+using Amazon.S3;
+using CulinaryBlog.Application.Common.Caching;
+using CulinaryBlog.Application.Common.Interfaces;
+using CulinaryBlog.Infrastructure.Caching;
+using CulinaryBlog.Infrastructure.Persistence;
+using CulinaryBlog.Infrastructure.Persistence.Interceptors;
 using CulinaryBlog.Infrastructure.Services;
 using CulinaryBlog.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
-using Scalar.AspNetCore;
-using CulinaryBlog.Application.Authentication.Commands.Register;
-using CulinaryBlog.Application.Contracts.Services;
-using Microsoft.AspNetCore.Identity;
-using CulinaryBlog.Domain.Entities;
-using CulinaryBlog.Application.Contracts.Persistence;
-using CulinaryBlog.Infrastructure;
-using Carter;
-using CulinaryBlog.Application.Common.Interfaces;
-using Amazon.S3;
-using Microsoft.AspNetCore.RateLimiting;
-using System.Threading.RateLimiting;
+using Scalar.AspNetCore; // Cần thêm using này để dùng được Scalar
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Khai's infrastructure extensions
-builder.Services.AddInfrastructure(builder.Configuration);
+// Khai báo cho ứng dụng biết cách kết nối PostgreSQL thông qua DbContext
+builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Add rate limiting (Minh)
-builder.Services.AddRateLimiter(options =>
-{
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    options.AddFixedWindowLimiter("login-policy", policy =>
-    {
-        policy.PermitLimit = 5; 
-        policy.Window = TimeSpan.FromMinutes(1); 
-        policy.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        policy.QueueLimit = 0;
-    });
-});
-
+//-----------------------------------------------------------------
+// =====================================================
+// Services
+// =====================================================
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddProblemDetails();
-builder.Services.AddOpenApi(options =>
+
+builder.Services.AddCors(options =>
 {
-    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    options.AddPolicy("DefaultCors", policy =>
     {
-        document.Components ??= new OpenApiComponents();
-        document.Components.SecuritySchemes.Add("Bearer", new OpenApiSecurityScheme
-        {
-            Type = SecuritySchemeType.Http,
-            Scheme = "bearer",
-            BearerFormat = "JWT",
-            Description = "Input your Bearer token to access this API"
-        });
-
-        document.SecurityRequirements.Add(new OpenApiSecurityRequirement
-        {
-            {
-                new OpenApiSecurityScheme
-                {
-                    Reference = new OpenApiReference
-                    {
-                        Type = ReferenceType.SecurityScheme,
-                        Id = "Bearer"
-                    }
-                },
-                Array.Empty<string>()
-            }
-        });
-
-        return Task.CompletedTask;
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
     });
 });
-builder.Services.AddCarter();
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(RegisterCommand).Assembly));
 
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Missing connection string: DefaultConnection");
+
+builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
+{
+    options.UseNpgsql(connectionString, npgsql =>
+    {
+        npgsql.MigrationsAssembly(typeof(CulinaryBlogDbContext).Assembly.FullName);
+    });
+});
+
+builder.Services.AddScoped<SoftDeleteInterceptor>();
+
+builder.Services.AddOpenApi();
+
+// HttpContext / Current user
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
+// Cache (build-safe fallback)
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddScoped<ICacheService, RedisCacheService>();
+
+// MinIO via AWS SDK
 builder.Services.AddSingleton<IAmazonS3>(_ =>
 {
     var endpoint = builder.Configuration["Minio:Endpoint"]
@@ -97,46 +81,45 @@ builder.Services.AddSingleton<IAmazonS3>(_ =>
 
 builder.Services.AddScoped<IFileStorageService, MinioStorageService>();
 
-// CORS
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>())
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
-});
-
 var app = builder.Build();
 
+// =====================================================
+// Middleware
+// =====================================================
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
+app.UseCors("DefaultCors");
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    app.MapScalarApiReference();
-}
+// OpenAPI / Scalar
+app.MapOpenApi();
+app.MapScalarApiReference();
 
-app.UseCors("AllowFrontend");    
-app.UseRateLimiter();            
-app.UseAuthentication();         
-app.UseAuthorization();          
-
+// =====================================================
+// Routes
+// =====================================================
 app.MapControllers();
-app.MapCarter();
 
 app.MapGet("/", () => Results.Redirect("/scalar"));
-app.MapGet("/health", () => Results.Ok(new { status = "Healthy", timestampUtc = DateTime.UtcNow }));
-app.MapGet("/health/live", () => Results.Ok(new { status = "Healthy", probe = "live", timestampUtc = DateTime.UtcNow }));
-app.MapGet("/health/ready", () => Results.Ok(new { status = "Healthy", probe = "ready", timestampUtc = DateTime.UtcNow }));
 
-using (var scope = app.Services.CreateScope())
+app.MapGet("/health", () => Results.Ok(new
 {
-    var db = scope.ServiceProvider.GetRequiredService<CulinaryBlog.Infrastructure.Persistence.CulinaryBlogDbContext>();
-    db.Database.Migrate();
-}
+    status = "Healthy",
+    timestampUtc = DateTime.UtcNow
+}));
+
+app.MapGet("/health/live", () => Results.Ok(new
+{
+    status = "Healthy",
+    probe = "live",
+    timestampUtc = DateTime.UtcNow
+}));
+
+app.MapGet("/health/ready", () => Results.Ok(new
+{
+    status = "Healthy",
+    probe = "ready",
+    timestampUtc = DateTime.UtcNow
+}));
 
 app.Run();
 
@@ -153,5 +136,14 @@ static string NormalizeServiceUrl(string endpoint)
     return value.TrimEnd('/');
 }
 
+//-----------------------------------------------------------------
+// var app = builder.Build();
 
-
+// if (app.Environment.IsDevelopment())
+// {
+//     app.MapOpenApi();
+//     app.MapScalarApiReference(); // Chỉ giữ đúng 1 dòng này!
+    
+//     app.MapGet("/", () => "Hello World! Culinary Blog Backend is running on .NET 10.");
+// }
+// app.Run();
