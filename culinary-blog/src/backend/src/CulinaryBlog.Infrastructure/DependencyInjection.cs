@@ -1,3 +1,4 @@
+using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Application.Contracts.Persistence;
 using CulinaryBlog.Application.Contracts.Services;
 using CulinaryBlog.Domain.Entities;
@@ -79,7 +80,12 @@ public static class DependencyInjection
             .AddPolicy("AuthorOrAdmin", p => p.RequireRole("Author", "Admin"))
             .AddPolicy("AuthenticatedUser", p => p.RequireAuthenticatedUser());
 
+        services.AddScoped<IRecipeRepository, CulinaryBlog.Infrastructure.Persistence.Repositories.RecipeRepository>();
+        services.AddScoped<IUnitOfWork, CulinaryBlog.Infrastructure.Persistence.Repositories.UnitOfWork>();
+
         return services;
     }
 }
+
+
 
