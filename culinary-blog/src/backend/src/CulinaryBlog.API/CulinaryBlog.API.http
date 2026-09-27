@@ -1,0 +1,31 @@
+@CulinaryBlog_HostAddress = http://localhost:5000
+
+### 1. Kiểm tra trạng thái máy chủ (Health Check)
+GET {{CulinaryBlog_HostAddress}}/
+Accept: text/plain
+
+###
+
+### 2. Thử nghiệm cú pháp sắp xếp linh hoạt (?sort=-field)
+# Sắp xếp giảm dần theo ngày tạo (-createdAt) và tăng dần theo tiêu đề (title)
+GET {{CulinaryBlog_HostAddress}}/api/v1/recipes?sort=-createdAt,title
+Accept: application/json
+
+###
+
+### 3. Thử nghiệm phản hồi lỗi chuẩn RFC 7807 (HTTP 400 Problem Details)
+# Gửi request không hợp lệ (ví dụ: Title để trống, CookTime âm)
+# Response mong đợi: 
+#   HTTP/1.1 400 Bad Request
+#   Content-Type: application/problem+json
+#   Body chứa cấu trúc HttpValidationProblemDetails với danh sách lỗi chi tiết theo từng thuộc tính.
+POST {{CulinaryBlog_HostAddress}}/api/v1/recipes
+Content-Type: application/json
+Accept: application/problem+json
+
+{
+  "title": "",
+  "description": "Mô tả món ăn",
+  "prepTimeMinutes": -10,
+  "cookTimeMinutes": -5
+}
