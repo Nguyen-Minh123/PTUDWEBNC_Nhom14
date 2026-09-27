@@ -30,10 +30,8 @@ internal sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, 
         }
 
         // 2. Khởi tạo Entity User mới
-        var user = new ApplicationUser
+        var user = new ApplicationUser(request.Email, "$($request.FirstName) $($request.LastName)")
         {
-            UserName = request.Email, // Thường dùng Email làm UserName để dễ đăng nhập
-            Email = request.Email,
             FirstName = request.FirstName,
             LastName = request.LastName
         };
@@ -75,3 +73,4 @@ internal sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, 
         return Result<AuthResponse>.Success(response);
     }
 }
+

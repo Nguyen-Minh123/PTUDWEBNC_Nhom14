@@ -20,12 +20,12 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // 1. Cấu hình Database PostgreSQL (Sử dụng lớp cụ thể ApplicationDbContext)
-        services.AddDbContext<ApplicationDbContext>(options =>
+        // 1. Cấu hình Database PostgreSQL (Sử dụng lớp cụ thể CulinaryBlogDbContext)
+        services.AddDbContext<CulinaryBlogDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
         
         // Map Interface sang lớp cụ thể
-        services.AddScoped<IApplicationDbContext, ApplicationDbContext>();
+        services.AddScoped<IApplicationDbContext, CulinaryBlogDbContext>();
 
         // 2. Cấu hình ASP.NET Core Identity với PBKDF2
         services
@@ -42,7 +42,7 @@ public static class DependencyInjection
                 
                 options.User.RequireUniqueEmail = true;
             })
-            .AddEntityFrameworkStores<ApplicationDbContext>() // Bắt buộc dùng lớp cụ thể ở đây
+            .AddEntityFrameworkStores<CulinaryBlogDbContext>() // Bắt buộc dùng lớp cụ thể ở đây
             .AddDefaultTokenProviders();
 
         // 3. Cấu hình JWT Authentication & Đăng ký IJwtService
@@ -82,3 +82,4 @@ public static class DependencyInjection
         return services;
     }
 }
+

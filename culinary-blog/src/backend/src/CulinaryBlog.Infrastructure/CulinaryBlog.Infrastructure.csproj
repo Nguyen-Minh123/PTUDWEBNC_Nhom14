@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CulinaryBlog.Application\CulinaryBlog.Application.csproj" />
+  <PackageReference Include="AWSSDK.S3" />
   </ItemGroup>
 
   <ItemGroup>
@@ -16,6 +17,7 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
 
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
+  <PackageReference Include="AWSSDK.S3" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -25,4 +27,7 @@
   </PropertyGroup>
 
 </Project>
+
+
+
 

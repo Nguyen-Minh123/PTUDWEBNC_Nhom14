@@ -7,7 +7,7 @@ namespace CulinaryBlog.Domain.Entities;
 /// Ngu?i dùng h? th?ng.
 /// K? th?a IdentityUser<string> theo SRS.
 /// </summary>
-public class ApplicationUser : IdentityUser<string>
+public class ApplicationUser : IdentityUser
 {
     private ApplicationUser()
     {
@@ -129,3 +129,4 @@ public class ApplicationUser : IdentityUser<string>
         return normalized;
     }
 }
+

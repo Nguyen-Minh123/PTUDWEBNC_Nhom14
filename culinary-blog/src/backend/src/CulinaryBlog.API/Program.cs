@@ -7,79 +7,19 @@ using CulinaryBlog.Application.Contracts.Services;
 using Microsoft.AspNetCore.Identity;
 using CulinaryBlog.Domain.Entities;
 using CulinaryBlog.Application.Contracts.Persistence;
-using CulinaryBlog.Infrastructure.Authentication;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
+using CulinaryBlog.Infrastructure;
+using Carter;
+using CulinaryBlog.Application.Common.Interfaces;
+using Amazon.S3;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
-using Amazon.S3;
-using CulinaryBlog.Application.Common.Interfaces;
-using CulinaryBlog.Infrastructure.Caching;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ==========================================
-// 1. C?U HÌNH DATABASE & IDENTITY
-// ==========================================
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Missing connection string: DefaultConnection");
+// Khai's infrastructure extensions
+builder.Services.AddInfrastructure(builder.Configuration);
 
-builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
-{
-    options.UseNpgsql(connectionString, npgsql =>
-    {
-        npgsql.MigrationsAssembly(typeof(CulinaryBlogDbContext).Assembly.FullName);
-    });
-});
-
-builder.Services.AddScoped<IApplicationDbContext, CulinaryBlogDbContext>();
-builder.Services.AddScoped<CulinaryBlog.Infrastructure.Persistence.Interceptors.SoftDeleteInterceptor>();
-
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
-    .AddEntityFrameworkStores<CulinaryBlogDbContext>()
-    .AddDefaultTokenProviders();
-
-// ==========================================
-// 2. C?U HÌNH JWT & AUTHENTICATION
-// ==========================================
-builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection(JwtSettings.SectionName));
-builder.Services.AddScoped<IJwtService, JwtService>(); 
-
-var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>();
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtSettings!.Issuer,
-        ValidAudience = jwtSettings.Audience,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey))
-    };
-});
-builder.Services.AddAuthorization();
-
-// ==========================================
-// 3. C?U HÌNH CORS VÀ RATE LIMITING
-// ==========================================
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>())
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
-});
-
+// Add rate limiting (Minh)
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -92,9 +32,6 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
-// ==========================================
-// 4. C?U HÌNH CÁC D?CH V? KHÁC
-// ==========================================
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddProblemDetails();
@@ -104,9 +41,6 @@ builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Regis
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
-
-builder.Services.AddDistributedMemoryCache();
-builder.Services.AddScoped<ICacheService, RedisCacheService>();
 
 builder.Services.AddSingleton<IAmazonS3>(_ =>
 {
@@ -132,11 +66,19 @@ builder.Services.AddSingleton<IAmazonS3>(_ =>
 
 builder.Services.AddScoped<IFileStorageService, MinioStorageService>();
 
+// CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>())
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
 
-// ==========================================
-// 5. MIDDLEWARE PIPELINE
-// ==========================================
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
 
@@ -173,3 +115,4 @@ static string NormalizeServiceUrl(string endpoint)
 
     return value.TrimEnd('/');
 }
+

@@ -3,15 +3,14 @@ using CulinaryBlog.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using CulinaryBlog.Application.Contracts.Persistence;
+
 
 namespace CulinaryBlog.Infrastructure.Persistence;
 
 
-public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplicationDbContext
+public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser>, IApplicationDbContext
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
+    public CulinaryBlogDbContext(DbContextOptions<CulinaryBlogDbContext> options) : base(options)
     {
     }
 
@@ -32,3 +31,5 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
 
     }
 }
+
+
