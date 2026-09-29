@@ -43,6 +43,16 @@ Nhiệm vụ của Lab02:
 | | **FR-FTE-002** | Đồng bộ TypeScript Interfaces | ✅ Done |
 | | **FR-FTE-003** | Chuẩn hóa cú pháp sắp xếp (?sort=-field) | ✅ Done |
 | | **FR-FTE-004** | Thiết lập Validation Behavior | ✅ Done |
+
+Nhiệm vụ của Lab03:
+| Thành viên / Vai trò | Mã Issue | Tên Nhiệm vụ chi tiết | Hướng dẫn triển khai | Trạng thái |
+| :--- | :--- | :--- | :--- | :--- |
+| **Nguyễn Thế Khải**<br>*(Database & Infra)* | **FR-DB-004** | Khởi tạo Cấu trúc Full-Text Search | Tạo migration bổ sung computed column `SearchVector` và `GIN index` dựa trên đoạn SQL cấu hình trong `RecipeConfiguration`[cite: 11]. | ⏳ Todo |
+| | **FR-DB-005** | Mở rộng FTS cho trường Instructions | Viết thêm migration đưa trường `Instructions` vào thuật toán FTS, cập nhật lại `RecipeConfiguration`[cite: 11]. | ⏳ Todo |
+| **Nguyễn Nhất Minh**<br>*(Trưởng nhóm / Backend)* | **FR-BKE-003** | Hiện thực API Tìm kiếm nâng cao | Implement `SearchRecipesQuery` và `SearchRecipesQueryHandler` sử dụng hàm `EF.Functions.PlainToTsQuery()`[cite: 11]. | ⏳ Todo |
+| **Phan Thành Huy**<br>*(DevOps & Testing)* | **FR-TST-003** | Mở rộng Seeding Dữ liệu (Bogus) | Cập nhật `CulinaryBlogSeeder`: Dùng Faker (Bogus) sinh tự động thêm 10 comments thực tế cho mỗi recipe[cite: 11]. | ⏳ Todo |
+| | **FR-TST-004** | Kiểm thử thuật toán unaccent | Test API FTS: Tìm "pho bo" (không dấu) phải ra "Phở bò" và giải thích extension `unaccent`[cite: 11]. | ⏳ Todo |
+| **Bùi Trung Hiếu**<br>*(Frontend Next.js)* | **FR-FTE-005** | Tích hợp UI Tìm kiếm & Comment | Cập nhật gọi API `/api/v1/recipes/search` vào trang kết quả. Thiết kế UI hiển thị danh sách 10 comments/recipe. | ⏳ Todo |
 ---
 
 ## ⚙️ Hướng dẫn Khởi chạy Hệ thống (Local Development)
