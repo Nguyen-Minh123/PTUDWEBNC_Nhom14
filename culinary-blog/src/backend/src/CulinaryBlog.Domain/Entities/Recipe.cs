@@ -1,3 +1,4 @@
+using CulinaryBlog.Domain.Exceptions;
 using System.ComponentModel.DataAnnotations;
 using CulinaryBlog.Domain.Common;
 
@@ -192,7 +193,7 @@ public class Recipe : BaseEntity
 
         if (_steps.Any(x => x.StepNumber == step.StepNumber))
         {
-            throw new InvalidOperationException($"StepNumber '{step.StepNumber}' already exists for this recipe.");
+            throw new DuplicateStepNumberException(step.StepNumber);
         }
 
         _steps.Add(step);
@@ -291,7 +292,7 @@ public class Recipe : BaseEntity
         if (Status == RecipeStatus.Published &&
             !string.Equals(Slug, newSlug, StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException("Slug cannot be changed after the recipe is published.");
+            throw new RecipeAlreadyPublishedException(Id);
         }
     }
 
@@ -379,3 +380,4 @@ public enum RecipeStatus
     Published = 1,
     Archived = 2
 }
+
