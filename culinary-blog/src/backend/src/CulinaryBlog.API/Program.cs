@@ -99,7 +99,7 @@ app.MapScalarApiReference();
 // =====================================================
 app.MapControllers();
 
-app.MapGet("/", () => Results.Redirect("/scalar"));
+app.MapGet("/", () => Results.Redirect("/scalar/v1"));
 
 app.MapGet("/health", () => Results.Ok(new
 {
