@@ -25,14 +25,43 @@ Dự án phát triển hệ thống Full-Stack cho nền tảng Blog ẩm thực
 
 ---
 
-## 👨‍💻 Phân công Nhiệm vụ (Cập nhật Lab 3)
-
-| Thành viên | Vai trò chuyên trách | Nhiệm vụ cốt lõi |
-| :--- | :--- | :--- |
-| **Nguyễn Nhất Minh** *(Nhóm trưởng)* | Backend & Security (TV1) | Thiết lập CQRS/MediatR, 3 API Auth (Lab 3) & **Cài đặt Domain Exceptions cho Auth (UserNotFoundException, InvalidCredentialsException)**. |
-| **Nguyễn Thế Khải** | Database & Infrastructure (TV2) | Xây dựng Soft Delete Interceptor, IRecipeRepository & IUnitOfWork (Lab 3) & **Cài đặt Domain Exceptions cho Category (CategoryNotFoundException)**. |
-| **Phan Thành Huy** | DevOps & Testing (TV3) | Hiện thực hóa Domain Rules xuất bản công thức, cấu hình Docker & **Cài đặt Domain Exceptions cho Recipe (RecipeAlreadyPublishedException, DuplicateStepNumberException, RecipeNotFoundException)**. |
-| **Bùi Trung Hiếu** | Frontend Next.js (TV4) | Dựng Frontend Skeleton, hoàn thiện Global Exception Middleware (Lab 3) & **Cài đặt Domain Exceptions cho Search/Validation (UnsupportedSortFieldException)**. |
+## 👥 Phân công Nhiệm vụ (Lab01: ✅ Done, Lab02: ✅ Done, lab03: ⏳ Todo)
+| Thành viên / Vai trò | Mã Issue | Tên Nhiệm vụ chi tiết | Trạng thái |
+| :--- | :--- | :--- | :--- |
+| **Nguyễn Nhất Minh**<br>*(Trưởng nhóm / Backend)* | **FR-BKE-001** | Dựng Backend Skeleton (.NET 10) | ✅ Done |
+| | **FR-BKE-002** | Thiết lập CQRS/MediatR cho Category và Recipe | ✅ Done |
+| | **FR-SEC-001** | Chuẩn hóa mã hóa Refresh Token SHA-256 | ✅ Done |
+| | **FR-SEC-002** | Thiết lập Token Rotation | ✅ Done |
+| | **FR-DOM-001** | Định nghĩa UserNotFoundException (Lab 3) | ✅ Done |
+| | **FR-DOM-002** | Định nghĩa InvalidCredentialsException (Lab 3) | ✅ Done |
+| | **FR-BKE-003** | Hiện thực API Tìm kiếm nâng cao (Full-Text Search) | ⏳ Todo |
+| | **FR-BKE-004** | Tối ưu truy vấn API Chi tiết (AsSplitQuery & Eager Loading) | ⏳ Todo |
+| **Nguyễn Thế Khải**<br>*(Database & Infra)* | **FR-DB-001** | Khởi tạo EF Core Migrations | ✅ Done |
+| | **FR-DB-002** | Định nghĩa BaseEntity, ApplicationUser | ✅ Done |
+| | **FR-DB-003** | Cấu hình PostgreSQL 16 trên Docker | ✅ Done |
+| | **FR-INF-001** | Xây dựng Soft Delete Interceptor | ✅ Done |
+| | **FR-INF-002** | Tích hợp MinIO Async File Deletion | ✅ Done |
+| | **FR-DOM-003** | Định nghĩa CategoryNotFoundException (Lab 3) | ✅ Done |
+| | **FR-DB-004** | Khởi tạo cấu trúc SearchVector & GIN Index | ⏳ Todo |
+| | **FR-DB-005** | Mở rộng Full-Text Search cho trường Instructions | ⏳ Todo |
+| | **FR-DB-006** | Phân tích hiệu năng truy vấn bằng EXPLAIN ANALYZE | ⏳ Todo |
+| **Phan Thành Huy**<br>*(DevOps & Testing)* | **FR-DVO-001** | Cấu hình docker-compose.yml tổng hợp (Nginx, Postgres, Redis, MinIO) | ✅ Done |
+| | **FR-DVO-002** | Cấu hình 6 chỉ số dinh dưỡng | ✅ Done |
+| | **FR-TST-001** | Kiểm thử API nâng cao | ✅ Done |
+| | **FR-TST-002** | Hiện thực hóa Domain Rules xuất bản công thức | ✅ Done |
+| | **FR-DOM-004** | Định nghĩa RecipeNotFoundException (Lab 3) | ✅ Done |
+| | **FR-DOM-005** | Định nghĩa RecipeAlreadyPublishedException (Lab 3) | ✅ Done |
+| | **FR-DOM-006** | Định nghĩa DuplicateStepNumberException (Lab 3) | ✅ Done |
+| | **FR-TST-003** | Mở rộng Seeding Dữ liệu thực tế bằng Bogus | ⏳ Todo |
+| | **FR-TST-004** | Kiểm thử thuật toán unaccent cho Full-Text Search | ⏳ Todo |
+| | **FR-TST-005** | Bật SQL Logging & Đo lường hiệu năng AsNoTracking | ⏳ Todo |
+| **Bùi Trung Hiếu**<br>*(Frontend Next.js)* | **FR-FTE-001** | Dựng Frontend Skeleton (Next.js 15 App Router + Tailwind CSS) | ✅ Done |
+| | **FR-FTE-002** | Đồng bộ TypeScript Interfaces | ✅ Done |
+| | **FR-FTE-003** | Chuẩn hóa cú pháp sắp xếp (?sort=-field) | ✅ Done |
+| | **FR-FTE-004** | Thiết lập Validation Behavior | ✅ Done |
+| | **FR-DOM-007** | Định nghĩa UnsupportedSortFieldException (Lab 3) | ✅ Done |
+| | **FR-FTE-005** | Tích hợp giao diện Tìm kiếm & Comment | ⏳ Todo |
+| | **FR-FTE-006** | Tích hợp DTO giảm tải dữ liệu (ProjectToType) | ⏳ Todo |
 
 ---
 
@@ -57,4 +86,3 @@ Tài liệu API Scalar UI: Truy cập trực tiếp tại trình duyệt:
 cd src/frontend
 npm install
 npm run dev
-
