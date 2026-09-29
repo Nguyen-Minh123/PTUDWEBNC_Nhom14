@@ -6,7 +6,7 @@
 * Bùi Trung Hiếu - 2312611
 * Phan Thành Huy - 2312634
 
-Culinary Blog là một hệ thống ứng dụng web Full-Stack cho phép người dùng chia sẻ, khám phá và lưu trữ các công thức nấu ăn từ nhiều nền ẩm thực khác nhau. Hệ thống được thiết kế theo mô hình API-Driven Architecture, tối ưu hóa hiệu năng và thân thiện với chuẩn SEO.
+Culinary Blog là một hệ thống ứng dụng web Full-Stack cho phép người dùng chia sẻ, khám phá và lưu trữ các công thức nấu ăn từ nhiều nền ẩm thực khác nhau. Dự án phát triển hệ thống Full-Stack cho nền tảng Blog ẩm thực (**Culinary Blog**) theo tiêu chuẩn kiến trúc **Clean Architecture** và tài liệu đặc tả **SRS v1.0.0**. Hệ thống sử dụng **.NET 10 (Minimal APIs)**, **Next.js (App Router)**, **PostgreSQL 16**, **Redis 7**, và **MinIO**.
 
 ---
 
@@ -53,18 +53,27 @@ Backend được chia thành 4 tầng ranh giới nghiêm ngặt:
 * **IDE khuyến dùng:** Visual Studio 2022 (v17.12+), Rider 2024+, hoặc VS Code.
 
 ---
-## 🚀 Hướng dẫn khởi chạy (Quick Start)
+
+## ⚙️ Hướng dẫn Khởi chạy Hệ thống (Local Development)
 ```bash
-### 1. Khởi chạy Infrastructure (PostgreSQL, Redis, MinIO)
-docker-compose up -d
+### Bước 1: Khởi động Hạ tầng (Docker Compose)
+Đảm bảo ứng dụng **Docker Desktop** trên máy tính đã được bật và chạy ổn định. Mở Terminal tại thư mục gốc của dự án (`culinary-blog`) và chạy[cite: 13, 15]:
 
+docker compose up -d
 
-### 2. Chạy Backend (.NET API)
-cd backend
+### Bước 2: Khởi chạy Backend API (.NET 10)
+
+cd src/backend
 dotnet restore
-dotnet run --project src/Presentation
+dotnet watch run --project src/CulinaryBlog.API
 
-### 3. Chạy Frontend (Next.js)
-cd frontend
+Tài liệu API Scalar UI: Truy cập trực tiếp tại trình duyệt:
+👉 http://localhost:5075/scalar/v1
+
+### Bước 3: Khởi chạy Frontend (Next.js)
+
+cd src/frontend
 npm install
 npm run dev
+
+---
