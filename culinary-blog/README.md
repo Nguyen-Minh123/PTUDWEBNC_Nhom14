@@ -9,10 +9,10 @@ Dự án phát triển hệ thống Full-Stack cho nền tảng Blog ẩm thực
 * **Soft Delete Pattern (Lab 2):** Áp dụng xóa mềm (IsDeleted = true) cho các thực thể cốt lõi (Recipe, Category) kết hợp Global Query Filters trong EF Core.
 * **Bảo mật Nâng cao (Chương 2):** Mã hóa Refresh Token bằng SHA-256 (TokenHash varchar(64)), hiện thực hóa Token Rotation và chống Reuse Attack.
 * **Quy chuẩn Lab 3 (MỚI CẬP NHẬT):** 
-  * ✅ **Domain Exceptions:** Đã thiết lập DomainException, RecipeAlreadyPublishedException, DuplicateStepNumberException ở tầng Domain.
+  * ✅ **Domain Exceptions:** Đã chia đều nhiệm vụ thiết lập các class kế thừa DomainException cho 4 thành viên (Auth, Category, Recipe, Search).
   * ✅ **Repository & Unit of Work:** Đã hoàn thiện IRecipeRepository và IUnitOfWork với Entity Framework Core.
   * ✅ **API Endpoints:** Đã hoàn thiện 3 API Endpoints cho tính năng Authentication (Register, Login, Refresh Token) thỏa mãn số lượng tối thiểu 2 APIs/thành viên.
-  * ✅ **Global Exception Middleware:** Đã tạo GlobalExceptionHandler bắt lỗi toàn cục và trả về chuẩn Problem Details RFC 7807 (cho cả ValidationException và Exception chung).
+  * ✅ **Global Exception Middleware:** Đã tạo GlobalExceptionHandler bắt lỗi toàn cục và trả về chuẩn Problem Details RFC 7807.
 
 ---
 
@@ -25,14 +25,14 @@ Dự án phát triển hệ thống Full-Stack cho nền tảng Blog ẩm thực
 
 ---
 
-## 👨‍💻 Phân công Nhiệm vụ 
+## 👨‍💻 Phân công Nhiệm vụ (Cập nhật Lab 3)
 
 | Thành viên | Vai trò chuyên trách | Nhiệm vụ cốt lõi |
 | :--- | :--- | :--- |
-| **Nguyễn Nhất Minh** *(Nhóm trưởng)* | Backend & Security (TV1) | Dựng Backend Skeleton (.NET 10), thiết lập CQRS/MediatR, chuẩn hóa mã hóa Refresh Token SHA-256, Token Rotation và 3 API Endpoints (Lab 3). |
-| **Nguyễn Thế Khải** | Database & Infrastructure (TV2) | Khởi tạo EF Core Migrations, định nghĩa BaseEntity, ApplicationUser, cấu hình PostgreSQL 16 trên Docker, xây dựng Soft Delete Interceptor, IRecipeRepository & IUnitOfWork (Lab 3). |
-| **Phan Thành Huy** | DevOps & Testing (TV3) | Cấu hình docker-compose.yml, hiện thực hóa Domain Rules xuất bản công thức, cấu hình 6 chỉ số dinh dưỡng, và tích hợp các lớp Domain Exceptions (Lab 3). |
-| **Bùi Trung Hiếu** | Frontend Next.js (TV4) | Dựng Frontend Skeleton, đồng bộ TypeScript Interfaces, chuẩn hóa cú pháp sắp xếp (?sort=-field), và hoàn thiện Global Exception Middleware trả về Problem Details (Lab 3). |
+| **Nguyễn Nhất Minh** *(Nhóm trưởng)* | Backend & Security (TV1) | Thiết lập CQRS/MediatR, 3 API Auth (Lab 3) & **Cài đặt Domain Exceptions cho Auth (UserNotFoundException, InvalidCredentialsException)**. |
+| **Nguyễn Thế Khải** | Database & Infrastructure (TV2) | Xây dựng Soft Delete Interceptor, IRecipeRepository & IUnitOfWork (Lab 3) & **Cài đặt Domain Exceptions cho Category (CategoryNotFoundException)**. |
+| **Phan Thành Huy** | DevOps & Testing (TV3) | Hiện thực hóa Domain Rules xuất bản công thức, cấu hình Docker & **Cài đặt Domain Exceptions cho Recipe (RecipeAlreadyPublishedException, DuplicateStepNumberException, RecipeNotFoundException)**. |
+| **Bùi Trung Hiếu** | Frontend Next.js (TV4) | Dựng Frontend Skeleton, hoàn thiện Global Exception Middleware (Lab 3) & **Cài đặt Domain Exceptions cho Search/Validation (UnsupportedSortFieldException)**. |
 
 ---
 
