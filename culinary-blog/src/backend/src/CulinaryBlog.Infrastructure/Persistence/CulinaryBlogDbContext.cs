@@ -1,13 +1,11 @@
-using CulinaryBlog.Application.Contracts.Persistence;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using CulinaryBlog.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace CulinaryBlog.Infrastructure.Persistence;
 
-public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, IdentityRole<string>, string>, IApplicationDbContext
+public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, IdentityRole<string>, string>
 {
     public CulinaryBlogDbContext(DbContextOptions<CulinaryBlogDbContext> options)
         : base(options)
@@ -173,6 +171,15 @@ public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, Identity
         entity.Property(x => x.RowVersion)
             .IsRowVersion();
 
+        entity.Property(x => x.SearchVector)
+            .HasComputedColumnSql(
+                "to_tsvector('simple', unaccent(coalesce(\"Title\", '')) || ' ' || unaccent(coalesce(\"Description\", '')) || ' ' || unaccent(coalesce(\"Instructions\", '')))",
+                stored: true)
+            .Metadata.SetAfterSaveBehavior(Microsoft.EntityFrameworkCore.Metadata.PropertySaveBehavior.Ignore);
+
+        entity.HasIndex(x => x.SearchVector)
+            .HasMethod("GIN");
+
         entity.HasIndex(x => x.CategoryId);
         entity.HasIndex(x => x.AuthorId);
         entity.HasIndex(x => x.Status);
@@ -181,11 +188,11 @@ public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, Identity
 
         modelBuilder.Entity<Category>()
             .HasMany(x => x.Recipes)
-            .WithOne()
+            .WithOne(x => x.Category)
             .HasForeignKey(x => x.CategoryId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        entity.HasOne<ApplicationUser>()
+        entity.HasOne(x => x.Author)
             .WithMany()
             .HasForeignKey(x => x.AuthorId)
             .OnDelete(DeleteBehavior.Restrict);

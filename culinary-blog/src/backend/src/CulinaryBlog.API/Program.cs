@@ -1,3 +1,4 @@
+using CulinaryBlog.API.Endpoints;
 using Amazon.S3;
 using CulinaryBlog.Application.Common.Caching;
 using CulinaryBlog.Application.Common.Interfaces;
@@ -51,6 +52,8 @@ builder.Services.AddOpenApi();
 // HttpContext / Current user
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<IRecipeRepository, CulinaryBlog.Infrastructure.Persistence.Repositories.RecipeRepository>();
+builder.Services.AddScoped<IUnitOfWork, CulinaryBlog.Infrastructure.Persistence.Repositories.UnitOfWork>();
 
 // Cache (build-safe fallback)
 builder.Services.AddDistributedMemoryCache();
@@ -98,6 +101,7 @@ app.MapScalarApiReference();
 // Routes
 // =====================================================
 app.MapControllers();
+app.MapRecipeEndpoints();
 
 app.MapGet("/", () => Results.Redirect("/scalar"));
 
