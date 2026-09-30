@@ -104,4 +104,27 @@ public class RecipeRepository : IRecipeRepository
             .Include(r => r.Images)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<int> CountAsync(
+        Guid? categoryId = null,
+        RecipeStatus? status = null,
+        string? keyword = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _db.Recipes.AsNoTracking();
+
+        if (categoryId.HasValue)
+            query = query.Where(r => r.CategoryId == categoryId.Value);
+
+        if (status.HasValue)
+            query = query.Where(r => r.Status == status.Value);
+
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            var tsQuery = EF.Functions.PlainToTsQuery("simple", keyword);
+            query = query.Where(r => r.SearchVector!.Matches(tsQuery));
+        }
+
+        return await query.CountAsync(cancellationToken);
+    }
 }
