@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { SearchBar } from '../components/search/SearchBar';
 import { FilterBar } from '../components/search/FilterBar';
 import { RecipeCard } from '../components/search/RecipeCard';
@@ -67,6 +68,9 @@ export default function Home() {
           </div>
 
           <nav className="flex items-center gap-4 text-xs font-semibold text-gray-600">
+            <Link href="/recipes/new" className="text-amber-700 hover:text-amber-800 transition-colors">
+              Tạo công thức
+            </Link>
             <a href="#search-section" className="text-amber-600 hover:text-amber-700 transition-colors">
               Tìm Kiếm Món Ăn
             </a>
