@@ -25,8 +25,13 @@ public class SearchRecipesQueryHandler : IRequestHandler<SearchRecipesQuery, Pag
             status: CulinaryBlog.Domain.Entities.RecipeStatus.Published,
             cancellationToken: cancellationToken);
 
+        var totalCount = await _unitOfWork.Recipes.CountAsync(
+            keyword: request.SearchTerm,
+            status: CulinaryBlog.Domain.Entities.RecipeStatus.Published,
+            cancellationToken: cancellationToken);
+
         var items = recipes.Adapt<List<RecipeSummaryDto>>();
 
-        return new PaginatedResult<RecipeSummaryDto>(items, 100, request.Page, request.PageSize);
+        return new PaginatedResult<RecipeSummaryDto>(items, totalCount, request.Page, request.PageSize);
     }
 }
