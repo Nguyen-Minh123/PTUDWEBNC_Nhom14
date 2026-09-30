@@ -1,12 +1,24 @@
 using CulinaryBlog.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Logging;
 using Scalar.AspNetCore; // Cần thêm using này để dùng được Scalar
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Khai báo cho ứng dụng biết cách kết nối PostgreSQL thông qua DbContext
 builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+
+    if (builder.Environment.IsDevelopment())
+    {
+        options.LogTo(
+            Console.WriteLine,
+            new[] { DbLoggerCategory.Database.Command.Name },
+            LogLevel.Information);
+    }
+});
 
 // 1. Đăng ký dịch vụ sinh tài liệu OpenAPI
 builder.Services.AddOpenApi();
