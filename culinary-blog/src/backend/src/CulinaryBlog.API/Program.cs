@@ -125,8 +125,10 @@ app.UseCors("DefaultCors");
 app.MapOpenApi();
 // Mở Scalar UI tại /scalar/v1.
 app.MapScalarApiReference();
-
+// Thực hiện API Quản lý Nguyên liệu
 app.MapRecipeIngredientsEndpoints();
+// Thực hiện API Quản lý Bước thực hiện
+app.MapRecipeStepsEndpoints();
 
 // =====================================================
 // Routes
