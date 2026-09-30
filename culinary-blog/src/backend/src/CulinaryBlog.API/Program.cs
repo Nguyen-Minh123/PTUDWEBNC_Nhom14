@@ -1,4 +1,5 @@
 using Amazon.S3;
+using CulinaryBlog.API.Endpoints;
 using CulinaryBlog.Application.Common.Caching;
 using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Application.Features.Recipes.Queries.GetRecipesByKeyword;
@@ -124,6 +125,8 @@ app.UseCors("DefaultCors");
 app.MapOpenApi();
 // Mở Scalar UI tại /scalar/v1.
 app.MapScalarApiReference();
+
+app.MapRecipeIngredientsEndpoints();
 
 // =====================================================
 // Routes
