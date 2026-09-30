@@ -55,13 +55,13 @@ public sealed class RecipeDataSeeder(CulinaryBlogDbContext dbContext)
             return;
         }
 
-        // Must have at least one Category and one Author to create a Recipe
+        // Must have at least one Category to create a Recipe.
+        // We do NOT insert a Category here — RowVersion is DB-generated and cannot be set manually.
         var category = await dbContext.Categories.FirstOrDefaultAsync(cancellationToken);
         if (category == null)
         {
-            category = new Category("Vietnamese Classics", "vietnamese-classics", "Classic Vietnamese dishes.");
-            dbContext.Categories.Add(category);
-            await dbContext.SaveChangesAsync(cancellationToken);
+            // No categories seeded yet — skip recipe seeding.
+            return;
         }
 
         var authorId = "seeder-user-id";
