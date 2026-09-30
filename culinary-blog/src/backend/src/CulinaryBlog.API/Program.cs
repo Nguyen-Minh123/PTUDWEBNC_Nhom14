@@ -44,6 +44,14 @@ builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
     {
         npgsql.MigrationsAssembly(typeof(CulinaryBlogDbContext).Assembly.FullName);
     });
+
+    if (builder.Environment.IsDevelopment())
+    {
+        options.LogTo(
+            Console.WriteLine,
+            new[] { Microsoft.EntityFrameworkCore.DbLoggerCategory.Database.Command.Name },
+            LogLevel.Information);
+    }
 });
 
 builder.Services.AddScoped<SoftDeleteInterceptor>();
@@ -86,6 +94,14 @@ builder.Services.AddSingleton<IAmazonS3>(_ =>
 builder.Services.AddScoped<IFileStorageService, MinioStorageService>();
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<CulinaryBlogDbContext>();
+    await dbContext.Database.MigrateAsync();
+    await new CulinaryBlog.Infrastructure.Persistence.RecipeDataSeeder(dbContext).SeedAsync();
+}
 
 // =====================================================
 // Middleware

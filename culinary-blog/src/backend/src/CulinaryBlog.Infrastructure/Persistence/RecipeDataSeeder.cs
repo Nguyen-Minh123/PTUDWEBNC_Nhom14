@@ -25,41 +25,27 @@ public sealed class RecipeDataSeeder(CulinaryBlogDbContext dbContext)
         "Mushroom Congee",
         "Chili Lemongrass Tofu",
         "Chicken and Cabbage Salad",
-        "Wonton Noodle Soup",
-        "Caramelized Ginger Chicken",
-        "Crispy Tofu Rice Bowl",
-        "Pumpkin Coconut Soup",
-        "Stir-Fried Morning Glory",
-        "Pork and Shrimp Dumplings",
-        "Turmeric Fish with Dill",
-        "Roasted Duck Noodle Soup"
+        "Garnish with fresh herbs and serve while warm."
     ];
 
     private static readonly string[] IngredientNames =
     [
-        "rice noodles",
-        "fish sauce",
-        "lemongrass",
-        "coconut milk",
-        "fresh ginger",
-        "garlic",
-        "shallots",
-        "bean sprouts",
-        "fresh basil",
-        "chicken breast",
-        "pork shoulder",
-        "white rice"
+        "Beef", "Chicken", "Pork", "Tofu", "Shrimp", "Fish",
+        "Garlic", "Onion", "Ginger", "Lemongrass", "Chili",
+        "Rice", "Noodles", "Cabbage", "Tomato", "Mushroom",
+        "Fish Sauce", "Soy Sauce", "Coconut Milk", "Sugar"
     ];
 
     private static readonly string[] CookingInstructions =
     [
-        "Rinse and prepare the ingredients before cooking.",
-        "Heat a pan over medium heat and add a little oil.",
-        "Cook the aromatics until fragrant, stirring regularly.",
-        "Add the main ingredients and cook until lightly browned.",
-        "Pour in the sauce and simmer until the flavors combine.",
-        "Season to taste and cook until the ingredients are tender.",
-        "Garnish with fresh herbs and serve while warm."
+        "Prepare the ingredients.",
+        "Heat oil in a pan.",
+        "Stir-fry until fragrant.",
+        "Add main ingredients and cook.",
+        "Pour in the sauce and simmer.",
+        "Taste and adjust seasoning.",
+        "Serve hot with rice or noodles.",
+        "Garnish with herbs."
     ];
 
     public async Task SeedAsync(CancellationToken cancellationToken = default)
@@ -69,40 +55,70 @@ public sealed class RecipeDataSeeder(CulinaryBlogDbContext dbContext)
             return;
         }
 
+        // Must have at least one Category and one Author to create a Recipe
+        var category = await dbContext.Categories.FirstOrDefaultAsync(cancellationToken);
+        if (category == null)
+        {
+            category = new Category("Vietnamese Classics", "vietnamese-classics", "Classic Vietnamese dishes.");
+            dbContext.Categories.Add(category);
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        var authorId = "seeder-user-id";
+
         var faker = new Faker("en");
         var recipes = DishNames
-            .Select(dishName => CreateRecipe(faker, dishName))
+            .Select(dishName => CreateRecipe(faker, dishName, category.Id, authorId))
             .ToArray();
 
         await dbContext.Recipes.AddRangeAsync(recipes, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    private static Recipe CreateRecipe(Faker faker, string dishName)
+    private static Recipe CreateRecipe(Faker faker, string dishName, Guid categoryId, string authorId)
     {
-        var recipe = new Recipe(dishName);
+        var slug = dishName.ToLowerInvariant().Replace(' ', '-');
+        var nutrition = new RecipeNutrition
+        {
+            Calories = faker.Random.Decimal(100, 800),
+            Protein = faker.Random.Decimal(5, 60),
+            Carbohydrates = faker.Random.Decimal(10, 120),
+            Fat = faker.Random.Decimal(1, 50),
+            Fiber = faker.Random.Decimal(1, 30),
+            Sodium = faker.Random.Decimal(1, 80)
+        };
+
+        var recipe = new Recipe(
+            title: dishName,
+            slug: slug,
+            description: faker.Lorem.Paragraph(),
+            instructions: "Follow the steps.",
+            prepTime: faker.Random.Int(10, 60),
+            cookTime: faker.Random.Int(15, 120),
+            servings: faker.Random.Int(2, 6),
+            difficulty: faker.PickRandom<RecipeDifficulty>(),
+            categoryId: categoryId,
+            authorId: authorId,
+            nutrition: nutrition
+        );
 
         for (var index = 0; index < faker.Random.Int(4, 8); index++)
         {
-            recipe.AddIngredient(
+            var ingredient = new RecipeIngredient(recipe.Id,
                 faker.PickRandom(IngredientNames),
                 faker.Random.Decimal(1, 500),
                 faker.PickRandom("g", "ml", "tbsp", "tsp"));
+            recipe.AddIngredient(ingredient);
         }
 
         var instructions = faker.Random.ArrayElements(CookingInstructions, faker.Random.Int(3, 8));
+        var stepCount = 1;
         foreach (var instruction in instructions)
         {
-            recipe.AddStep(instruction);
+            var step = new RecipeStep(recipe.Id, stepCount, "Step " + stepCount, instruction); stepCount++;
+            recipe.AddStep(step);
         }
 
-        recipe.SetNutritionInfo(new NutritionInfo(
-            faker.Random.Decimal(100, 800),
-            faker.Random.Decimal(5, 60),
-            faker.Random.Decimal(10, 120),
-            faker.Random.Decimal(1, 50),
-            faker.Random.Decimal(1, 30),
-            faker.Random.Decimal(1, 80)));
         recipe.Publish();
 
         return recipe;

@@ -197,7 +197,7 @@ public class Recipe : BaseEntity
 
         if (_steps.Any(x => x.StepNumber == step.StepNumber))
         {
-            throw new InvalidOperationException($"StepNumber '{step.StepNumber}' already exists for this recipe.");
+            throw new CulinaryBlog.Domain.Common.DuplicateStepNumberException(step.StepNumber);
         }
 
         _steps.Add(step);
