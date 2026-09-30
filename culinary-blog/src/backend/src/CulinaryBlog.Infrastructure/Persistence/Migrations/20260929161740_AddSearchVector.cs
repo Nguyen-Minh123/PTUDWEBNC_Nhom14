@@ -15,6 +15,8 @@ namespace CulinaryBlog.Infrastructure.Persistence.Migrations
             migrationBuilder.AlterDatabase()
                 .Annotation("Npgsql:PostgresExtension:unaccent", ",,");
 
+            migrationBuilder.Sql("ALTER FUNCTION unaccent(text) IMMUTABLE;");
+
             migrationBuilder.DropColumn(
                 name: "CreatedAt",
                 table: "RefreshTokens");
