@@ -1,3 +1,4 @@
+using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -5,20 +6,66 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CulinaryBlog.Infrastructure.Persistence;
 
+/// <summary>
+/// DbContext chính của hệ thống.
+/// 
+/// Vai trò:
+/// - Quản lý Identity tables
+/// - Quản lý các bảng nghiệp vụ như Category, Recipe, RecipeStep, ...
+/// - Là implementation cụ thể của IApplicationDbContext và IUnitOfWork
+/// </summary>
 public class CulinaryBlogDbContext
-    : IdentityDbContext<ApplicationUser, IdentityRole<string>, string>
+    : IdentityDbContext<ApplicationUser, IdentityRole<string>, string>,
+      IApplicationDbContext,
+      IUnitOfWork
 {
+    /// <summary>
+    /// Khởi tạo DbContext với options được DI cung cấp.
+    /// </summary>
     public CulinaryBlogDbContext(DbContextOptions<CulinaryBlogDbContext> options)
         : base(options)
     {
     }
 
+    /// <summary>
+    /// Bảng Categories.
+    /// </summary>
     public DbSet<Category> Categories => Set<Category>();
+
+    /// <summary>
+    /// Bảng Recipes.
+    /// </summary>
     public DbSet<Recipe> Recipes => Set<Recipe>();
+
+    /// <summary>
+    /// Bảng RecipeSteps.
+    /// </summary>
     public DbSet<RecipeStep> RecipeSteps => Set<RecipeStep>();
+
+    /// <summary>
+    /// Bảng RecipeIngredients.
+    /// </summary>
     public DbSet<RecipeIngredient> RecipeIngredients => Set<RecipeIngredient>();
+
+    /// <summary>
+    /// Bảng RecipeImages.
+    /// </summary>
     public DbSet<RecipeImage> RecipeImages => Set<RecipeImage>();
 
+    /// <summary>
+    /// Override SaveChangesAsync để DbContext thực thi vai trò Unit of Work.
+    /// 
+    /// Nếu bạn có interceptor audit/soft delete thì vẫn có thể giữ ở pipeline,
+    /// còn DbContext chỉ chịu trách nhiệm lưu dữ liệu.
+    /// </summary>
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Cấu hình mapping model sang database.
+    /// </summary>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -31,6 +78,9 @@ public class CulinaryBlogDbContext
         ConfigureRecipeImage(modelBuilder);
     }
 
+    /// <summary>
+    /// Đổi tên các bảng Identity về format thống nhất với project.
+    /// </summary>
     private static void ConfigureIdentityTables(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ApplicationUser>().ToTable("AspNetUsers");
@@ -42,6 +92,9 @@ public class CulinaryBlogDbContext
         modelBuilder.Entity<IdentityUserToken<string>>().ToTable("AspNetUserTokens");
     }
 
+    /// <summary>
+    /// Cấu hình bảng Category.
+    /// </summary>
     private static void ConfigureCategory(ModelBuilder modelBuilder)
     {
         var entity = modelBuilder.Entity<Category>();
@@ -49,6 +102,7 @@ public class CulinaryBlogDbContext
         entity.ToTable("Categories");
         entity.HasKey(x => x.Id);
 
+        // Id do application tự sinh, không để database sinh tự động.
         entity.Property(x => x.Id)
             .ValueGeneratedNever();
 
@@ -91,9 +145,13 @@ public class CulinaryBlogDbContext
         entity.Property(x => x.RowVersion)
             .IsRowVersion();
 
+        // Soft delete filter.
         entity.HasQueryFilter(x => !x.IsDeleted);
     }
 
+    /// <summary>
+    /// Cấu hình bảng Recipe.
+    /// </summary>
     private static void ConfigureRecipe(ModelBuilder modelBuilder)
     {
         var entity = modelBuilder.Entity<Recipe>();
@@ -133,14 +191,14 @@ public class CulinaryBlogDbContext
             .IsRequired();
 
         entity.Property(x => x.Difficulty)
-        .HasConversion<int>()
-        .HasDefaultValue(RecipeDifficulty.Easy)
-        .IsRequired();
+            .HasConversion<int>()
+            .HasDefaultValue(RecipeDifficulty.Easy)
+            .IsRequired();
 
         entity.Property(x => x.Status)
-        .HasConversion<int>()
-        .HasDefaultValue(RecipeStatus.Draft)
-        .IsRequired();
+            .HasConversion<int>()
+            .HasDefaultValue(RecipeStatus.Draft)
+            .IsRequired();
 
         entity.Property(x => x.CategoryId)
             .IsRequired();
@@ -181,6 +239,7 @@ public class CulinaryBlogDbContext
             .HasForeignKey(x => x.AuthorId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // Value object Nutrition được map vào cùng bảng Recipes.
         entity.OwnsOne(x => x.Nutrition, nutrition =>
         {
             nutrition.Property(x => x.Calories)
@@ -223,9 +282,13 @@ public class CulinaryBlogDbContext
             .HasForeignKey(x => x.RecipeId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Soft delete filter.
         entity.HasQueryFilter(x => !x.IsDeleted);
     }
 
+    /// <summary>
+    /// Cấu hình bảng RecipeSteps.
+    /// </summary>
     private static void ConfigureRecipeStep(ModelBuilder modelBuilder)
     {
         var entity = modelBuilder.Entity<RecipeStep>();
@@ -278,6 +341,9 @@ public class CulinaryBlogDbContext
         entity.HasQueryFilter(x => !x.IsDeleted);
     }
 
+    /// <summary>
+    /// Cấu hình bảng RecipeIngredients.
+    /// </summary>
     private static void ConfigureRecipeIngredient(ModelBuilder modelBuilder)
     {
         var entity = modelBuilder.Entity<RecipeIngredient>();
@@ -331,6 +397,9 @@ public class CulinaryBlogDbContext
         entity.HasQueryFilter(x => !x.IsDeleted);
     }
 
+    /// <summary>
+    /// Cấu hình bảng RecipeImages.
+    /// </summary>
     private static void ConfigureRecipeImage(ModelBuilder modelBuilder)
     {
         var entity = modelBuilder.Entity<RecipeImage>();
