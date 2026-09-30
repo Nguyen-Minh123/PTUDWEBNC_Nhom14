@@ -1,4 +1,5 @@
-﻿using CulinaryBlog.Domain.Entities;
+﻿using CulinaryBlog.Domain.Common;
+using CulinaryBlog.Domain.Entities;
 
 namespace CulinaryBlog.UnitTests;
 
@@ -32,6 +33,25 @@ public class RecipeDomainTests
         recipe.Publish();
 
         Assert.True(recipe.IsPublished);
+    }
+
+    [Fact]
+    public void Publish_throws_when_recipe_is_already_published()
+    {
+        var recipe = new Recipe("Pho");
+        recipe.AddIngredient("Rice noodles");
+        recipe.AddStep("Boil the broth.");
+        recipe.Publish();
+
+        Assert.Throws<RecipeAlreadyPublishedException>(() => recipe.Publish());
+    }
+
+    [Fact]
+    public void Duplicate_step_number_exception_contains_conflicting_step_number()
+    {
+        var exception = new DuplicateStepNumberException(2);
+
+        Assert.Equal(2, exception.StepNumber);
     }
 
     [Fact]
