@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { RecipeSummaryDto } from '../../types';
 
 interface RecipeCardProps {
@@ -44,11 +45,14 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onOpenDetails })
       <div>
         {/* Cover Image & Badges */}
         <div className="relative aspect-video w-full overflow-hidden bg-gray-100">
-          <img
+          <Image
             src={recipe.coverImageUrl || 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800&auto=format&fit=crop&q=80'}
             alt={recipe.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            loading="lazy"
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            placeholder="blur"
+            blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAIAAoDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAAAAYE/8QAIhAAAQMEAgMAAAAAAAAAAAAAAQIDBAAFERIhMUH/xAAVAQEBAAAAAAAAAAAAAAAAAAABEQIS/9oADAMBAAIRAxEAPwCPJJOSx4xeWCDTMhvD2lWtqO/YvSlp4xo37O3rSShvGGE7u3OcDvnPnAqBSp//2Q=="
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
 
