@@ -1,3 +1,4 @@
+using CulinaryBlog.API.Endpoints;
 using Amazon.S3;
 using CulinaryBlog.Application.Common.Caching;
 using CulinaryBlog.Application.Common.Interfaces;
@@ -22,6 +23,7 @@ builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<CulinaryBlog.API.Infrastructure.GlobalExceptionHandler>();
 
 builder.Services.AddCors(options =>
 {
@@ -42,6 +44,14 @@ builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
     {
         npgsql.MigrationsAssembly(typeof(CulinaryBlogDbContext).Assembly.FullName);
     });
+
+    if (builder.Environment.IsDevelopment())
+    {
+        options.LogTo(
+            Console.WriteLine,
+            new[] { Microsoft.EntityFrameworkCore.DbLoggerCategory.Database.Command.Name },
+            LogLevel.Information);
+    }
 });
 
 builder.Services.AddScoped<SoftDeleteInterceptor>();
@@ -51,6 +61,8 @@ builder.Services.AddOpenApi();
 // HttpContext / Current user
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<IRecipeRepository, CulinaryBlog.Infrastructure.Persistence.Repositories.RecipeRepository>();
+builder.Services.AddScoped<IUnitOfWork, CulinaryBlog.Infrastructure.Persistence.Repositories.UnitOfWork>();
 
 // Cache (build-safe fallback)
 builder.Services.AddDistributedMemoryCache();
@@ -83,6 +95,14 @@ builder.Services.AddScoped<IFileStorageService, MinioStorageService>();
 
 var app = builder.Build();
 
+if (app.Environment.IsDevelopment())
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<CulinaryBlogDbContext>();
+    await dbContext.Database.MigrateAsync();
+    await new CulinaryBlog.Infrastructure.Persistence.RecipeDataSeeder(dbContext).SeedAsync();
+}
+
 // =====================================================
 // Middleware
 // =====================================================
@@ -98,6 +118,7 @@ app.MapScalarApiReference();
 // Routes
 // =====================================================
 app.MapControllers();
+app.MapRecipeEndpoints();
 
 app.MapGet("/", () => Results.Redirect("/scalar"));
 

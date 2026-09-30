@@ -2,11 +2,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CulinaryBlog.Application\CulinaryBlog.Application.csproj" />
-  <PackageReference Include="AWSSDK.S3" />
   </ItemGroup>
 
   <ItemGroup>
-
+    <PackageReference Include="Bogus" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
@@ -17,7 +16,7 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
 
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
-  <PackageReference Include="AWSSDK.S3" />
+    <PackageReference Include="AWSSDK.S3" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -27,8 +26,3 @@
   </PropertyGroup>
 
 </Project>
-
-
-
-
-

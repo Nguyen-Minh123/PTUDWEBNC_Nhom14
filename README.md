@@ -54,9 +54,9 @@ Dự án phát triển hệ thống Full-Stack cho nền tảng Blog ẩm thực
 | | **FR-FTE-002** | Đồng bộ TypeScript Interfaces | ✅ Done |
 | | **FR-FTE-003** | Chuẩn hóa cú pháp sắp xếp (?sort=-field) | ✅ Done |
 | | **FR-FTE-004** | Thiết lập Validation Behavior | ✅ Done |
-| | **FR-DOM-007** | Định nghĩa UnsupportedSortFieldException (Lab 3) | ⏳ Todo |
-| | **FR-FTE-005** | Tích hợp giao diện Tìm kiếm & Comment (Lab 3) | ⏳ Todo |
-| | **FR-FTE-006** | Tích hợp DTO giảm tải dữ liệu (ProjectToType) (Lab 3) | ⏳ Todo |
+| | **FR-DOM-007** | Định nghĩa UnsupportedSortFieldException (Lab 3) | ✅ Done |
+| | **FR-FTE-005** | Tích hợp giao diện Tìm kiếm & Comment (Lab 3) | ✅ Done |
+| | **FR-FTE-006** | Tích hợp DTO giảm tải dữ liệu (ProjectToType) (Lab 3) | ✅ Done |
 ---
 
 ## ⚙️ Hướng dẫn Khởi chạy Hệ thống (Local Development)

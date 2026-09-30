@@ -1,92 +1,46 @@
-using CulinaryBlog.Application.Common.Caching;
 using CulinaryBlog.Application.Common.Interfaces;
-using CulinaryBlog.Domain.Entities;
 using MediatR;
-using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 
 namespace CulinaryBlog.Application.Recipes.Commands.DeleteRecipe;
 
-public sealed record DeleteRecipeCommand(Guid RecipeId) : IRequest<Unit>;
-
-public sealed class DeleteRecipeCommandHandler : IRequestHandler<DeleteRecipeCommand, Unit>
+/// <summary>
+/// Command handler dùng để xóa Recipe.
+/// 
+/// Vì hệ thống đang theo hướng Clean Architecture + EF Core abstraction,
+/// handler sẽ làm việc trực tiếp với IApplicationDbContext thay vì đi qua
+/// IUnitOfWork.Recipes.
+/// </summary>
+public sealed class DeleteRecipeCommandHandler
+    : IRequestHandler<DeleteRecipeCommand, Unit>
 {
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly ICurrentUserService _currentUserService;
-    private readonly ICacheService _cacheService;
-    private readonly IBackgroundJobQueue _backgroundJobQueue;
-    private readonly ILogger<DeleteRecipeCommandHandler> _logger;
+    private readonly IApplicationDbContext _dbContext;
 
-    public DeleteRecipeCommandHandler(
-        IUnitOfWork unitOfWork,
-        ICurrentUserService currentUserService,
-        ICacheService cacheService,
-        IBackgroundJobQueue backgroundJobQueue,
-        ILogger<DeleteRecipeCommandHandler> logger)
+    public DeleteRecipeCommandHandler(IApplicationDbContext dbContext)
     {
-        _unitOfWork = unitOfWork;
-        _currentUserService = currentUserService;
-        _cacheService = cacheService;
-        _backgroundJobQueue = backgroundJobQueue;
-        _logger = logger;
+        _dbContext = dbContext;
     }
 
-    public async Task<Unit> Handle(DeleteRecipeCommand request, CancellationToken cancellationToken)
+    public async Task<Unit> Handle(
+        DeleteRecipeCommand request,
+        CancellationToken cancellationToken)
     {
-        var recipe = await _unitOfWork.Recipes.GetByIdWithDetailsAsync(
-            request.RecipeId,
-            cancellationToken);
+        // Tìm recipe theo Id.
+        var recipe = await _dbContext.Recipes
+            .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
 
         if (recipe is null)
         {
-            throw new KeyNotFoundException($"Recipe '{request.RecipeId}' was not found.");
+            throw new InvalidOperationException($"Recipe with Id '{request.Id}' was not found.");
         }
 
-        if (!CanDelete(recipe))
-        {
-            throw new UnauthorizedAccessException("You do not have permission to delete this recipe.");
-        }
+        // Nếu hệ thống có SoftDeleteInterceptor, Remove() sẽ được interceptor
+        // chuyển thành soft delete thay vì xóa vật lý.
+        _dbContext.Recipes.Remove(recipe);
 
-        var imageUrls = recipe.Images
-            .Select(x => x.OriginalUrl)
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-
-        _unitOfWork.Recipes.Remove(recipe);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        foreach (var imageUrl in imageUrls)
-        {
-            _backgroundJobQueue.EnqueueDeleteFile(imageUrl);
-        }
-
-        await _cacheService.RemoveByPrefixAsync(CacheKeys.RecipesInvalidatePrefix, cancellationToken);
-        await _cacheService.RemoveByPrefixAsync(CacheKeys.SearchInvalidatePrefix, cancellationToken);
-
-        if (!string.IsNullOrWhiteSpace(recipe.Slug))
-        {
-            await _cacheService.RemoveAsync(CacheKeys.RecipeBySlug(recipe.Slug), cancellationToken);
-        }
-
-        await _cacheService.RemoveAsync(CacheKeys.RecipeById(recipe.Id), cancellationToken);
-
-        _logger.LogInformation(
-            "Recipe deleted. RecipeId={RecipeId}, Slug={Slug}, ImageCount={ImageCount}",
-            recipe.Id,
-            recipe.Slug,
-            imageUrls.Length);
+        // Lưu thay đổi xuống database.
+        await _dbContext.SaveChangesAsync(cancellationToken);
 
         return Unit.Value;
-    }
-
-    private bool CanDelete(Recipe recipe)
-    {
-        if (_currentUserService.IsInRole("Admin"))
-        {
-            return true;
-        }
-
-        return !string.IsNullOrWhiteSpace(_currentUserService.UserId)
-               && string.Equals(recipe.AuthorId, _currentUserService.UserId, StringComparison.Ordinal);
     }
 }

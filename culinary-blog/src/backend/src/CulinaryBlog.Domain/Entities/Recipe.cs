@@ -97,9 +97,14 @@ public class Recipe : BaseEntity
     [MaxLength(450)]
     public string AuthorId { get; private set; } = string.Empty;
 
+    public Category? Category { get; private set; }
+    public ApplicationUser? Author { get; private set; }
+
     public DateTimeOffset? PublishedAt { get; private set; }
 
     public RecipeNutrition Nutrition { get; private set; } = new();
+
+    public NpgsqlTypes.NpgsqlTsVector? SearchVector { get; private set; }
 
     public IReadOnlyCollection<RecipeStep> Steps => _steps.AsReadOnly();
 
@@ -192,7 +197,7 @@ public class Recipe : BaseEntity
 
         if (_steps.Any(x => x.StepNumber == step.StepNumber))
         {
-            throw new InvalidOperationException($"StepNumber '{step.StepNumber}' already exists for this recipe.");
+            throw new CulinaryBlog.Domain.Common.DuplicateStepNumberException(step.StepNumber);
         }
 
         _steps.Add(step);

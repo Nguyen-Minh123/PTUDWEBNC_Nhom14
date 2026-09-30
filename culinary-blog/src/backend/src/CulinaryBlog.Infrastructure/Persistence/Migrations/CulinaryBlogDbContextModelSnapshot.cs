@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
+using NpgsqlTypes;
 
 #nullable disable
 
@@ -217,6 +218,11 @@ namespace CulinaryBlog.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("bytea");
 
+                    b.Property<NpgsqlTsVector>("SearchVector")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("tsvector")
+                        .HasComputedColumnSql("to_tsvector('simple', unaccent(coalesce(\"Title\", '')) || ' ' || unaccent(coalesce(\"Description\", '')) || ' ' || unaccent(coalesce(\"Instructions\", '')))", true);
+
                     b.Property<int>("Servings")
                         .HasColumnType("integer");
 
@@ -247,6 +253,10 @@ namespace CulinaryBlog.Infrastructure.Persistence.Migrations
                     b.HasIndex("Difficulty");
 
                     b.HasIndex("PublishedAt");
+
+                    b.HasIndex("SearchVector");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SearchVector"), "GIN");
 
                     b.HasIndex("Slug")
                         .IsUnique();
@@ -433,9 +443,6 @@ namespace CulinaryBlog.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -447,6 +454,11 @@ namespace CulinaryBlog.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("ReplacedByTokenHash")
                         .HasColumnType("text");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("TokenHash")
                         .IsRequired()
@@ -463,7 +475,7 @@ namespace CulinaryBlog.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens");
+                    b.ToTable("RefreshTokens", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<string>", b =>
@@ -600,13 +612,13 @@ namespace CulinaryBlog.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("CulinaryBlog.Domain.Entities.Recipe", b =>
                 {
-                    b.HasOne("CulinaryBlog.Domain.Entities.ApplicationUser", null)
+                    b.HasOne("CulinaryBlog.Domain.Entities.ApplicationUser", "Author")
                         .WithMany()
                         .HasForeignKey("AuthorId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("CulinaryBlog.Domain.Entities.Category", null)
+                    b.HasOne("CulinaryBlog.Domain.Entities.Category", "Category")
                         .WithMany("Recipes")
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -649,11 +661,15 @@ namespace CulinaryBlog.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("RecipeId");
 
-                            b1.ToTable("Recipes");
+                            b1.ToTable("Recipes", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("RecipeId");
                         });
+
+                    b.Navigation("Author");
+
+                    b.Navigation("Category");
 
                     b.Navigation("Nutrition")
                         .IsRequired();
