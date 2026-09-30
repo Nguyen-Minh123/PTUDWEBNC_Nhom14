@@ -23,6 +23,8 @@ public class GlobalExceptionHandler : IExceptionHandler
 
         var (statusCode, title) = exception switch
         {
+            UserNotFoundException => (StatusCodes.Status404NotFound, "User Not Found"),
+            InvalidCredentialsException => (StatusCodes.Status401Unauthorized, "Invalid Credentials"),
             DomainException => (StatusCodes.Status400BadRequest, "Domain Rule Violation"),
             _ => (StatusCodes.Status500InternalServerError, "Server Error")
         };
