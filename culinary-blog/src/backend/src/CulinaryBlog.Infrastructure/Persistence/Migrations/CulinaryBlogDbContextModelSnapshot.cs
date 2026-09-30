@@ -475,7 +475,7 @@ namespace CulinaryBlog.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens");
+                    b.ToTable("RefreshTokens", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<string>", b =>
@@ -661,7 +661,7 @@ namespace CulinaryBlog.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("RecipeId");
 
-                            b1.ToTable("Recipes");
+                            b1.ToTable("Recipes", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("RecipeId");

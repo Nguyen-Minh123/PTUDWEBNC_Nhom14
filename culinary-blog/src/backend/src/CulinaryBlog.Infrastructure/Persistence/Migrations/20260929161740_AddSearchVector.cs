@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using NpgsqlTypes;
 
@@ -12,6 +12,9 @@ namespace CulinaryBlog.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AlterDatabase()
+                .Annotation("Npgsql:PostgresExtension:unaccent", ",,");
+
             migrationBuilder.DropColumn(
                 name: "CreatedAt",
                 table: "RefreshTokens");

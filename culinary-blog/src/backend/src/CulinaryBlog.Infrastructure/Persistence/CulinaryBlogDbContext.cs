@@ -22,6 +22,7 @@ public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, Identity
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.HasPostgresExtension("unaccent");
         modelBuilder.Entity<RefreshToken>(entity =>
         {
             entity.HasKey(rt => rt.Id);
