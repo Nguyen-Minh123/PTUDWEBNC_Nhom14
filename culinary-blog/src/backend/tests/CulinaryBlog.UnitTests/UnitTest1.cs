@@ -47,6 +47,14 @@ public class RecipeDomainTests
     }
 
     [Fact]
+    public void Duplicate_step_number_exception_contains_conflicting_step_number()
+    {
+        var exception = new DuplicateStepNumberException(2);
+
+        Assert.Equal(2, exception.StepNumber);
+    }
+
+    [Fact]
     public void Insert_and_remove_step_keep_step_numbers_contiguous()
     {
         var recipe = new Recipe("Pho");
