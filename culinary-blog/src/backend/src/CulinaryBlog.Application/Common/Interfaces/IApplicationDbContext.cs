@@ -13,6 +13,7 @@ namespace CulinaryBlog.Application.Common.Interfaces;
 /// </summary>
 public interface IApplicationDbContext
 {
+    DbSet<RefreshToken> RefreshTokens { get; }
     /// <summary>
     /// Tập hợp Category để truy vấn và thao tác dữ liệu.
     /// </summary>
