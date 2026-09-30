@@ -1,3 +1,5 @@
+using CulinaryBlog.Domain.Common;
+
 namespace CulinaryBlog.Domain.Entities;
 
 public class Recipe : BaseEntity
@@ -76,6 +78,11 @@ public class Recipe : BaseEntity
 
     public void Publish()
     {
+        if (IsPublished)
+        {
+            throw new RecipeAlreadyPublishedException();
+        }
+
         if (_ingredients.Count == 0)
         {
             throw new InvalidOperationException("A recipe must have at least one ingredient before publishing.");
