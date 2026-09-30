@@ -23,6 +23,7 @@ builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<CulinaryBlog.API.Infrastructure.GlobalExceptionHandler>();
 
 builder.Services.AddCors(options =>
 {
