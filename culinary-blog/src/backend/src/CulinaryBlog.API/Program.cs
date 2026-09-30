@@ -2,6 +2,7 @@ using CulinaryBlog.API.Endpoints;
 using Amazon.S3;
 using CulinaryBlog.Application.Common.Caching;
 using CulinaryBlog.Application.Common.Interfaces;
+using CulinaryBlog.Application.Features.Recipes.Commands;
 using CulinaryBlog.Infrastructure.Caching;
 using CulinaryBlog.Infrastructure.Persistence;
 using CulinaryBlog.Infrastructure.Persistence.Interceptors;
@@ -21,6 +22,8 @@ builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
 // Services
 // =====================================================
 builder.Services.AddControllers();
+builder.Services.AddMediatR(configuration =>
+    configuration.RegisterServicesFromAssembly(typeof(CreateRecipeCommand).Assembly));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<CulinaryBlog.API.Infrastructure.GlobalExceptionHandler>();

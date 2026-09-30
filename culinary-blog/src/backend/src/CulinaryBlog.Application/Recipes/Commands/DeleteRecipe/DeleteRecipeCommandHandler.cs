@@ -1,46 +1,38 @@
 using CulinaryBlog.Application.Common.Interfaces;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace CulinaryBlog.Application.Recipes.Commands.DeleteRecipe;
 
 /// <summary>
 /// Command handler dùng để xóa Recipe.
 /// 
-/// Vì hệ thống đang theo hướng Clean Architecture + EF Core abstraction,
-/// handler sẽ làm việc trực tiếp với IApplicationDbContext thay vì đi qua
-/// IUnitOfWork.Recipes.
+/// Xóa mềm Recipe thông qua repository và Unit of Work.
 /// </summary>
 public sealed class DeleteRecipeCommandHandler
-    : IRequestHandler<DeleteRecipeCommand, Unit>
+    : IRequestHandler<DeleteRecipeCommand, bool>
 {
-    private readonly IApplicationDbContext _dbContext;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public DeleteRecipeCommandHandler(IApplicationDbContext dbContext)
+    public DeleteRecipeCommandHandler(IUnitOfWork unitOfWork)
     {
-        _dbContext = dbContext;
+        _unitOfWork = unitOfWork;
     }
 
-    public async Task<Unit> Handle(
+    public async Task<bool> Handle(
         DeleteRecipeCommand request,
         CancellationToken cancellationToken)
     {
-        // Tìm recipe theo Id.
-        var recipe = await _dbContext.Recipes
-            .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
-
+        var recipe = await _unitOfWork.Recipes.GetByIdAsync(request.Id, cancellationToken);
         if (recipe is null)
         {
-            throw new InvalidOperationException($"Recipe with Id '{request.Id}' was not found.");
+            return false;
         }
 
-        // Nếu hệ thống có SoftDeleteInterceptor, Remove() sẽ được interceptor
-        // chuyển thành soft delete thay vì xóa vật lý.
-        _dbContext.Recipes.Remove(recipe);
+        recipe.IsDeleted = true;
+        recipe.UpdatedAt = DateTimeOffset.UtcNow;
+        _unitOfWork.Recipes.Update(recipe);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // Lưu thay đổi xuống database.
-        await _dbContext.SaveChangesAsync(cancellationToken);
-
-        return Unit.Value;
+        return true;
     }
 }

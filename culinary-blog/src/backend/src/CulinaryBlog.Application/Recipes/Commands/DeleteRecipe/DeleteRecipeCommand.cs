@@ -11,4 +11,4 @@ namespace CulinaryBlog.Application.Recipes.Commands.DeleteRecipe;
 /// - Được handler xử lý trong tầng Application
 /// </summary>
 /// <param name="Id">Id của Recipe cần xóa.</param>
-public sealed record DeleteRecipeCommand(Guid Id) : IRequest<Unit>;
+public sealed record DeleteRecipeCommand(Guid Id) : IRequest<bool>;

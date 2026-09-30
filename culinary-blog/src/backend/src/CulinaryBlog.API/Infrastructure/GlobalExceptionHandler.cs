@@ -1,4 +1,5 @@
 using CulinaryBlog.Domain.Exceptions;
+using CulinaryBlog.Domain.Common;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
@@ -25,6 +26,8 @@ public class GlobalExceptionHandler : IExceptionHandler
         {
             UserNotFoundException => (StatusCodes.Status404NotFound, "User Not Found"),
             InvalidCredentialsException => (StatusCodes.Status401Unauthorized, "Invalid Credentials"),
+            RecipeAlreadyPublishedException => (StatusCodes.Status409Conflict, "Recipe Already Published"),
+            RecipeSlugConflictException => (StatusCodes.Status409Conflict, "Recipe Slug Conflict"),
             DomainException => (StatusCodes.Status400BadRequest, "Domain Rule Violation"),
             _ => (StatusCodes.Status500InternalServerError, "Server Error")
         };
