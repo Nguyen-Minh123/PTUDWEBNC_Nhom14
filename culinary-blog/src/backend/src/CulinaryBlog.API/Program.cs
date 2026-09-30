@@ -15,6 +15,14 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
+    await using var scope = app.Services.CreateAsyncScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<CulinaryBlogDbContext>();
+    await dbContext.Database.MigrateAsync();
+    await new RecipeDataSeeder(dbContext).SeedAsync();
+}
+
+if (app.Environment.IsDevelopment())
+{
     app.MapOpenApi();
     app.MapScalarApiReference(); // Chỉ giữ đúng 1 dòng này!
     

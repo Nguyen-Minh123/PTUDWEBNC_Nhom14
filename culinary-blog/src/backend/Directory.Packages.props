@@ -1,5 +1,6 @@
 <Project>
 <ItemGroup>
+    <PackageVersion Include="Bogus" Version="35.6.3" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.0" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="11.9.0" />
