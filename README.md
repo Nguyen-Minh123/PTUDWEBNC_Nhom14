@@ -27,29 +27,30 @@ Dự án phát triển hệ thống Full-Stack cho nền tảng Blog ẩm thực
 | | **FR-BKE-002** | Thiết lập CQRS/MediatR cho Category và Recipe | ✅ Done |
 | | **FR-SEC-001** | Chuẩn hóa mã hóa Refresh Token SHA-256 | ✅ Done |
 | | **FR-SEC-002** | Thiết lập Token Rotation | ✅ Done |
-| | **FR-DOM-001** | Định nghĩa UserNotFoundException (Lab 3) | ⏳ Todo |
-| | **FR-DOM-002** | Định nghĩa InvalidCredentialsException (Lab 3) | ⏳ Todo |
-| | **FR-BKE-003** | Hiện thực API Tìm kiếm nâng cao (Full-Text Search) (Lab 3) | ⏳ Todo |
-| | **FR-BKE-004** | Tối ưu truy vấn API Chi tiết (AsSplitQuery & Eager Loading) (Lab 3) | ⏳ Todo |
+| | **FR-DOM-001** | Định nghĩa UserNotFoundException (Lab 3) | ✅ Done|
+| | **FR-DOM-002** | Định nghĩa InvalidCredentialsException (Lab 3) | ✅ Done |
+| | **FR-BKE-003** | Hiện thực API Tìm kiếm nâng cao (Full-Text Search) (Lab 3) | ✅ Done |
+| | **FR-BKE-004** | Tối ưu truy vấn API Chi tiết (AsSplitQuery & Eager Loading) (Lab 3) | ✅ Done|
+| | **FR-BKE-005** | Cài đặt Global Exception Middleware & Problem Details (Lab 3) | ✅ Done|
 | **Nguyễn Thế Khải**<br>*(Database & Infra)* | **FR-DB-001** | Khởi tạo EF Core Migrations | ✅ Done |
 | | **FR-DB-002** | Định nghĩa BaseEntity, ApplicationUser | ✅ Done |
 | | **FR-DB-003** | Cấu hình PostgreSQL 16 trên Docker | ✅ Done |
 | | **FR-INF-001** | Xây dựng Soft Delete Interceptor | ✅ Done |
 | | **FR-INF-002** | Tích hợp MinIO Async File Deletion | ✅ Done |
-| | **FR-DOM-003** | Định nghĩa CategoryNotFoundException (Lab 3) | ⏳ Todo |
-| | **FR-DB-004** | Khởi tạo cấu trúc SearchVector & GIN Index (Lab 3) | ⏳ Todo |
-| | **FR-DB-005** | Mở rộng Full-Text Search cho trường Instructions (Lab 3) | ⏳ Todo |
-| | **FR-DB-006** | Phân tích hiệu năng truy vấn bằng EXPLAIN ANALYZE (Lab 3) | ⏳ Todo |
+| | **FR-DOM-003** | Định nghĩa CategoryNotFoundException (Lab 3) | ✅ Done |
+| | **FR-DB-004** | Khởi tạo cấu trúc SearchVector & GIN Index (Lab 3) | ✅ Done |
+| | **FR-DB-005** | Mở rộng Full-Text Search cho trường Instructions (Lab 3) | ✅ Done |
+| | **FR-DB-006** | Phân tích hiệu năng truy vấn bằng EXPLAIN ANALYZE (Lab 3) | ✅ Done |
 | **Phan Thành Huy**<br>*(DevOps & Testing)* | **FR-DVO-001** | Cấu hình docker-compose.yml tổng hợp (Nginx, Postgres, Redis, MinIO) | ✅ Done |
 | | **FR-DVO-002** | Cấu hình 6 chỉ số dinh dưỡng | ✅ Done |
 | | **FR-TST-001** | Kiểm thử API nâng cao | ✅ Done |
 | | **FR-TST-002** | Hiện thực hóa Domain Rules xuất bản công thức | ✅ Done |
 | | **FR-DOM-004** | Định nghĩa RecipeNotFoundException (Lab 3) | ✅ Done |
-| | **FR-DOM-005** | Định nghĩa RecipeAlreadyPublishedException (Lab 3) | ⏳ Todo |
-| | **FR-DOM-006** | Định nghĩa DuplicateStepNumberException (Lab 3) | ⏳ Todo |
-| | **FR-TST-003** | Mở rộng Seeding Dữ liệu thực tế bằng Bogus (Lab 3) | ⏳ Todo |
-| | **FR-TST-004** | Kiểm thử thuật toán unaccent cho Full-Text Search (Lab 3) | ⏳ Todo |
-| | **FR-TST-005** | Bật SQL Logging & Đo lường hiệu năng AsNoTracking (Lab 3) | ⏳ Todo |
+| | **FR-DOM-005** | Định nghĩa RecipeAlreadyPublishedException (Lab 3) | ✅ Done |
+| | **FR-DOM-006** | Định nghĩa DuplicateStepNumberException (Lab 3) | ✅ Done |
+| | **FR-TST-003** | Mở rộng Seeding Dữ liệu thực tế bằng Bogus (Lab 3) | ✅ Done |
+| | **FR-TST-004** | Kiểm thử thuật toán unaccent cho Full-Text Search (Lab 3) | ✅ Done |
+| | **FR-TST-005** | Bật SQL Logging & Đo lường hiệu năng AsNoTracking (Lab 3) | ✅ Done |
 | **Bùi Trung Hiếu**<br>*(Frontend Next.js)* | **FR-FTE-001** | Dựng Frontend Skeleton (Next.js 15 App Router + Tailwind CSS) | ✅ Done |
 | | **FR-FTE-002** | Đồng bộ TypeScript Interfaces | ✅ Done |
 | | **FR-FTE-003** | Chuẩn hóa cú pháp sắp xếp (?sort=-field) | ✅ Done |
