@@ -30,7 +30,7 @@ public static class RecipeEndpoints
         .WithSummary("Tìm kiếm công thức nấu ăn bằng Full-Text Search")
         .AllowAnonymous();
 
-        group.MapGet("/{slug}", async (string slug, ISender sender, CancellationToken ct) =>
+        group.MapGet("/{slug}", async (string slug, [FromServices] ISender sender, CancellationToken ct) =>
         {
             var result = await sender.Send(new GetRecipeBySlugQuery(slug), ct);
             return result is not null ? Results.Ok(result) : Results.NotFound();
