@@ -14,7 +14,7 @@ public static class RecipeEndpoints
             .WithOpenApi();
 
         group.MapGet("/search", async (
-            ISender sender,
+            [FromServices] ISender sender,
             [FromQuery] string q,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
