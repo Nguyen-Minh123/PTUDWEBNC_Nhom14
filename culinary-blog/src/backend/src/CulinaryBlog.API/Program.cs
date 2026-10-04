@@ -69,6 +69,7 @@ builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
 builder.Services.AddScoped<SoftDeleteInterceptor>();
 
 builder.Services.AddOpenApi();
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<CulinaryBlog.Application.Features.Recipes.Commands.CreateRecipeCommand>());
 
 // HttpContext / Current user
 builder.Services.AddHttpContextAccessor();
