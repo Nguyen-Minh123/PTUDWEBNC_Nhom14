@@ -10,5 +10,5 @@ public abstract class BaseEntity
     
     public bool IsDeleted { get; set; } = false;
     
-    public byte[] RowVersion { get; set; } = null!;
+    public uint RowVersion { get; set; }
 }

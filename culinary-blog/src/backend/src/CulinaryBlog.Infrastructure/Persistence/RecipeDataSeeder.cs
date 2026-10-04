@@ -111,8 +111,10 @@ public sealed class RecipeDataSeeder(CulinaryBlogDbContext dbContext)
             recipe.AddIngredient(ingredient);
         }
 
-        var instructions = faker.Random.ArrayElements(CookingInstructions, faker.Random.Int(3, 8));
-        var stepCount = 1;
+        var instructions = faker.Random.ArrayElements(
+            CookingInstructions,
+            faker.Random.Int(3, CookingInstructions.Length));
+    var stepCount = 1;
         foreach (var instruction in instructions)
         {
             var step = new RecipeStep(recipe.Id, stepCount, "Step " + stepCount, instruction); stepCount++;
