@@ -129,6 +129,8 @@ app.MapScalarApiReference();
 app.MapRecipeIngredientsEndpoints();
 // Thực hiện API Quản lý Bước thực hiện
 app.MapRecipeStepsEndpoints();
+// Thực hiện API Upload và Quản lý Hình ảnh
+app.MapRecipeImagesEndpoints();
 
 // =====================================================
 // Routes
