@@ -42,7 +42,7 @@ public static class CategoryEndpoints
         })
         .WithName("CreateCategory")
         .WithSummary("Tạo danh mục mới (Admin)")
-        .RequireAuthorization(); // Requires Admin role typically, handled in next tasks
+        .RequireAuthorization("AdminOnly");
 
         group.MapPut("/{id:guid}", async (Guid id, [FromServices] ISender sender, [FromBody] UpdateCategoryRequest request, CancellationToken ct) =>
         {
@@ -52,7 +52,7 @@ public static class CategoryEndpoints
         })
         .WithName("UpdateCategory")
         .WithSummary("Cập nhật danh mục (Admin)")
-        .RequireAuthorization();
+        .RequireAuthorization("AdminOnly");
 
         group.MapDelete("/{id:guid}", async (Guid id, [FromServices] ISender sender, CancellationToken ct) =>
         {
@@ -61,7 +61,7 @@ public static class CategoryEndpoints
         })
         .WithName("DeleteCategory")
         .WithSummary("Xóa danh mục (Admin)")
-        .RequireAuthorization();
+        .RequireAuthorization("AdminOnly");
 
         return app;
     }

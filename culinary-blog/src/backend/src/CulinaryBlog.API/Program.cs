@@ -27,7 +27,11 @@ builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddProblemDetails();
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("UserOrAdmin", policy => policy.RequireRole("User", "Admin"));
+});
 
 var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "super-secret-key-that-is-very-long-for-hmac-sha256-1234567890";
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
