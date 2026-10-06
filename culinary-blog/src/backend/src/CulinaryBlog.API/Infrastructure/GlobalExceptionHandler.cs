@@ -25,6 +25,8 @@ public class GlobalExceptionHandler : IExceptionHandler
         {
             UserNotFoundException => (StatusCodes.Status404NotFound, "User Not Found"),
             InvalidCredentialsException => (StatusCodes.Status401Unauthorized, "Invalid Credentials"),
+            ForbiddenAccessException => (StatusCodes.Status403Forbidden, "Forbidden"),
+            CategoryNotFoundException => (StatusCodes.Status404NotFound, "Category Not Found"),
             DomainException => (StatusCodes.Status400BadRequest, "Domain Rule Violation"),
             _ => (StatusCodes.Status500InternalServerError, "Server Error")
         };

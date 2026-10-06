@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using CulinaryBlog.API.Endpoints;
 using Amazon.S3;
 using CulinaryBlog.Application.Common.Caching;
@@ -20,9 +23,30 @@ builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
 // =====================================================
 // Services
 // =====================================================
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddProblemDetails();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("UserOrAdmin", policy => policy.RequireRole("User", "Admin"));
+});
+
+var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "super-secret-key-that-is-very-long-for-hmac-sha256-1234567890";
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+            ValidateIssuer = false, // Simplified for lab
+            ValidateAudience = false,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+
 builder.Services.AddExceptionHandler<CulinaryBlog.API.Infrastructure.GlobalExceptionHandler>();
 
 builder.Services.AddCors(options =>
@@ -61,6 +85,8 @@ builder.Services.AddOpenApi();
 // HttpContext / Current user
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
 builder.Services.AddScoped<IRecipeRepository, CulinaryBlog.Infrastructure.Persistence.Repositories.RecipeRepository>();
 builder.Services.AddScoped<IUnitOfWork, CulinaryBlog.Infrastructure.Persistence.Repositories.UnitOfWork>();
 
@@ -110,6 +136,8 @@ app.UseExceptionHandler();
 app.UseHttpsRedirection();
 app.UseCors("DefaultCors");
 
+app.UseAuthorization();
+
 // OpenAPI / Scalar
 app.MapOpenApi();
 app.MapScalarApiReference();
@@ -119,6 +147,9 @@ app.MapScalarApiReference();
 // =====================================================
 app.MapControllers();
 app.MapRecipeEndpoints();
+app.MapCategoryEndpoints();
+app.MapAuthEndpoints();
+app.MapUserEndpoints();
 
 app.MapGet("/", () => Results.Redirect("/scalar"));
 

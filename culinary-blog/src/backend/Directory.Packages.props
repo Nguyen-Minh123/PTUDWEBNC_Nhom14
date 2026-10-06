@@ -2,6 +2,7 @@
   <ItemGroup>
     <PackageVersion Include="Bogus" Version="35.6.3" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.103.3" />
+    <PackageVersion Include="Google.Apis.Auth" Version="1.77.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.12" />
     <PackageVersion Include="Npgsql" Version="9.0.0" />
