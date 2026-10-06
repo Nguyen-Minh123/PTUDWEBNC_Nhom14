@@ -23,6 +23,7 @@ builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddProblemDetails();
+builder.Services.AddAuthorization();
 builder.Services.AddExceptionHandler<CulinaryBlog.API.Infrastructure.GlobalExceptionHandler>();
 
 builder.Services.AddCors(options =>
@@ -110,6 +111,8 @@ app.UseExceptionHandler();
 app.UseHttpsRedirection();
 app.UseCors("DefaultCors");
 
+app.UseAuthorization();
+
 // OpenAPI / Scalar
 app.MapOpenApi();
 app.MapScalarApiReference();
@@ -119,6 +122,8 @@ app.MapScalarApiReference();
 // =====================================================
 app.MapControllers();
 app.MapRecipeEndpoints();
+app.MapAuthEndpoints();
+app.MapUserEndpoints();
 
 app.MapGet("/", () => Results.Redirect("/scalar"));
 
