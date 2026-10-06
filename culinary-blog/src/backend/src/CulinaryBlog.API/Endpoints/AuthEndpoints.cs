@@ -15,6 +15,22 @@ public static class AuthEndpoints
             .WithTags("Auth")
             .WithOpenApi();
 
+        group.MapPost("/google-login", async (
+            [FromServices] ISender sender,
+            [FromBody] GoogleLoginRequest request,
+            CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.IdToken))
+            {
+                return Results.BadRequest("IdToken is required.");
+            }
+
+            var result = await sender.Send(new CulinaryBlog.Application.Features.Auth.Commands.GoogleLogin.GoogleLoginCommand(request.IdToken), ct);
+            return Results.Ok(result);
+        })
+        .WithName("GoogleLogin")
+        .WithSummary("Đăng nhập bằng Google (Social Login)");
+
         group.MapPost("/logout", async (
             [FromServices] ISender sender,
             [FromBody] LogoutRequest request,
@@ -39,4 +55,9 @@ public static class AuthEndpoints
 public class LogoutRequest
 {
     public string RefreshToken { get; set; } = string.Empty;
+}
+
+public class GoogleLoginRequest
+{
+    public string IdToken { get; set; } = string.Empty;
 }
