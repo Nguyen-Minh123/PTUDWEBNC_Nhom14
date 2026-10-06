@@ -122,6 +122,7 @@ app.MapScalarApiReference();
 // =====================================================
 app.MapControllers();
 app.MapRecipeEndpoints();
+app.MapCategoryEndpoints();
 app.MapAuthEndpoints();
 app.MapUserEndpoints();
 
