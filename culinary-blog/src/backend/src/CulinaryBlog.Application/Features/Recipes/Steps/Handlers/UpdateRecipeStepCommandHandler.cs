@@ -1,4 +1,5 @@
 using CulinaryBlog.Application.Common.Interfaces;
+using CulinaryBlog.Application.Common.Security;
 using CulinaryBlog.Application.Features.Recipes.Steps.Commands;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -6,8 +7,8 @@ using Microsoft.EntityFrameworkCore;
 namespace CulinaryBlog.Application.Features.Recipes.Steps.Handlers;
 
 /// <summary>
-/// Xử lý cập nhật nội dung bước.
-/// Không thay đổi StepNumber ở đây.
+/// Xử lý cập nhật nội dung bước thực hiện.
+/// StepNumber không được sửa ở đây để tránh lệch logic tự động đánh số.
 /// </summary>
 public sealed class UpdateRecipeStepCommandHandler
     : IRequestHandler<UpdateRecipeStepCommand, RecipeStepDto>
@@ -34,10 +35,11 @@ public sealed class UpdateRecipeStepCommandHandler
         if (recipe is null)
             throw new KeyNotFoundException("Recipe not found.");
 
-        if (!CanManageRecipe(recipe.AuthorId))
+        // Kiểm tra quyền owner/admin.
+        if (!CurrentUserAuthorization.CanManageRecipe(_currentUser, recipe.AuthorId))
             throw new UnauthorizedAccessException("You do not have permission to manage this recipe.");
 
-        // Tìm bước thuộc đúng recipe.
+        // Tìm đúng step thuộc recipe hiện tại.
         var step = await _db.RecipeSteps
             .FirstOrDefaultAsync(
                 x => x.Id == request.StepId && x.RecipeId == request.RecipeId,
@@ -66,8 +68,8 @@ public sealed class UpdateRecipeStepCommandHandler
             step.ImageUrl);
     }
 
-    private bool CanManageRecipe(string authorId)
-    {
-        return string.Equals(_currentUser.UserId, authorId, StringComparison.Ordinal);
-    }
+    // private bool CanManageRecipe(string authorId)
+    // {
+    //     return string.Equals(_currentUser.UserId, authorId, StringComparison.Ordinal);
+    // }
 }

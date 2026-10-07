@@ -74,6 +74,7 @@ public class Recipe : BaseEntity
     /// <summary>
     /// Concurrency token của Recipe.
     /// Với PostgreSQL/Npgsql, property kiểu uint này sẽ map tới xmin.
+    /// Ép kiểu dữ liệu từ byte[] thành uint cho recipe.RowVersion
     /// </summary>
     [Timestamp]
     public uint RowVersion { get; private set; }

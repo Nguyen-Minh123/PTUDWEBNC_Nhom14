@@ -1,5 +1,6 @@
 using CulinaryBlog.Application.Common.Exceptions;
 using CulinaryBlog.Application.Common.Interfaces;
+using CulinaryBlog.Application.Common.Security;
 using CulinaryBlog.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -40,7 +41,7 @@ public sealed class UpdateRecipeCommandHandler
             throw new ConcurrencyConflictException("Recipe was updated by another user. Please reload and try again.");
         }
 
-        if (!CanManageRecipe(recipe.AuthorId))
+        if (!CurrentUserAuthorization.CanManageRecipe(_currentUser, recipe.AuthorId))
             throw new UnauthorizedAccessException("You do not have permission to update this recipe.");
 
         recipe.UpdateDetails(
@@ -78,9 +79,9 @@ public sealed class UpdateRecipeCommandHandler
             recipe.RowVersion);
     }
 
-    private bool CanManageRecipe(string authorId)
-    {
-        // Nếu sau này ICurrentUserService có IsAdmin, chỉ cần mở rộng điều kiện tại đây.
-        return string.Equals(_currentUser.UserId, authorId, StringComparison.Ordinal);
-    }
+    // private bool CanManageRecipe(string authorId)
+    // {
+    //     // Nếu sau này ICurrentUserService có IsAdmin, chỉ cần mở rộng điều kiện tại đây.
+    //     return string.Equals(_currentUser.UserId, authorId, StringComparison.Ordinal);
+    // }
 }

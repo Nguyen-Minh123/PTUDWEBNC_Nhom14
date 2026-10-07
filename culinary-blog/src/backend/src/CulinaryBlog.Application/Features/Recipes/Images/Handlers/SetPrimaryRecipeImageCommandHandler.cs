@@ -1,4 +1,5 @@
 using CulinaryBlog.Application.Common.Interfaces;
+using CulinaryBlog.Application.Common.Security;
 using CulinaryBlog.Application.Features.Recipes.Images.Commands;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -33,7 +34,7 @@ public sealed class SetPrimaryRecipeImageCommandHandler
         if (recipe is null)
             throw new KeyNotFoundException("Recipe not found.");
 
-        if (!CanManageRecipe(recipe.AuthorId))
+        if (!CurrentUserAuthorization.CanManageRecipe(_currentUser, recipe.AuthorId))
             throw new UnauthorizedAccessException("You do not have permission to manage this recipe.");
 
         var image = await _db.RecipeImages

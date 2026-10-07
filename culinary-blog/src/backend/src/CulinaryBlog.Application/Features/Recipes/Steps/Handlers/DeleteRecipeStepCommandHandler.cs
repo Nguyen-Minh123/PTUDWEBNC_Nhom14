@@ -1,4 +1,5 @@
 using CulinaryBlog.Application.Common.Interfaces;
+using CulinaryBlog.Application.Common.Security;
 using CulinaryBlog.Application.Features.Recipes.Steps.Commands;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -33,7 +34,7 @@ public sealed class DeleteRecipeStepCommandHandler
         if (recipe is null)
             throw new KeyNotFoundException("Recipe not found.");
 
-        if (!CanManageRecipe(recipe.AuthorId))
+        if (!CurrentUserAuthorization.CanManageRecipe(_currentUser, recipe.AuthorId))
             throw new UnauthorizedAccessException("You do not have permission to manage this recipe.");
 
         // Tìm step cần xóa.
@@ -66,8 +67,8 @@ public sealed class DeleteRecipeStepCommandHandler
         return Unit.Value;
     }
 
-    private bool CanManageRecipe(string authorId)
-    {
-        return string.Equals(_currentUser.UserId, authorId, StringComparison.Ordinal);
-    }
+    // private bool CanManageRecipe(string authorId)
+    // {
+    //     return string.Equals(_currentUser.UserId, authorId, StringComparison.Ordinal);
+    // }
 }

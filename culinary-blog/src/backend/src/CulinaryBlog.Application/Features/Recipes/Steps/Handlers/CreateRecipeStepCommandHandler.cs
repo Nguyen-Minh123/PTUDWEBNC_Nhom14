@@ -1,4 +1,5 @@
 using CulinaryBlog.Application.Common.Interfaces;
+using CulinaryBlog.Application.Common.Security;
 using CulinaryBlog.Application.Features.Recipes.Steps.Commands;
 using CulinaryBlog.Domain.Entities;
 using MediatR;
@@ -34,7 +35,7 @@ public sealed class CreateRecipeStepCommandHandler
         if (recipe is null)
             throw new KeyNotFoundException("Recipe not found.");
 
-        if (!CanManageRecipe(recipe.AuthorId))
+        if (!CurrentUserAuthorization.CanManageRecipe(_currentUser, recipe.AuthorId))
             throw new UnauthorizedAccessException("You do not have permission to manage this recipe.");
 
         // Tính StepNumber tự động: nếu chưa có step nào thì bắt đầu từ 1.
@@ -68,10 +69,10 @@ public sealed class CreateRecipeStepCommandHandler
             step.ImageUrl);
     }
 
-    private bool CanManageRecipe(string authorId)
-    {
-        // Nếu về sau bạn thêm IsAdmin vào current user service,
-        // chỉ cần mở rộng logic tại đây.
-        return string.Equals(_currentUser.UserId, authorId, StringComparison.Ordinal);
-    }
+    // private bool CanManageRecipe(string authorId)
+    // {
+    //     // Nếu về sau bạn thêm IsAdmin vào current user service,
+    //     // chỉ cần mở rộng logic tại đây.
+    //     return string.Equals(_currentUser.UserId, authorId, StringComparison.Ordinal);
+    // }
 }

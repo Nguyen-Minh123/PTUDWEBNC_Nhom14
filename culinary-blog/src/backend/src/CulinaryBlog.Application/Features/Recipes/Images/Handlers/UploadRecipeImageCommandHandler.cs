@@ -1,4 +1,5 @@
 using CulinaryBlog.Application.Common.Interfaces;
+using CulinaryBlog.Application.Common.Security;
 using CulinaryBlog.Application.Features.Recipes.Images.Commands;
 using CulinaryBlog.Domain.Entities;
 using MediatR;
@@ -51,7 +52,7 @@ public sealed class UploadRecipeImageCommandHandler
         if (recipe is null)
             throw new KeyNotFoundException("Recipe not found.");
 
-        if (!CanManageRecipe(recipe.AuthorId))
+        if (!CurrentUserAuthorization.CanManageRecipe(_currentUser, recipe.AuthorId))
             throw new UnauthorizedAccessException("You do not have permission to manage this recipe.");
 
         // Validate MIME type theo SRS.
@@ -109,11 +110,11 @@ public sealed class UploadRecipeImageCommandHandler
             image.OrderIndex);
     }
 
-    private bool CanManageRecipe(string authorId)
-    {
-        // Nếu sau này interface có IsAdmin thì thêm điều kiện OR ở đây.
-        return string.Equals(_currentUser.UserId, authorId, StringComparison.Ordinal);
-    }
+    // private bool CanManageRecipe(string authorId)
+    // {
+    //     // Nếu sau này interface có IsAdmin thì thêm điều kiện OR ở đây.
+    //     return string.Equals(_currentUser.UserId, authorId, StringComparison.Ordinal);
+    // }
 
     private static async Task<bool> HasValidMagicBytesAsync(IFormFile file, CancellationToken cancellationToken)
     {

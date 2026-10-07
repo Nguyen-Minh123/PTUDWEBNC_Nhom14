@@ -1,4 +1,5 @@
 using CulinaryBlog.Application.Common.Interfaces;
+using CulinaryBlog.Application.Common.Security;
 using CulinaryBlog.Domain.Entities;
 using CulinaryBlog.Application.Features.Recipes.Ingredients.Commands;
 using MediatR;
@@ -6,6 +7,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CulinaryBlog.Application.Features.Recipes.Ingredients.Handlers;
 
+/// <summary>
+/// Xử lý tạo nguyên liệu cho recipe.
+/// </summary>
 public sealed class CreateRecipeIngredientCommandHandler
     : IRequestHandler<CreateRecipeIngredientCommand, RecipeIngredientDto>
 {
@@ -24,6 +28,7 @@ public sealed class CreateRecipeIngredientCommandHandler
         CreateRecipeIngredientCommand request,
         CancellationToken cancellationToken)
     {
+        // Lấy recipe để kiểm tra quyền quản lý.
         var recipe = await _db.Recipes
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == request.RecipeId, cancellationToken);
@@ -31,7 +36,7 @@ public sealed class CreateRecipeIngredientCommandHandler
         if (recipe is null)
             throw new KeyNotFoundException("Recipe not found.");
 
-        if (!CanManageRecipe(recipe.AuthorId))
+        if (!CurrentUserAuthorization.CanManageRecipe(_currentUser, recipe.AuthorId))
             throw new UnauthorizedAccessException("You do not have permission to manage this recipe.");
 
         var ingredient = new RecipeIngredient(
@@ -55,8 +60,8 @@ public sealed class CreateRecipeIngredientCommandHandler
             ingredient.OrderIndex);
     }
 
-    private bool CanManageRecipe(string authorId)
-    {
-        return string.Equals(_currentUser.UserId, authorId, StringComparison.Ordinal);
-    }
+    // private bool CanManageRecipe(string authorId)
+    // {
+    //     return string.Equals(_currentUser.UserId, authorId, StringComparison.Ordinal);
+    // }
 }
