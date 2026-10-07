@@ -28,18 +28,32 @@ public static class RecipeEndpoints
             [FromQuery] int pageSize = 10,
             CancellationToken ct = default) =>
         {
-            var pageNumber = page <= 0 ? 1 : page;
-            var pageSizeNumber = pageSize <= 0 ? 10 : Math.Min(pageSize, 100);
+            var validationErrors = ValidatePagination(page, pageSize);
 
             RecipeStatus? statusFilter = null;
-            if (!string.IsNullOrWhiteSpace(status) && Enum.TryParse<RecipeStatus>(status, true, out var parsedStatus))
+            if (!string.IsNullOrWhiteSpace(status))
             {
-                statusFilter = parsedStatus;
+                var statusValue = status.Trim();
+                if (Enum.TryParse<RecipeStatus>(statusValue, true, out var parsedStatus) &&
+                    Enum.IsDefined(parsedStatus) &&
+                    string.Equals(Enum.GetName(parsedStatus), statusValue, StringComparison.OrdinalIgnoreCase))
+                {
+                    statusFilter = parsedStatus;
+                }
+                else
+                {
+                    validationErrors["status"] = ["Status must be Draft, Published, or Archived."];
+                }
+            }
+
+            if (validationErrors.Count > 0)
+            {
+                return Results.ValidationProblem(validationErrors);
             }
 
             var recipes = await unitOfWork.Recipes.GetPagedAsync(
-                page: pageNumber,
-                pageSize: pageSizeNumber,
+                page: page,
+                pageSize: pageSize,
                 categoryId: categoryId,
                 status: statusFilter,
                 keyword: keyword,
@@ -52,10 +66,11 @@ public static class RecipeEndpoints
                 cancellationToken: ct);
 
             var items = recipes.Select(MapToSummaryDto).ToList();
-            return Results.Ok(new PaginatedResult<RecipeSummaryDto>(items, totalCount, pageNumber, pageSizeNumber));
+            return Results.Ok(new PaginatedResult<RecipeSummaryDto>(items, totalCount, page, pageSize));
         })
         .WithName("GetRecipes")
         .WithSummary("Lấy danh sách công thức có phân trang, lọc theo trạng thái và danh mục")
+        .ProducesValidationProblem()
         .AllowAnonymous();
 
         group.MapGet("/{id:guid}", async (
@@ -139,14 +154,24 @@ public static class RecipeEndpoints
             [FromQuery] int pageSize = 10,
             CancellationToken ct = default) =>
         {
+            var validationErrors = ValidatePagination(page, pageSize);
+
             if (string.IsNullOrWhiteSpace(q))
-                return Results.BadRequest("Vui lòng nhập từ khóa tìm kiếm.");
+            {
+                validationErrors["q"] = ["Vui lòng nhập từ khóa tìm kiếm."];
+            }
+
+            if (validationErrors.Count > 0)
+            {
+                return Results.ValidationProblem(validationErrors);
+            }
 
             var result = await sender.Send(new SearchRecipesQuery(q.Trim(), page, pageSize), ct);
             return Results.Ok(result);
         })
         .WithName("SearchRecipes")
         .WithSummary("Tìm kiếm công thức nấu ăn bằng Full-Text Search")
+        .ProducesValidationProblem()
         .AllowAnonymous();
 
         group.MapGet("/{slug}", async (string slug, [FromServices] ISender sender, CancellationToken ct) =>
@@ -159,6 +184,23 @@ public static class RecipeEndpoints
         .AllowAnonymous();
 
         return app;
+    }
+
+    private static Dictionary<string, string[]> ValidatePagination(int page, int pageSize)
+    {
+        var errors = new Dictionary<string, string[]>();
+
+        if (page < 1)
+        {
+            errors["page"] = ["Page must be greater than or equal to 1."];
+        }
+
+        if (pageSize is < 1 or > 100)
+        {
+            errors["pageSize"] = ["Page size must be between 1 and 100."];
+        }
+
+        return errors;
     }
 
     private static RecipeSummaryDto MapToSummaryDto(Recipe recipe) => new(

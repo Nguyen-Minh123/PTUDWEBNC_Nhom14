@@ -1,5 +1,6 @@
 using CulinaryBlog.Domain.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 
@@ -8,10 +9,14 @@ namespace CulinaryBlog.API.Infrastructure;
 public class GlobalExceptionHandler : IExceptionHandler
 {
     private readonly ILogger<GlobalExceptionHandler> _logger;
+    private readonly IProblemDetailsService _problemDetailsService;
 
-    public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
+    public GlobalExceptionHandler(
+        ILogger<GlobalExceptionHandler> logger,
+        IProblemDetailsService problemDetailsService)
     {
         _logger = logger;
+        _problemDetailsService = problemDetailsService;
     }
 
     public async ValueTask<bool> TryHandleAsync(
@@ -26,6 +31,7 @@ public class GlobalExceptionHandler : IExceptionHandler
             UserNotFoundException => (StatusCodes.Status404NotFound, "User Not Found"),
             InvalidCredentialsException => (StatusCodes.Status401Unauthorized, "Invalid Credentials"),
             DomainException => (StatusCodes.Status400BadRequest, "Domain Rule Violation"),
+            ArgumentException => (StatusCodes.Status400BadRequest, "Invalid Request"),
             _ => (StatusCodes.Status500InternalServerError, "Server Error")
         };
 
@@ -41,8 +47,11 @@ public class GlobalExceptionHandler : IExceptionHandler
         problemDetails.Extensions.Add("traceId", Activity.Current?.Id ?? httpContext.TraceIdentifier);
 
         httpContext.Response.StatusCode = statusCode;
-
-        await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
+        await _problemDetailsService.WriteAsync(new ProblemDetailsContext
+        {
+            HttpContext = httpContext,
+            ProblemDetails = problemDetails
+        });
 
         return true;
     }
