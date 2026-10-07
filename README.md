@@ -70,10 +70,10 @@ Dự án phát triển hệ thống Full-Stack cho nền tảng Blog ẩm thực
 | | **FR-DOM-007** | Định nghĩa UnsupportedSortFieldException (Lab 3) | ✅ Done |
 | | **FR-FTE-005** | Tích hợp giao diện Tìm kiếm & Comment (Lab 3) | ✅ Done |
 | | **FR-FTE-006** | Tích hợp DTO giảm tải dữ liệu (ProjectToType) (Lab 3) | ✅ Done |
-| | **FR-FTE-007** | Tích hợp `Auth.js v5` xử lý luồng Login, Logout & Bảo vệ Route (Lab 4) | ⏳ To Do |
-| | **FR-FTE-008** | Xây dựng Dashboard quản lý Profile và danh sách Recipe cá nhân (Lab 4) | ⏳ To Do |
-| | **FR-FTE-009** | Xây dựng Form tạo Recipe đa bước (React Hook Form + Zod) (Lab 4) | ⏳ To Do |
-| | **FR-FTE-010** | Tích hợp API Upload hình ảnh, thêm Bước thực hiện và Nguyên liệu (Lab 4) | ⏳ To Do |
+| | **FR-FTE-007** | Tích hợp `Auth.js v5` xử lý luồng Login, Logout & Bảo vệ Route (Lab 4) | ✅ Done |
+| | **FR-FTE-008** | Xây dựng Dashboard quản lý Profile và danh sách Recipe cá nhân (Lab 4) | ✅ Done |
+| | **FR-FTE-009** | Xây dựng Form tạo Recipe đa bước (React Hook Form + Zod) (Lab 4) | ✅ Done |
+| | **FR-FTE-010** | Tích hợp API Upload hình ảnh, thêm Bước thực hiện và Nguyên liệu (Lab 4) | ✅ Done |
 ---
 
 ## ⚙️ Hướng dẫn Khởi chạy Hệ thống (Local Development)

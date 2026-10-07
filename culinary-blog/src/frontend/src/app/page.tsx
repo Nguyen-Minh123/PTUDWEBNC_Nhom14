@@ -6,6 +6,7 @@ import { SearchBar } from '../components/search/SearchBar';
 import { FilterBar } from '../components/search/FilterBar';
 import { RecipeCard } from '../components/search/RecipeCard';
 import { RecipeDetailModal } from '../components/recipe/RecipeDetailModal';
+import { Navbar } from '../components/layout/Navbar';
 import { searchRecipes } from '../services/recipeService';
 import { RecipeSummaryDto } from '../types';
 
@@ -53,34 +54,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50/40 via-white to-gray-50 flex flex-col font-sans">
       {/* 1. Header Navigation Bar */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-amber-100 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🍲</span>
-            <div>
-              <span className="text-lg font-black bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
-                Culinary Blog
-              </span>
-              <span className="hidden sm:inline-block ml-2 px-2 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-800 rounded-full">
-                Nhóm 14 • Lab 3
-              </span>
-            </div>
-          </div>
-
-          <nav className="flex items-center gap-4 text-xs font-semibold text-gray-600">
-            <Link href="/recipes/new" className="text-amber-700 hover:text-amber-800 transition-colors">
-              Tạo công thức
-            </Link>
-            <a href="#search-section" className="text-amber-600 hover:text-amber-700 transition-colors">
-              Tìm Kiếm Món Ăn
-            </a>
-            <span className="text-gray-300">|</span>
-            <span className="text-gray-500 font-normal">
-              Thành viên: <strong className="text-gray-800">Bùi Trung Hiếu</strong>
-            </span>
-          </nav>
-        </div>
-      </header>
+      <Navbar />
 
       {/* 2. Hero Section */}
       <section className="relative py-12 sm:py-16 px-4 sm:px-6 lg:px-8 text-center max-w-4xl mx-auto">
