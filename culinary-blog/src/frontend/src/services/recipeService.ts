@@ -62,7 +62,7 @@ export const INITIAL_RECIPES: RecipeSummaryDto[] = [
     categoryName: 'Món Cơm & Xôi',
     authorId: 'chef-03',
     authorName: 'Bếp Nhà Sài Gòn',
-    coverImageUrl: 'https://images.unsplash.com/photo-1505253758473-96b3d58f7300?w=800&auto=format&fit=crop&q=80',
+    coverImageUrl: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800&auto=format&fit=crop&q=80',
     createdAt: '2026-03-23T10:15:00Z',
     averageRating: 4.9,
     reviewCount: 35,
