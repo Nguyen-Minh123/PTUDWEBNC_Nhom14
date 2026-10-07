@@ -76,8 +76,8 @@ public class Recipe : BaseEntity
     /// Với PostgreSQL/Npgsql, property kiểu uint này sẽ map tới xmin.
     /// Ép kiểu dữ liệu từ byte[] thành uint cho recipe.RowVersion
     /// </summary>
-    [Timestamp]
-    public uint RowVersion { get; private set; }
+    // [Timestamp]
+    // public uint RowVersion { get; private set; }
 
     [MaxLength(200)]
     public string Title { get; private set; } = string.Empty;
