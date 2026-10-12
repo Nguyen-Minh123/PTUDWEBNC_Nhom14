@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using CulinaryBlog.Domain.Entities;
 using CulinaryBlog.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -112,6 +112,33 @@ public class UnitTest1
         }
     }
 
+    [Fact]
+    public async Task Register_saves_user_and_refresh_token()
+    {
+        await using var dbContext = CreateDbContext();
+        var email = $"test_{Guid.NewGuid()}@example.com";
+        var user = new ApplicationUser(email, "Test User");
+        dbContext.Users.Add(user);
+
+        var rt = new RefreshToken
+        {
+            Token = Guid.NewGuid().ToString("N"),
+            UserId = user.Id,
+            ExpiresAt = DateTime.UtcNow.AddDays(7)
+        };
+        dbContext.RefreshTokens.Add(rt);
+
+        try
+        {
+            await dbContext.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _output.WriteLine("EXCEPTION: " + ex.ToString());
+            throw;
+        }
+    }
+
     private static string GetConnectionString() =>
         Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
         ?? "Host=localhost;Port=5432;Database=CulinaryBlogDb;Username=postgres;Password=postgres";
@@ -120,9 +147,9 @@ public class UnitTest1
     {
         var options = new DbContextOptionsBuilder<CulinaryBlogDbContext>()
             .UseNpgsql(GetConnectionString())
+            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning))
             .Options;
 
         return new CulinaryBlogDbContext(options);
-
     }
 }

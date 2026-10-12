@@ -1,5 +1,6 @@
 using CulinaryBlog.Domain.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 
@@ -8,10 +9,14 @@ namespace CulinaryBlog.API.Infrastructure;
 public class GlobalExceptionHandler : IExceptionHandler
 {
     private readonly ILogger<GlobalExceptionHandler> _logger;
+    private readonly IProblemDetailsService _problemDetailsService;
 
-    public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
+    public GlobalExceptionHandler(
+        ILogger<GlobalExceptionHandler> logger,
+        IProblemDetailsService problemDetailsService)
     {
         _logger = logger;
+        _problemDetailsService = problemDetailsService;
     }
 
     public async ValueTask<bool> TryHandleAsync(
@@ -24,8 +29,15 @@ public class GlobalExceptionHandler : IExceptionHandler
         var (statusCode, title) = exception switch
         {
             UserNotFoundException => (StatusCodes.Status404NotFound, "User Not Found"),
+            RecipeNotFoundException => (StatusCodes.Status404NotFound, "Recipe Not Found"),
+            CategoryNotFoundException => (StatusCodes.Status404NotFound, "Category Not Found"),
             InvalidCredentialsException => (StatusCodes.Status401Unauthorized, "Invalid Credentials"),
+            ForbiddenAccessException => (StatusCodes.Status403Forbidden, "Forbidden"),
+            UserAlreadyExistsException => (StatusCodes.Status409Conflict, "User Conflict"),
+            RecipeSlugConflictException => (StatusCodes.Status409Conflict, "Recipe Conflict"),
+            CulinaryBlog.Application.Common.Exceptions.ConcurrencyConflictException => (StatusCodes.Status409Conflict, "Concurrency Conflict"),
             DomainException => (StatusCodes.Status400BadRequest, "Domain Rule Violation"),
+            ArgumentException => (StatusCodes.Status400BadRequest, "Invalid Request"),
             _ => (StatusCodes.Status500InternalServerError, "Server Error")
         };
 
@@ -41,8 +53,11 @@ public class GlobalExceptionHandler : IExceptionHandler
         problemDetails.Extensions.Add("traceId", Activity.Current?.Id ?? httpContext.TraceIdentifier);
 
         httpContext.Response.StatusCode = statusCode;
-
-        await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
+        await _problemDetailsService.WriteAsync(new ProblemDetailsContext
+        {
+            HttpContext = httpContext,
+            ProblemDetails = problemDetails
+        });
 
         return true;
     }

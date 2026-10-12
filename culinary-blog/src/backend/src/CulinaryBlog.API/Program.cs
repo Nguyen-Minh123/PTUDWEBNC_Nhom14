@@ -1,4 +1,10 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using CulinaryBlog.API.Endpoints;
+using CulinaryBlog.API.HealthChecks;
 using Amazon.S3;
 using CulinaryBlog.Application.Common.Caching;
 using CulinaryBlog.Application.Common.Interfaces;
@@ -7,22 +13,47 @@ using CulinaryBlog.Infrastructure.Persistence;
 using CulinaryBlog.Infrastructure.Persistence.Interceptors;
 using CulinaryBlog.Infrastructure.Services;
 using CulinaryBlog.Infrastructure.Storage;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
-using Scalar.AspNetCore; // Cần thêm using này để dùng được Scalar
+using Scalar.AspNetCore;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Khai báo cho ứng dụng biết cách kết nối PostgreSQL thông qua DbContext
-builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Host.UseSerilog((context, services, loggerConfiguration) =>
+    loggerConfiguration
+        .ReadFrom.Configuration(context.Configuration)
+        .Enrich.FromLogContext());
+
 
 //-----------------------------------------------------------------
 // =====================================================
 // Services
 // =====================================================
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddProblemDetails();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("UserOrAdmin", policy => policy.RequireRole("User", "Admin"));
+});
+
+var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "super-secret-key-that-is-very-long-for-hmac-sha256-1234567890";
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+            ValidateIssuer = false, // Simplified for lab
+            ValidateAudience = false,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+
 builder.Services.AddExceptionHandler<CulinaryBlog.API.Infrastructure.GlobalExceptionHandler>();
 
 builder.Services.AddCors(options =>
@@ -34,6 +65,22 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod();
     });
 });
+
+// Rate Limiting (Chương 2: 5 requests/phút cho login endpoint)
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("login-policy", opt =>
+    {
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.PermitLimit = 5;
+        opt.QueueLimit = 0;
+    });
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
+
+builder.Services.AddHealthChecks()
+    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("Self check passed."), tags: ["live"])
+    .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Missing connection string: DefaultConnection");
@@ -54,13 +101,19 @@ builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
     }
 });
 
+builder.Services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<CulinaryBlogDbContext>());
+
 builder.Services.AddScoped<SoftDeleteInterceptor>();
 
 builder.Services.AddOpenApi();
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<CulinaryBlog.Application.Features.Recipes.Commands.CreateRecipeCommand>());
 
 // HttpContext / Current user
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
+builder.Services.AddScoped<IPasswordHasherService, PasswordHasherService>();
 builder.Services.AddScoped<IRecipeRepository, CulinaryBlog.Infrastructure.Persistence.Repositories.RecipeRepository>();
 builder.Services.AddScoped<IUnitOfWork, CulinaryBlog.Infrastructure.Persistence.Repositories.UnitOfWork>();
 
@@ -109,38 +162,41 @@ if (app.Environment.IsDevelopment())
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
 app.UseCors("DefaultCors");
+app.UseRateLimiter();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 // OpenAPI / Scalar
 app.MapOpenApi();
 app.MapScalarApiReference();
+// Thực hiện API Quản lý Nguyên liệu
+app.MapRecipeIngredientsEndpoints();
+// Thực hiện API Quản lý Bước thực hiện
+app.MapRecipeStepsEndpoints();
+// Thực hiện API Upload và Quản lý Hình ảnh
+app.MapRecipeImagesEndpoints();
 
 // =====================================================
 // Routes
 // =====================================================
 app.MapControllers();
 app.MapRecipeEndpoints();
+app.MapCategoryEndpoints();
+app.MapAuthEndpoints();
+app.MapUserEndpoints();
 
 app.MapGet("/", () => Results.Redirect("/scalar"));
 
-app.MapGet("/health", () => Results.Ok(new
+app.MapHealthChecks("/health");
+app.MapHealthChecks("/health/live", new HealthCheckOptions
 {
-    status = "Healthy",
-    timestampUtc = DateTime.UtcNow
-}));
-
-app.MapGet("/health/live", () => Results.Ok(new
+    Predicate = healthCheck => healthCheck.Tags.Contains("live")
+});
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {
-    status = "Healthy",
-    probe = "live",
-    timestampUtc = DateTime.UtcNow
-}));
-
-app.MapGet("/health/ready", () => Results.Ok(new
-{
-    status = "Healthy",
-    probe = "ready",
-    timestampUtc = DateTime.UtcNow
-}));
+    Predicate = healthCheck => healthCheck.Tags.Contains("ready")
+});
 
 app.Run();
 
@@ -156,15 +212,3 @@ static string NormalizeServiceUrl(string endpoint)
 
     return value.TrimEnd('/');
 }
-
-//-----------------------------------------------------------------
-// var app = builder.Build();
-
-// if (app.Environment.IsDevelopment())
-// {
-//     app.MapOpenApi();
-//     app.MapScalarApiReference(); // Chỉ giữ đúng 1 dòng này!
-    
-//     app.MapGet("/", () => "Hello World! Culinary Blog Backend is running on .NET 10.");
-// }
-// app.Run();

@@ -71,6 +71,14 @@ public class Recipe : BaseEntity
         Nutrition = nutrition ?? new RecipeNutrition();
     }
 
+    /// <summary>
+    /// Concurrency token của Recipe.
+    /// Với PostgreSQL/Npgsql, property kiểu uint này sẽ map tới xmin.
+    /// Ép kiểu dữ liệu từ byte[] thành uint cho recipe.RowVersion
+    /// </summary>
+    // [Timestamp]
+    // public uint RowVersion { get; private set; }
+
     [MaxLength(200)]
     public string Title { get; private set; } = string.Empty;
 
@@ -111,6 +119,7 @@ public class Recipe : BaseEntity
     public IReadOnlyCollection<RecipeIngredient> Ingredients => _ingredients.AsReadOnly();
 
     public IReadOnlyCollection<RecipeImage> Images => _images.AsReadOnly();
+
 
     public void UpdateDetails(
         string title,

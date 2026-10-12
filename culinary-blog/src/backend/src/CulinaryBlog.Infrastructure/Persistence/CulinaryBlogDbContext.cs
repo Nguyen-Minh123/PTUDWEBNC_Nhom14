@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace CulinaryBlog.Infrastructure.Persistence;
 
-public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, IdentityRole<string>, string>
+public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, IdentityRole<string>, string>, IApplicationDbContext
 {
     public CulinaryBlogDbContext(DbContextOptions<CulinaryBlogDbContext> options)
         : base(options)
@@ -141,11 +142,13 @@ public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, Identity
         entity.Property(x => x.Difficulty)
         .HasConversion<int>()
         .HasDefaultValue(RecipeDifficulty.Easy)
+        .HasSentinel((RecipeDifficulty)(-1))
         .IsRequired();
 
         entity.Property(x => x.Status)
         .HasConversion<int>()
         .HasDefaultValue(RecipeStatus.Draft)
+        .HasSentinel((RecipeStatus)(-1))
         .IsRequired();
 
         entity.Property(x => x.CategoryId)
@@ -240,6 +243,13 @@ public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, Identity
             .OnDelete(DeleteBehavior.Cascade);
 
         entity.HasQueryFilter(x => !x.IsDeleted);
+
+        /// <summary>
+        /// Cấu hình optimistic concurrency token.
+        /// Npgsql sẽ dùng xmin cho property uint này.
+        /// </summary>
+        entity.Property(x => x.RowVersion)
+            .IsRowVersion();
     }
 
     private static void ConfigureRecipeStep(ModelBuilder modelBuilder)
