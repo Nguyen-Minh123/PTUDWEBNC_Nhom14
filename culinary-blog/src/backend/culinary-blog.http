@@ -1,0 +1,142 @@
+@baseUrl = http://localhost:5075/api/v1
+@contentType = application/json
+
+### 1. Đăng ký tài khoản mới hợp lệ (201 Created)
+# @name register
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "chef_lab5@culinaryblog.vn",
+  "password": "Password@123",
+  "displayName": "Bếp Trưởng Lab 5",
+  "firstName": "Minh",
+  "lastName": "Nguyễn"
+}
+
+### 2. Đăng ký trùng email (409 Conflict)
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "email": "chef_lab5@culinaryblog.vn",
+  "password": "Password@123",
+  "displayName": "Trùng Email"
+}
+
+### 3. Đăng nhập thành công (200 OK)
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "chef_lab5@culinaryblog.vn",
+  "password": "Password@123"
+}
+
+### 4. Đăng nhập sai mật khẩu (401 Unauthorized - Chống dò tài khoản)
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "chef_lab5@culinaryblog.vn",
+  "password": "SaiMatKhau123"
+}
+
+### 5. Thử Rate Limiting: Gửi 6 lần liên tiếp trong 1 phút (Lần 6 nhận 429 Too Many Requests)
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "spam@culinaryblog.vn",
+  "password": "Password@123"
+}
+
+### Lưu biến token sau khi đăng nhập thành công
+@accessToken = {{login.response.body.accessToken}}
+@refreshToken = {{login.response.body.refreshToken}}
+
+### 6. Lấy thông tin người dùng hiện tại có Bearer Token (200 OK)
+GET {{baseUrl}}/users/me
+Authorization: Bearer {{accessToken}}
+
+### 7. Lấy thông tin người dùng KHÔNG có Token (401 Unauthorized)
+GET {{baseUrl}}/users/me
+
+### 8. Cập nhật hồ sơ cá nhân (200 OK)
+PUT {{baseUrl}}/users/me
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "displayName": "Bếp Trưởng Michelin Lab 5",
+  "bio": "Đam mê ẩm thực Việt Nam và các món ăn truyền thống.",
+  "avatarUrl": "https://lh3.googleusercontent.com/avatar_chef.png"
+}
+
+### 9. Lấy danh sách danh mục công thức (200 OK)
+# @name getCategories
+GET {{baseUrl}}/categories
+
+### Lưu Category Id đầu tiên
+@categoryId = {{getCategories.response.body.value[0].id}}
+
+### 10. Tạo công thức mới ở trạng thái Draft (201 Created)
+# @name createRecipe
+POST {{baseUrl}}/recipes
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "title": "Phở Bò Tái Lăn Hà Nội Lab 5",
+  "description": "Món phở bò tái lăn chuẩn phong vị Hà Nội với thịt bò xào lăn thơm phức.",
+  "instructions": "1. Sơ chế thịt bò và xương ống. 2. Hầm nước dùng. 3. Xào lăn thịt bò với tỏi. 4. Trụng phở và thưởng thức.",
+  "prepTime": 30,
+  "cookTime": 120,
+  "servings": 4,
+  "difficulty": 1,
+  "categoryId": "{{categoryId}}"
+}
+
+### Lưu Recipe Id
+@recipeId = {{createRecipe.response.body.id}}
+
+### 11. Cập nhật công thức bởi tác giả sở hữu (200 OK)
+PUT {{baseUrl}}/recipes/{{recipeId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "title": "Phở Bò Tái Lăn Hà Nội Đặc Biệt Lab 5",
+  "description": "Món phở bò tái lăn đặc biệt nước dùng đậm đà thơm ngậy.",
+  "instructions": "Sơ chế chi tiết và xào lăn lửa lớn.",
+  "prepTime": 35,
+  "cookTime": 150,
+  "servings": 4,
+  "difficulty": 1,
+  "categoryId": "{{categoryId}}"
+}
+
+### 12. Xuất bản công thức (Publish) (200 OK)
+POST {{baseUrl}}/recipes/{{recipeId}}/publish
+Authorization: Bearer {{accessToken}}
+
+### 13. Tìm kiếm công thức nấu ăn bằng Full-Text Search (200 OK)
+GET {{baseUrl}}/recipes/search?q=pho+bo&page=1&pageSize=10
+
+### 14. Xoay vòng Refresh Token (Token Rotation) (200 OK)
+POST {{baseUrl}}/auth/refresh
+Content-Type: {{contentType}}
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### 15. Đăng xuất và thu hồi Refresh Token (204 No Content)
+POST {{baseUrl}}/auth/logout
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+
+{
+  "refreshToken": "{{refreshToken}}"
+}

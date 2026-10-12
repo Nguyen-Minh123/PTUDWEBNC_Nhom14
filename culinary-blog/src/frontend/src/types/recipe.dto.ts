@@ -1,12 +1,26 @@
-/**
-/// <summary>
-/// DTO đại diện cho công thức tóm tắt dùng trên giao diện danh sách, tìm kiếm và phân trang
-/// Đồng bộ 100% với RecipeSummaryDto tại Backend .NET (sử dụng Mapster ProjectToType)
-/// </summary>
-*/
-export type RecipeDifficulty = 'Easy' | 'Medium' | 'Hard';
+import { RecipeIngredientDto } from './ingredient.dto';
+import { RecipeStepDto } from './step.dto';
+import { RecipeImageDto } from './image.dto';
+
+export type RecipeDifficulty = 'Easy' | 'Medium' | 'Hard' | 'Expert';
 export type RecipeStatus = 'Draft' | 'Published' | 'Archived';
 
+/**
+ * 6 chỉ số dinh dưỡng chính (FR-DVO-002)
+ */
+export interface RecipeNutritionDto {
+  calories: number;
+  proteinGrams: number;
+  fatGrams: number;
+  carbsGrams: number;
+  fiberGrams?: number;
+  sodiumMg?: number;
+}
+
+/**
+ * DTO đại diện cho công thức tóm tắt dùng trên giao diện danh sách, tìm kiếm và phân trang
+ * Đồng bộ 100% với RecipeSummaryDto tại Backend .NET (Mapster ProjectToType)
+ */
 export interface RecipeSummaryDto {
   id: string;
   title: string;
@@ -26,35 +40,42 @@ export interface RecipeSummaryDto {
   createdAt: string;
   averageRating: number;
   reviewCount: number;
+  nutrition?: RecipeNutritionDto | null;
 }
 
-export interface RecipeIngredientDto {
-  id: string;
-  name: string;
-  quantity?: number | null;
-  unit?: string | null;
-  orderIndex: number;
-}
-
-export interface RecipeStepDto {
-  id: string;
-  stepNumber: number;
-  instruction: string;
-  imageUrl?: string | null;
-}
-
+/**
+ * DTO đại diện cho chi tiết toàn bộ công thức bao gồm nguyên liệu, các bước và hình ảnh
+ */
 export interface RecipeDetailDto extends RecipeSummaryDto {
-  instructions: string;
+  instructions?: string;
   ingredients: RecipeIngredientDto[];
   steps: RecipeStepDto[];
-  images: Array<{
-    id: string;
-    originalUrl: string;
-    mediumUrl?: string | null;
-    thumbnailUrl?: string | null;
-    altText?: string | null;
-    isPrimary: boolean;
-  }>;
+  images: RecipeImageDto[];
+  rowVersion?: string;
+}
+
+export interface CreateRecipeRequest {
+  title: string;
+  description: string;
+  prepTimeMinutes: number;
+  cookTimeMinutes: number;
+  servings: number;
+  difficulty: RecipeDifficulty | string;
+  categoryId: string;
+  instructions?: string;
+}
+
+export interface UpdateRecipeRequest {
+  id: string;
+  title: string;
+  description: string;
+  prepTimeMinutes: number;
+  cookTimeMinutes: number;
+  servings: number;
+  difficulty: RecipeDifficulty | string;
+  categoryId: string;
+  instructions?: string;
+  rowVersion?: string;
 }
 
 export interface RecipeSearchParams {
@@ -65,3 +86,7 @@ export interface RecipeSearchParams {
   page?: number;
   pageSize?: number;
 }
+
+// Aliases
+export type RecipeDto = RecipeDetailDto;
+export type RecipeListDto = RecipeSummaryDto;
