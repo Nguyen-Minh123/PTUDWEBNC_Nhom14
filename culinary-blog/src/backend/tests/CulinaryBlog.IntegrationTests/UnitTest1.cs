@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using CulinaryBlog.Domain.Entities;
 using CulinaryBlog.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -120,9 +120,9 @@ public class UnitTest1
     {
         var options = new DbContextOptionsBuilder<CulinaryBlogDbContext>()
             .UseNpgsql(GetConnectionString())
+            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning))
             .Options;
 
         return new CulinaryBlogDbContext(options);
-
     }
 }

@@ -101,6 +101,8 @@ builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
     }
 });
 
+builder.Services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<CulinaryBlogDbContext>());
+
 builder.Services.AddScoped<SoftDeleteInterceptor>();
 
 builder.Services.AddOpenApi();

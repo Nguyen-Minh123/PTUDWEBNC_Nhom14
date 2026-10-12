@@ -38,7 +38,7 @@ public sealed class RecipeDataSeeder(CulinaryBlogDbContext dbContext)
             "Sweet and Sour Fish",
             "Crispy Rice Crepes",
             "Caramelized Fish",
-            "Coconut Pancakes",
+            "Mango Sticky Rice",
             "Fruit Yogurt Bowl"
         ]),
         ("Đồ uống",
@@ -97,6 +97,16 @@ public sealed class RecipeDataSeeder(CulinaryBlogDbContext dbContext)
         }
 
         var authorId = "seeder-user-id";
+        if (!await dbContext.Users.AnyAsync(u => u.Id == authorId, cancellationToken))
+        {
+            var seederUser = new ApplicationUser("seeder@culinaryblog.local", "Seeder Chef")
+            {
+                Id = authorId
+            };
+            await dbContext.Users.AddAsync(seederUser, cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
         var faker = new Faker("en");
         var recipes = new List<Recipe>();
 

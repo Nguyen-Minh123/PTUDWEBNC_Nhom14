@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace CulinaryBlog.Infrastructure.Persistence;
 
-public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, IdentityRole<string>, string>
+public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, IdentityRole<string>, string>, IApplicationDbContext
 {
     public CulinaryBlogDbContext(DbContextOptions<CulinaryBlogDbContext> options)
         : base(options)
