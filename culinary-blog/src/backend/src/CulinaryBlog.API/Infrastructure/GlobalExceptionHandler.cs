@@ -33,6 +33,7 @@ public class GlobalExceptionHandler : IExceptionHandler
             CategoryNotFoundException => (StatusCodes.Status404NotFound, "Category Not Found"),
             InvalidCredentialsException => (StatusCodes.Status401Unauthorized, "Invalid Credentials"),
             ForbiddenAccessException => (StatusCodes.Status403Forbidden, "Forbidden"),
+            UserAlreadyExistsException => (StatusCodes.Status409Conflict, "User Conflict"),
             RecipeSlugConflictException => (StatusCodes.Status409Conflict, "Recipe Conflict"),
             CulinaryBlog.Application.Common.Exceptions.ConcurrencyConflictException => (StatusCodes.Status409Conflict, "Concurrency Conflict"),
             DomainException => (StatusCodes.Status400BadRequest, "Domain Rule Violation"),

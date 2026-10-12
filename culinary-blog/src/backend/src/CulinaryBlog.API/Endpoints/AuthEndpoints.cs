@@ -1,4 +1,7 @@
+using CulinaryBlog.Application.Features.Auth.Commands.GoogleLogin;
+using CulinaryBlog.Application.Features.Auth.Commands.Login;
 using CulinaryBlog.Application.Features.Auth.Commands.Logout;
+using CulinaryBlog.Application.Features.Auth.Commands.Register;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -15,6 +18,55 @@ public static class AuthEndpoints
             .WithTags("Auth")
             .WithOpenApi();
 
+        // 1. Đăng ký tài khoản mới (FR-AUTH-001)
+        group.MapPost("/register", async (
+            [FromServices] ISender sender,
+            [FromBody] RegisterRequest request,
+            CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+            {
+                return Results.BadRequest("Email và Mật khẩu không được để trống.");
+            }
+
+            var displayName = string.IsNullOrWhiteSpace(request.DisplayName)
+                ? request.Email.Split('@')[0]
+                : request.DisplayName;
+
+            var command = new RegisterCommand(
+                request.Email,
+                request.Password,
+                displayName,
+                request.FirstName,
+                request.LastName);
+
+            var result = await sender.Send(command, ct);
+            return Results.Created($"/api/v1/users/{result.User.Id}", result);
+        })
+        .WithName("Register")
+        .WithSummary("Đăng ký tài khoản mới (Local Register)")
+        .AllowAnonymous();
+
+        // 2. Đăng nhập Email/Mật khẩu (FR-AUTH-002) - Áp dụng Rate Limiting 5 req/phút
+        group.MapPost("/login", async (
+            [FromServices] ISender sender,
+            [FromBody] LoginRequest request,
+            CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+            {
+                return Results.BadRequest("Email và Mật khẩu không được để trống.");
+            }
+
+            var result = await sender.Send(new LoginCommand(request.Email, request.Password), ct);
+            return Results.Ok(result);
+        })
+        .WithName("Login")
+        .WithSummary("Đăng nhập bằng Email và Mật khẩu")
+        .RequireRateLimiting("login-policy")
+        .AllowAnonymous();
+
+        // 3. Đăng nhập Google OAuth (FR-AUTH-003)
         group.MapPost("/google-login", async (
             [FromServices] ISender sender,
             [FromBody] GoogleLoginRequest request,
@@ -25,12 +77,14 @@ public static class AuthEndpoints
                 return Results.BadRequest("IdToken is required.");
             }
 
-            var result = await sender.Send(new CulinaryBlog.Application.Features.Auth.Commands.GoogleLogin.GoogleLoginCommand(request.IdToken), ct);
+            var result = await sender.Send(new GoogleLoginCommand(request.IdToken), ct);
             return Results.Ok(result);
         })
         .WithName("GoogleLogin")
-        .WithSummary("Đăng nhập bằng Google (Social Login)");
+        .WithSummary("Đăng nhập bằng Google (Social Login)")
+        .AllowAnonymous();
 
+        // 4. Đăng xuất (FR-AUTH-005)
         group.MapPost("/logout", async (
             [FromServices] ISender sender,
             [FromBody] LogoutRequest request,
@@ -46,10 +100,25 @@ public static class AuthEndpoints
         })
         .WithName("Logout")
         .WithSummary("Đăng xuất (Revoke Refresh Token)")
-        .RequireAuthorization(); // Requires auth to logout
+        .RequireAuthorization();
 
         return app;
     }
+}
+
+public class RegisterRequest
+{
+    public string Email { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+    public string? DisplayName { get; set; }
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+}
+
+public class LoginRequest
+{
+    public string Email { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
 }
 
 public class LogoutRequest
