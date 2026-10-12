@@ -212,15 +212,3 @@ static string NormalizeServiceUrl(string endpoint)
 
     return value.TrimEnd('/');
 }
-
-//-----------------------------------------------------------------
-// var app = builder.Build();
-
-// if (app.Environment.IsDevelopment())
-// {
-//     app.MapOpenApi();
-//     app.MapScalarApiReference(); // Chỉ giữ đúng 1 dòng này!
-    
-//     app.MapGet("/", () => "Hello World! Culinary Blog Backend is running on .NET 10.");
-// }
-// app.Run();
