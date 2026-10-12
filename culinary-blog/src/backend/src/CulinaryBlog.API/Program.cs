@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using CulinaryBlog.API.Endpoints;
+using CulinaryBlog.API.HealthChecks;
 using Amazon.S3;
 using CulinaryBlog.Application.Common.Caching;
 using CulinaryBlog.Application.Common.Interfaces;
@@ -10,14 +11,18 @@ using CulinaryBlog.Infrastructure.Persistence;
 using CulinaryBlog.Infrastructure.Persistence.Interceptors;
 using CulinaryBlog.Infrastructure.Services;
 using CulinaryBlog.Infrastructure.Storage;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
-using Scalar.AspNetCore; // Cần thêm using này để dùng được Scalar
+using Scalar.AspNetCore;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Khai báo cho ứng dụng biết cách kết nối PostgreSQL thông qua DbContext
-builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Host.UseSerilog((context, services, loggerConfiguration) =>
+    loggerConfiguration
+        .ReadFrom.Configuration(context.Configuration)
+        .Enrich.FromLogContext());
+
 
 //-----------------------------------------------------------------
 // =====================================================
@@ -59,6 +64,10 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddHealthChecks()
+    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("Self check passed."), tags: ["live"])
+    .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Missing connection string: DefaultConnection");
 
@@ -81,6 +90,7 @@ builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
 builder.Services.AddScoped<SoftDeleteInterceptor>();
 
 builder.Services.AddOpenApi();
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<CulinaryBlog.Application.Features.Recipes.Commands.CreateRecipeCommand>());
 
 // HttpContext / Current user
 builder.Services.AddHttpContextAccessor();
@@ -136,6 +146,7 @@ app.UseExceptionHandler();
 app.UseHttpsRedirection();
 app.UseCors("DefaultCors");
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 // OpenAPI / Scalar
@@ -153,25 +164,15 @@ app.MapUserEndpoints();
 
 app.MapGet("/", () => Results.Redirect("/scalar"));
 
-app.MapGet("/health", () => Results.Ok(new
+app.MapHealthChecks("/health");
+app.MapHealthChecks("/health/live", new HealthCheckOptions
 {
-    status = "Healthy",
-    timestampUtc = DateTime.UtcNow
-}));
-
-app.MapGet("/health/live", () => Results.Ok(new
+    Predicate = healthCheck => healthCheck.Tags.Contains("live")
+});
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {
-    status = "Healthy",
-    probe = "live",
-    timestampUtc = DateTime.UtcNow
-}));
-
-app.MapGet("/health/ready", () => Results.Ok(new
-{
-    status = "Healthy",
-    probe = "ready",
-    timestampUtc = DateTime.UtcNow
-}));
+    Predicate = healthCheck => healthCheck.Tags.Contains("ready")
+});
 
 app.Run();
 
