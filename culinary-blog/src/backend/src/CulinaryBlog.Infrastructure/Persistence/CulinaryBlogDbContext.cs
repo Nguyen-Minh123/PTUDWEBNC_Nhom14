@@ -240,6 +240,13 @@ public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, Identity
             .OnDelete(DeleteBehavior.Cascade);
 
         entity.HasQueryFilter(x => !x.IsDeleted);
+
+        /// <summary>
+        /// Cấu hình optimistic concurrency token.
+        /// Npgsql sẽ dùng xmin cho property uint này.
+        /// </summary>
+        entity.Property(x => x.RowVersion)
+            .IsRowVersion();
     }
 
     private static void ConfigureRecipeStep(ModelBuilder modelBuilder)

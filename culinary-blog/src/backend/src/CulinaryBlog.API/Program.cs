@@ -152,6 +152,12 @@ app.UseAuthorization();
 // OpenAPI / Scalar
 app.MapOpenApi();
 app.MapScalarApiReference();
+// Thực hiện API Quản lý Nguyên liệu
+app.MapRecipeIngredientsEndpoints();
+// Thực hiện API Quản lý Bước thực hiện
+app.MapRecipeStepsEndpoints();
+// Thực hiện API Upload và Quản lý Hình ảnh
+app.MapRecipeImagesEndpoints();
 
 // =====================================================
 // Routes

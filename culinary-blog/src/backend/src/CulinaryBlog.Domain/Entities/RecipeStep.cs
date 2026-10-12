@@ -104,6 +104,7 @@ public class RecipeStep : BaseEntity
         Description = NormalizeRequiredText(description, int.MaxValue, nameof(description));
         TimerMinutes = timerMinutes;
         ImageUrl = NormalizeOptionalText(imageUrl, 500);
+        UpdatedAt = DateTime.UtcNow;
     }
 
     /// <summary>
@@ -117,6 +118,7 @@ public class RecipeStep : BaseEntity
         }
 
         StepNumber = stepNumber;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     /// <summary>
@@ -135,6 +137,9 @@ public class RecipeStep : BaseEntity
         ImageUrl = null;
     }
 
+    /// <summary>
+    /// Chuẩn hóa text bắt buộc.
+    /// </summary>
     private static string NormalizeRequiredText(string? value, int maxLength, string paramName)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -154,6 +159,9 @@ public class RecipeStep : BaseEntity
         return normalized;
     }
 
+    /// <summary>
+    /// Chuẩn hóa text tùy chọn.
+    /// </summary>
     private static string? NormalizeOptionalText(string? value, int maxLength)
     {
         if (string.IsNullOrWhiteSpace(value))

@@ -34,6 +34,7 @@ public class GlobalExceptionHandler : IExceptionHandler
             InvalidCredentialsException => (StatusCodes.Status401Unauthorized, "Invalid Credentials"),
             ForbiddenAccessException => (StatusCodes.Status403Forbidden, "Forbidden"),
             RecipeSlugConflictException => (StatusCodes.Status409Conflict, "Recipe Conflict"),
+            CulinaryBlog.Application.Common.Exceptions.ConcurrencyConflictException => (StatusCodes.Status409Conflict, "Concurrency Conflict"),
             DomainException => (StatusCodes.Status400BadRequest, "Domain Rule Violation"),
             ArgumentException => (StatusCodes.Status400BadRequest, "Invalid Request"),
             _ => (StatusCodes.Status500InternalServerError, "Server Error")
