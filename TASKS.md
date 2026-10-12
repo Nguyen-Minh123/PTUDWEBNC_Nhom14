@@ -1,4 +1,4 @@
-## 👥 Phân công Nhiệm vụ (Lab 01-04: ✅ Done)
+## 👥 Phân công Nhiệm vụ (Lab 01-04: ✅ Done, Lab 05: ⏳ To Do)
 
 | Thành viên / Vai trò | Mã Issue | Tên Nhiệm vụ chi tiết | Trạng thái |
 | :--- | :--- | :--- | :--- |
@@ -15,6 +15,10 @@
 | | **FR-BKE-007** | Hiện thực API Quản lý Danh mục (CRUD: Thêm, Sửa, Xóa) cho Admin (Lab 4) | ✅ Done |
 | | **FR-BKE-008** | Tích hợp API xác thực Google OAuth 2.0 (Social Login) (Lab 4) | ✅ Done |
 | | **FR-BKE-009** | Xử lý Authorization (RBAC và Resource-Based) bảo vệ endpoints (Lab 4) | ✅ Done |
+| | **FR-SEC-003** | Chuẩn hóa JWT Bearer & Cấu hình Token Validation nâng cao (Lab 5) | ⏳ To Do |
+| | **FR-BKE-011** | Hiện thực phân quyền RBAC, Policy-based & Fallback Policy (Lab 5) | ⏳ To Do |
+| | **FR-BKE-012** | Hoàn thiện Resource-Based Authorization chống BOLA (OWASP API1) (Lab 5) | ⏳ To Do |
+| | **FR-SEC-004** | Xử lý Token Theft Detection trong Refresh Token Rotation (Lab 5) | ⏳ To Do |
 | **Nguyễn Thế Khải**<br>*(Database & Infra)* | **FR-DB-001** | Khởi tạo EF Core Migrations | ✅ Done |
 | | **FR-DB-002** | Định nghĩa BaseEntity, ApplicationUser | ✅ Done |
 | | **FR-DB-003** | Cấu hình PostgreSQL 16 trên Docker | ✅ Done |
@@ -28,6 +32,10 @@
 | | **FR-DB-008** | Hiện thực API Quản lý Bước thực hiện (CRUD `RecipeStep`) (Lab 4) | ✅ Done |
 | | **FR-INF-003** | Hiện thực API Upload và Quản lý Hình ảnh (`RecipeImage`) với MinIO (Lab 4) | ✅ Done |
 | | **FR-DB-009** | Xử lý Concurrency Token (`RowVersion`) cập nhật Công thức (Lab 4) | ✅ Done |
+| | **FR-INF-004** | Thiết lập CORS Policy đa môi trường (Development & Production) (Lab 5) | ⏳ To Do |
+| | **FR-INF-005** | Cấu hình Rate Limiting nâng cao (Fixed Window & Token Bucket) (Lab 5) | ⏳ To Do |
+| | **FR-INF-006** | Cấu hình Security Headers & Pipeline Middleware bảo mật (Lab 5) | ⏳ To Do |
+| | **FR-BKE-013** | Cài đặt và cấu hình API Versioning (`Asp.Versioning.Http`) (Lab 5) | ⏳ To Do |
 | **Phan Thành Huy**<br>*(DevOps & Testing)* | **FR-DVO-001** | Cấu hình docker-compose.yml tổng hợp (Nginx, Postgres, Redis, MinIO) | ✅ Done |
 | | **FR-DVO-002** | Cấu hình 6 chỉ số dinh dưỡng | ✅ Done |
 | | **FR-TST-001** | Kiểm thử API nâng cao | ✅ Done |
@@ -42,6 +50,10 @@
 | | **FR-DVO-003** | Cài đặt Health Check Endpoints (`/health`, `/health/live`, `/ready`) (Lab 4) | ✅ Done |
 | | **FR-DVO-004** | Thiết lập Structured Logging toàn hệ thống bằng `Serilog` (Lab 4) | ✅ Done |
 | | **FR-TST-006** | Cập nhật Seeder cho Steps/Ingredients & Viết Test cho API mới (Lab 4) | ✅ Done |
+| | **FR-DVO-005** | Tích hợp OpenAPI 3.1 & Scalar UI kèm Bearer Security Scheme (Lab 5) | ⏳ To Do |
+| | **FR-DVO-006** | Bật XML Documentation Comments & Metadata chuẩn cho Endpoints (Lab 5) | ⏳ To Do |
+| | **FR-TST-007** | Xây dựng bộ 15 kịch bản kiểm thử API tự động (`culinary-blog.http`) (Lab 5) | ⏳ To Do |
+| | **FR-TST-008** | Viết Integration Tests kiểm thử ma trận phân quyền (`TestAuthHandler`) (Lab 5) | ⏳ To Do |
 | **Bùi Trung Hiếu**<br>*(Frontend Next.js)* | **FR-FTE-001** | Dựng Frontend Skeleton (Next.js 15 App Router + Tailwind CSS) | ✅ Done |
 | | **FR-FTE-002** | Đồng bộ TypeScript Interfaces | ✅ Done |
 | | **FR-FTE-003** | Chuẩn hóa cú pháp sắp xếp (?sort=-field) | ✅ Done |
@@ -53,3 +65,7 @@
 | | **FR-FTE-008** | Xây dựng Dashboard quản lý Profile và danh sách Recipe cá nhân (Lab 4) | ✅ Done |
 | | **FR-FTE-009** | Xây dựng Form tạo Recipe đa bước (React Hook Form + Zod) (Lab 4) | ✅ Done |
 | | **FR-FTE-010** | Tích hợp API Upload hình ảnh, thêm Bước thực hiện và Nguyên liệu (Lab 4) | ✅ Done |
+| | **FR-FTE-011** | Thiết lập môi trường (`.env.local`) & Cấu hình `next.config.ts` tối ưu (Lab 5) | ⏳ To Do |
+| | **FR-FTE-012** | Chuẩn hóa cấu trúc thư mục Next.js 15 App Router theo Route Groups (Lab 5) | ⏳ To Do |
+| | **FR-FTE-013** | Cài đặt & cấu hình thư viện cốt lõi (TanStack Query, Zustand, Axios) (Lab 5) | ⏳ To Do |
+| | **FR-FTE-014** | Cài đặt toàn bộ kiểu dữ liệu TypeScript (TS Types/DTOs) đồng bộ Backend (Lab 5) | ⏳ To Do |
