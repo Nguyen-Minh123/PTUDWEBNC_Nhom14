@@ -142,11 +142,13 @@ public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, Identity
         entity.Property(x => x.Difficulty)
         .HasConversion<int>()
         .HasDefaultValue(RecipeDifficulty.Easy)
+        .HasSentinel((RecipeDifficulty)(-1))
         .IsRequired();
 
         entity.Property(x => x.Status)
         .HasConversion<int>()
         .HasDefaultValue(RecipeStatus.Draft)
+        .HasSentinel((RecipeStatus)(-1))
         .IsRequired();
 
         entity.Property(x => x.CategoryId)
