@@ -6,11 +6,11 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useSession } from 'next-auth/react';
-import { CATEGORIES } from '../../../services/recipeService';
+import { CATEGORIES } from '@/services/recipeService';
 import {
   recipeManagementService,
   FullRecipeSubmission,
-} from '../../../services/recipeManagementService';
+} from '@/services/recipeManagementService';
 
 // Schema validation Zod cho toàn bộ 4 bước
 const recipeWizardSchema = z.object({

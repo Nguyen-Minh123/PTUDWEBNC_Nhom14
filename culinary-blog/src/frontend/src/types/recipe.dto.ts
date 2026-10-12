@@ -1,9 +1,6 @@
 /**
-/// <summary>
-/// DTO đại diện cho công thức tóm tắt dùng trên giao diện danh sách, tìm kiếm và phân trang
-/// Đồng bộ 100% với RecipeSummaryDto tại Backend .NET (sử dụng Mapster ProjectToType)
-/// </summary>
-*/
+ * DTOs đại diện cho Recipe đồng bộ 100% với Backend ASP.NET Core
+ */
 export type RecipeDifficulty = 'Easy' | 'Medium' | 'Hard';
 export type RecipeStatus = 'Draft' | 'Published' | 'Archived';
 
@@ -30,6 +27,7 @@ export interface RecipeSummaryDto {
 
 export interface RecipeIngredientDto {
   id: string;
+  recipeId?: string;
   name: string;
   quantity?: number | null;
   unit?: string | null;
@@ -38,23 +36,41 @@ export interface RecipeIngredientDto {
 
 export interface RecipeStepDto {
   id: string;
+  recipeId?: string;
   stepNumber: number;
   instruction: string;
   imageUrl?: string | null;
 }
 
+export interface RecipeImageDto {
+  id: string;
+  recipeId?: string;
+  originalUrl: string;
+  mediumUrl?: string | null;
+  thumbnailUrl?: string | null;
+  altText?: string | null;
+  isPrimary: boolean;
+  orderIndex: number;
+}
+
+export interface RecipeNutritionDto {
+  calories?: number | null;
+  fat?: number | null;
+  saturatedFat?: number | null;
+  carbohydrates?: number | null;
+  sugar?: number | null;
+  fiber?: number | null;
+  protein?: number | null;
+  sodium?: number | null;
+}
+
 export interface RecipeDetailDto extends RecipeSummaryDto {
   instructions: string;
+  nutrition?: RecipeNutritionDto | null;
   ingredients: RecipeIngredientDto[];
   steps: RecipeStepDto[];
-  images: Array<{
-    id: string;
-    originalUrl: string;
-    mediumUrl?: string | null;
-    thumbnailUrl?: string | null;
-    altText?: string | null;
-    isPrimary: boolean;
-  }>;
+  images: RecipeImageDto[];
+  rowVersion?: string;
 }
 
 export interface RecipeSearchParams {
@@ -64,4 +80,30 @@ export interface RecipeSearchParams {
   sort?: string; // Ví dụ: "-createdAt", "title", "-prepTime"
   page?: number;
   pageSize?: number;
+}
+
+export interface CreateRecipeRequest {
+  title: string;
+  description: string;
+  prepTime: number;
+  cookTime: number;
+  servings: number;
+  difficulty: RecipeDifficulty | string;
+  categoryId: string;
+  instructions: string;
+  ingredients?: Array<{
+    name: string;
+    quantity?: number | null;
+    unit?: string | null;
+    orderIndex: number;
+  }>;
+  steps?: Array<{
+    stepNumber: number;
+    instruction: string;
+    imageUrl?: string | null;
+  }>;
+}
+
+export interface UpdateRecipeRequest extends CreateRecipeRequest {
+  rowVersion?: string;
 }

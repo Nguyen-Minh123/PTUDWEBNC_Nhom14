@@ -2,13 +2,13 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { SearchBar } from '../components/search/SearchBar';
-import { FilterBar } from '../components/search/FilterBar';
-import { RecipeCard } from '../components/search/RecipeCard';
-import { RecipeDetailModal } from '../components/recipe/RecipeDetailModal';
-import { Navbar } from '../components/layout/Navbar';
-import { searchRecipes } from '../services/recipeService';
-import { RecipeSummaryDto } from '../types';
+import { SearchBar } from '@/components/search/SearchBar';
+import { FilterBar } from '@/components/search/FilterBar';
+import { RecipeCard } from '@/components/search/RecipeCard';
+import { RecipeDetailModal } from '@/components/recipe/RecipeDetailModal';
+import { Navbar } from '@/components/layout/Navbar';
+import { searchRecipes } from '@/services/recipeService';
+import { RecipeSummaryDto } from '@/types';
 
 export default function Home() {
   const [keyword, setKeyword] = useState('');

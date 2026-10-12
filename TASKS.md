@@ -65,7 +65,7 @@
 | | **FR-FTE-008** | Xây dựng Dashboard quản lý Profile và danh sách Recipe cá nhân (Lab 4) | ✅ Done |
 | | **FR-FTE-009** | Xây dựng Form tạo Recipe đa bước (React Hook Form + Zod) (Lab 4) | ✅ Done |
 | | **FR-FTE-010** | Tích hợp API Upload hình ảnh, thêm Bước thực hiện và Nguyên liệu (Lab 4) | ✅ Done |
-| | **FR-FTE-011** | Thiết lập môi trường (`.env.local`) & Cấu hình `next.config.ts` tối ưu (Lab 5) | ⏳ To Do |
-| | **FR-FTE-012** | Chuẩn hóa cấu trúc thư mục Next.js 15 App Router theo Route Groups (Lab 5) | ⏳ To Do |
-| | **FR-FTE-013** | Cài đặt & cấu hình thư viện cốt lõi (TanStack Query, Zustand, Axios) (Lab 5) | ⏳ To Do |
-| | **FR-FTE-014** | Cài đặt toàn bộ kiểu dữ liệu TypeScript (TS Types/DTOs) đồng bộ Backend (Lab 5) | ⏳ To Do |
+| | **FR-FTE-011** | Thiết lập môi trường (`.env.local`) & Cấu hình `next.config.ts` tối ưu (Lab 5) | ✅ Done |
+| | **FR-FTE-012** | Chuẩn hóa cấu trúc thư mục Next.js 15 App Router theo Route Groups (Lab 5) | ✅ Done |
+| | **FR-FTE-013** | Cài đặt & cấu hình thư viện cốt lõi (TanStack Query, Zustand, Axios) (Lab 5) | ✅ Done |
+| | **FR-FTE-014** | Cài đặt toàn bộ kiểu dữ liệu TypeScript (TS Types/DTOs) đồng bộ Backend (Lab 5) | ✅ Done |
