@@ -10,6 +10,7 @@ using CulinaryBlog.Infrastructure.Services;
 using CulinaryBlog.Infrastructure.Storage;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -68,7 +69,24 @@ builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
 
 builder.Services.AddScoped<SoftDeleteInterceptor>();
 
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    options.OpenApiVersion = OpenApiSpecVersion.OpenApi3_1;
+    options.AddDocumentTransformer((document, _, _) =>
+    {
+        var components = document.Components ??= new OpenApiComponents();
+        components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+        components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            Description = "Nhập JWT Bearer token để xác thực."
+        };
+
+        return Task.CompletedTask;
+    });
+});
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<CulinaryBlog.Application.Features.Recipes.Commands.CreateRecipeCommand>());
 
 // HttpContext / Current user
