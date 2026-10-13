@@ -37,4 +37,30 @@ Không dự kiến thêm package hoặc file mã nguồn mới cho task này; Sc
 
 - [x] Triển khai
 - [x] Kiểm tra (build thành công; OpenAPI trả phiên bản 3.1.1; Scalar trả HTTP 200 sau redirect)
-- [ ] Chờ xác nhận của người dùng trước khi commit/push task này
+- [x] Commit/push `e6f20a8` lên `2312634-Huy`
+
+## Giải thích code để trình bày
+
+### Luồng tạo OpenAPI document
+
+Trong `Program.cs`, `AddOpenApi` đăng ký dịch vụ sinh OpenAPI; `MapOpenApi` ở phần cấu hình ứng dụng mới tạo route phục vụ document. Scalar UI được map riêng và đọc document đó để hiển thị trang tương tác. Như vậy, generator và giao diện tài liệu là hai phần phối hợp nhưng không phải cùng một middleware.
+
+`options.OpenApiVersion = OpenApiSpecVersion.OpenApi3_1` yêu cầu generator xuất document theo chuẩn 3.1. Phiên bản package phải đủ mới để hỗ trợ lựa chọn này; nếu package cũ, chỉ đổi setting có thể không biên dịch hoặc không tạo đúng document.
+
+### Bearer Security Scheme
+
+Document transformer chạy khi document được tạo. Nó bảo đảm `Components` và `SecuritySchemes` tồn tại, rồi thêm scheme tên `Bearer`:
+
+| Cấu hình | Ý nghĩa |
+| --- | --- |
+| `Type = Http` | Authentication dùng HTTP Authorization header. |
+| `Scheme = "bearer"` | Header theo dạng `Authorization: Bearer <token>`. |
+| `BearerFormat = "JWT"` | Gợi ý loại token cho tài liệu/UI; không tự xác minh token. |
+
+Khai báo scheme chỉ cung cấp thông tin cho OpenAPI/Scalar. Nó không bảo vệ endpoint và cũng không tự gắn yêu cầu xác thực lên tất cả operation. Quyền endpoint do Authentication/Authorization middleware và metadata route quyết định ở task FR-BKE-009.
+
+### Câu hỏi thầy có thể hỏi
+
+- **Scalar có phải thư viện sinh OpenAPI không?** Không. ASP.NET Core OpenAPI sinh document; Scalar trình bày và cho phép thử document đó.
+- **Vì sao không đặt security requirement global?** Tại task này chưa phải mọi endpoint đều được bảo vệ. Requirement global sẽ làm tài liệu nói sai rằng route đọc cũng cần token.
+- **BearerFormat có xác minh token là JWT không?** Không. Đây chỉ là metadata mô tả; việc xác minh chữ ký, issuer, audience và hạn dùng thuộc JWT authentication ở FR-BKE-009.

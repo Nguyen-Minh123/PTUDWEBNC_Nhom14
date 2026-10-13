@@ -44,6 +44,7 @@ var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
 var jwtSigningKey = builder.Configuration["Jwt:SigningKey"];
 
+// Fail fast thay vì vô tình khởi chạy API với cấu hình token thiếu hoặc không hợp lệ.
 if (string.IsNullOrWhiteSpace(jwtIssuer) ||
     string.IsNullOrWhiteSpace(jwtAudience) ||
     string.IsNullOrWhiteSpace(jwtSigningKey))
@@ -64,9 +65,11 @@ builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // Giữ nguyên tên claim "sub"/"role" để khớp với token và authorization handler.
         options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
+            // Chỉ chấp nhận token đúng issuer, audience, chữ ký, thời hạn và thuật toán đã thống nhất.
             ValidateIssuer = true,
             ValidIssuer = jwtIssuer,
             ValidateAudience = true,
@@ -84,6 +87,7 @@ builder.Services
 
 builder.Services.AddAuthorization(options =>
 {
+    // Policy này chỉ yêu cầu đăng nhập; quyền sở hữu được xét riêng sau khi nạp recipe.
     options.AddPolicy(
         RecipeAuthorizationPolicies.AuthenticatedUser,
         policy => policy.RequireAuthenticatedUser());
@@ -132,9 +136,11 @@ builder.Services.AddScoped<SoftDeleteInterceptor>();
 
 builder.Services.AddOpenApi(options =>
 {
+    // Khai báo phiên bản 3.1 để document có thể dùng các schema/feature tương ứng.
     options.OpenApiVersion = OpenApiSpecVersion.OpenApi3_1;
     options.AddDocumentTransformer((document, _, _) =>
     {
+        // Đăng ký Bearer để Scalar biết cách gửi JWT; không gắn security mặc định vào mọi operation.
         var components = document.Components ??= new OpenApiComponents();
         components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
         components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
@@ -201,6 +207,7 @@ if (app.Environment.IsDevelopment())
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
 app.UseCors("DefaultCors");
+// Authentication tạo ClaimsPrincipal; Authorization dùng principal đó để áp dụng policy.
 app.UseAuthentication();
 app.UseAuthorization();
 

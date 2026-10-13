@@ -122,6 +122,7 @@ public static class RecipeEndpoints
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status403Forbidden)
         .ProducesValidationProblem()
+        // Yêu cầu đăng nhập trước khi handler được chạy; author luôn lấy từ identity phía server.
         .RequireAuthorization(RecipeAuthorizationPolicies.AuthenticatedUser);
 
         group.MapPut("/{id:guid}", async (
@@ -133,6 +134,7 @@ public static class RecipeEndpoints
             HttpContext httpContext,
             CancellationToken ct) =>
         {
+            // Nạp tài nguyên trước để kiểm tra owner/Admin; ID không tồn tại trả 404.
             var recipe = await unitOfWork.Recipes.GetByIdAsync(id, ct);
             if (recipe is null)
             {
@@ -145,6 +147,7 @@ public static class RecipeEndpoints
                 RecipeAuthorizationPolicies.OwnerOrAdmin);
             if (!authorizationResult.Succeeded)
             {
+                // Người đã đăng nhập nhưng không sở hữu recipe và không phải Admin nhận 403.
                 return Results.Forbid();
             }
 
@@ -170,6 +173,7 @@ public static class RecipeEndpoints
             HttpContext httpContext,
             CancellationToken ct) =>
         {
+            // Publish/archive/delete là quyền trên một recipe cụ thể, không chỉ quyền đăng nhập.
             var existingRecipe = await unitOfWork.Recipes.GetByIdAsync(id, ct);
             if (existingRecipe is null)
             {
@@ -208,6 +212,7 @@ public static class RecipeEndpoints
             HttpContext httpContext,
             CancellationToken ct) =>
         {
+            // Kiểm tra cùng một resource trước khi thay đổi trạng thái recipe.
             var existingRecipe = await unitOfWork.Recipes.GetByIdAsync(id, ct);
             if (existingRecipe is null)
             {

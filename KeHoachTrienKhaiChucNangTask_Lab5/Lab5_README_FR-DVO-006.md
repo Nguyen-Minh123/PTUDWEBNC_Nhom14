@@ -42,4 +42,29 @@ Không dự kiến thêm file mã nguồn mới cho task này.
 
 - [x] Triển khai
 - [x] Kiểm tra
-- [ ] Chờ xác nhận của người dùng trước khi commit/push task này
+- [x] Commit/push `5fc7223` lên `2312634-Huy`
+
+## Giải thích code để trình bày
+
+### XML documentation và metadata của route
+
+`GenerateDocumentationFile` trong `CulinaryBlog.API.csproj` yêu cầu compiler tạo `CulinaryBlog.API.xml` từ các XML comment trong source. `<summary>` mô tả type/member cho người đọc và công cụ; XML file là đầu vào để tích hợp mô tả trong API documentation khi hỗ trợ được bật. Đây không phải file OpenAPI và cũng không thay thế metadata HTTP.
+
+Trong `RecipeEndpoints.cs`, các phương thức `.WithName()`, `.WithSummary()` và `.WithDescription()` tạo metadata có ý nghĩa khác nhau:
+
+- **Name** là operation identifier ổn định, hữu ích cho client/tooling.
+- **Summary** là nhãn ngắn gọn trong danh sách operations.
+- **Description** giải thích behavior, dữ liệu hoặc rule của endpoint.
+- **Produces / ProducesValidationProblem** khai báo response schema/status dự kiến để OpenAPI mô tả các nhánh thành công và lỗi.
+
+Route `/`, health routes và recipe routes được mô tả riêng. Health checks được map bằng `MapHealthChecks`; theo kiểm tra document ở task này, generator không đưa chúng vào danh sách operations dù metadata trên endpoint có thể được gắn.
+
+### Vì sao bỏ `.WithOpenApi()`
+
+Phiên bản OpenAPI package sau khi nâng cấp đánh dấu lời gọi `.WithOpenApi()` trong pattern cũ là obsolete. Metadata fluent hiện dùng trực tiếp trên endpoint; bỏ lời gọi cũ loại warning mà không đổi URL hay logic xử lý request.
+
+### Câu hỏi thầy có thể hỏi
+
+- **XML comments có tự động tạo endpoint không?** Không. Chúng mô tả symbol/code; route vẫn được đăng ký bằng `MapGet`, `MapPost`... và metadata endpoint.
+- **`.Produces` có ép handler trả status đó không?** Không. Nó mô tả response có thể có cho OpenAPI; handler vẫn phải thực sự trả đúng status.
+- **Vì sao health check chưa xuất hiện trong OpenAPI?** Generator hiện không tạo operation cho `MapHealthChecks` trong cấu hình đã kiểm tra; endpoint vẫn chạy và dùng được như HTTP route bình thường.

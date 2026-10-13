@@ -40,4 +40,34 @@ Không cần Docker/WSL nếu test doubles cô lập được các dịch vụ �
 - [x] Được xác nhận tạo file test mới
 - [x] Triển khai TestServer/TestAuthHandler và test doubles không cần dịch vụ ngoài
 - [x] Chạy filtered integration tests: 22 passed, 0 failed
-- [ ] Chờ xác nhận của người dùng trước khi commit/push task này
+- [x] Commit/push `be72aad` lên `2312634-Huy`
+
+## Giải thích test code để trình bày
+
+### TestServer và factory
+
+`WebApplicationFactory<Program>` khởi động ứng dụng thật trong `TestServer`, nên request đi qua routing, authentication middleware, authorization middleware và endpoint handler mà không mở cổng mạng. `ConfigureWebHost` đặt environment thành `Testing`; điều kiện startup chỉ chạy migration/seeder ở `Development`, vì vậy test không chạm PostgreSQL. JWT settings giả chỉ giúp ứng dụng hoàn tất đăng ký service; request identity được cung cấp bởi `TestAuthHandler`, không cần token ký thật.
+
+### TestAuthHandler
+
+Handler đọc `X-Test-User` và `X-Test-Role` để tạo claims:
+
+- Không có user header: trả `NoResult`, được xem là anonymous.
+- Có user header: tạo principal có `NameIdentifier` và `sub`.
+- Có role header: thêm claim role mà `IsInRole("Admin")` sử dụng.
+
+Đây là cơ chế kiểm thử thay thế, chỉ đăng ký trong test host; nó không thay thế hay làm yếu JWT authentication production.
+
+### Test doubles và HTTP assertions
+
+`RecipeRepositoryStub` cung cấp một recipe cố định có owner xác định; `UnitOfWorkStub` và `RecipeSenderStub` đáp ứng các dependency sau khi request đã qua authorization. Các request vẫn gọi endpoint bằng HTTP, nhưng không kết nối database hoặc gọi command handler thật. Lệnh bị từ chối dừng trước `ISender`, nhờ đó test tập trung vào lớp phân quyền.
+
+`TheoryData` tái sử dụng cùng assertion cho nhiều route: public reads, năm thao tác mutation, user khác và Admin. Test thành công cho create còn đọc response `authorId` để xác nhận server dùng claim chứ không dùng `authorId` giả gửi trong request.
+
+Tập hợp có 22 trường hợp: 4 public read, 5 anonymous mutation, 5 owner mutation, 4 non-owner denial và 4 Admin mutation. Chạy bằng `dotnet test` với filter `FullyQualifiedName~RecipeAuthorizationMatrixTests`.
+
+### Câu hỏi thầy có thể hỏi
+
+- **Đây có còn là integration test nếu dùng stub?** Có: request đi qua host HTTP và middleware thật; dependency dữ liệu/command được thay thế để cô lập concern đang kiểm tra.
+- **Vì sao không dùng PostgreSQL?** Ma trận quyền không cần persistence thật; test doubles giúp chạy ổn định và tập trung vào status/auth.
+- **TestAuthHandler có được dùng khi deploy không?** Không. Nó chỉ nằm trong integration test project và được đăng ký trong `ConfigureTestServices`.

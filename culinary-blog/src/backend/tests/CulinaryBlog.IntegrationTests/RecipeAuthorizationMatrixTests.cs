@@ -27,6 +27,7 @@ namespace CulinaryBlog.IntegrationTests;
 public sealed class RecipeAuthorizationMatrixTests
     : IClassFixture<RecipeAuthorizationWebApplicationFactory>
 {
+    // The seeded test resource belongs to OwnerId; all mutations go through the real HTTP pipeline.
     private const string OwnerId = "recipe-owner";
     private const string OtherUserId = "another-user";
 
@@ -65,6 +66,7 @@ public sealed class RecipeAuthorizationMatrixTests
         "delete"
     };
 
+    // Public reads should pass authorization even without the test identity headers.
     public static TheoryData<string, int> PublicReadCases => new()
     {
         { "list", (int)HttpStatusCode.OK },
@@ -75,6 +77,7 @@ public sealed class RecipeAuthorizationMatrixTests
 
     [Theory]
     [MemberData(nameof(PublicReadCases))]
+    // A slug miss is expected to reach the endpoint and return 404, not an auth challenge.
     public async Task Anonymous_can_reach_public_recipe_reads(string readCase, int expectedStatus)
     {
         using var response = await _client.SendAsync(CreateReadRequest(readCase));
@@ -84,6 +87,7 @@ public sealed class RecipeAuthorizationMatrixTests
 
     [Theory]
     [MemberData(nameof(MutationNames))]
+    // No test identity headers means the handler returns NoResult and protected routes challenge with 401.
     public async Task Anonymous_cannot_mutate_recipes(string mutation)
     {
         using var request = CreateMutationRequest(mutation);
@@ -94,6 +98,7 @@ public sealed class RecipeAuthorizationMatrixTests
 
     [Theory]
     [MemberData(nameof(MutationCases))]
+    // The success status checks that authorization passed; create also proves the server overwrote authorId.
     public async Task Owner_can_perform_recipe_mutations(string mutation, int expectedStatus)
     {
         using var request = CreateMutationRequest(mutation, OwnerId);
@@ -111,6 +116,7 @@ public sealed class RecipeAuthorizationMatrixTests
 
     [Theory]
     [MemberData(nameof(ResourceMutationCases))]
+    // Authenticated non-owners satisfy the login policy but fail the resource ownership requirement.
     public async Task Other_users_cannot_mutate_a_recipe(string mutation)
     {
         using var request = CreateMutationRequest(mutation, OtherUserId);
@@ -121,6 +127,7 @@ public sealed class RecipeAuthorizationMatrixTests
 
     [Theory]
     [MemberData(nameof(ResourceMutationCases))]
+    // Admin role is the explicit exception to recipe ownership.
     public async Task Admin_can_mutate_another_users_recipe(string mutation)
     {
         using var request = CreateMutationRequest(mutation, OtherUserId, "Admin");
@@ -207,6 +214,7 @@ public sealed class RecipeAuthorizationWebApplicationFactory : WebApplicationFac
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // Non-Development prevents the production startup migration and data seeding from touching PostgreSQL.
         builder.UseEnvironment("Testing");
         builder.UseSetting("Jwt:Issuer", "culinary-blog-integration-tests");
         builder.UseSetting("Jwt:Audience", "culinary-blog-integration-tests");
@@ -216,6 +224,7 @@ public sealed class RecipeAuthorizationWebApplicationFactory : WebApplicationFac
             "Host=localhost;Port=5432;Database=unused;Username=unused;Password=unused");
         builder.ConfigureTestServices(services =>
         {
+            // Replace JWT authentication with controllable test claims and use in-memory collaborators.
             services.AddAuthentication(options =>
                 {
                     options.DefaultAuthenticateScheme = TestAuthHandler.SchemeName;
@@ -244,6 +253,7 @@ public sealed class TestAuthHandler(
     public const string UserIdHeader = "X-Test-User";
     public const string RoleHeader = "X-Test-Role";
 
+    // Tests opt into an identity by setting headers; a missing user header represents an anonymous request.
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         if (!Request.Headers.TryGetValue(UserIdHeader, out var userId))
@@ -293,6 +303,7 @@ internal sealed class RecipeRepositoryStub : IRecipeRepository
         CategoryId,
         "recipe-owner");
 
+    // Return one deterministic recipe so the endpoint exercises authorization without a database.
     public Task<Recipe?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         Task.FromResult(id == Recipe.Id ? Recipe : null);
 
@@ -341,6 +352,7 @@ internal sealed class RecipeRepositoryStub : IRecipeRepository
 
 internal sealed class RecipeSenderStub(Recipe existingRecipe) : ISender
 {
+    // Only emulate responses needed after authorization; forbidden requests never reach this sender.
     public Task<TResponse> Send<TResponse>(
         IRequest<TResponse> request,
         CancellationToken cancellationToken = default)

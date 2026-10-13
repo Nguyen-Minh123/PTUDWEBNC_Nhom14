@@ -1,11 +1,15 @@
 @baseUrl = http://localhost:5075
+# REST Client reads the token from the local environment; never paste a secret into this tracked file.
 @accessToken = {{$processEnv CULINARY_BLOG_ACCESS_TOKEN}}
+# These values are extracted from request 1, so subsequent requests use actual seeded identifiers.
 @seedRecipeSlug = {{seedRecipes.response.body.$.items[0].slug}}
 @categoryId = {{seedRecipes.response.body.$.items[0].categoryId}}
+# Reuse the created resource for read/update/lifecycle/delete scenarios below.
 @createdRecipeId = {{createRecipe.response.body.$.id}}
 @updatedRecipeSlug = lab5-http-updated-{{$guid}}
 
 ### 1. List recipes and provide seed values for following requests
+# Named responses expose the seed recipe/category fields to REST Client variables.
 # @name seedRecipes
 GET {{baseUrl}}/api/v1/recipes?page=1&pageSize=10
 Accept: application/json
@@ -37,6 +41,7 @@ client.test("3. Searches recipes successfully", function () {
 %}
 
 ### 4. Create a recipe using values from the seed response
+# Authenticated write: authorId is intentionally omitted; the API derives it from the token.
 # @name createRecipe
 POST {{baseUrl}}/api/v1/recipes
 Authorization: Bearer {{accessToken}}
