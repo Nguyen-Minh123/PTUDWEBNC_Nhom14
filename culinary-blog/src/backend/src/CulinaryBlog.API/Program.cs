@@ -1,4 +1,6 @@
 using Amazon.S3;
+using Asp.Versioning;
+using Asp.Versioning.Builder;
 using CulinaryBlog.API.Endpoints;
 using CulinaryBlog.API.Middlewares;
 using CulinaryBlog.API.Extensions;
@@ -27,6 +29,28 @@ builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
 builder.Services.AddApplication();
 // Đăng ký Infrastructure layer
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// =====================================================
+// Cấu hình API Versioning cho Minimal APIs
+// =====================================================
+// - Default v1.0
+// - URL segment: /api/v{version:apiVersion}/...
+// - ReportApiVersions: trả header version để client biết
+builder.Services
+    .AddApiVersioning(options =>
+    {
+        options.DefaultApiVersion = new ApiVersion(1, 0);
+        options.AssumeDefaultVersionWhenUnspecified = false;
+        options.ReportApiVersions = true;
+        options.ApiVersionReader = new UrlSegmentApiVersionReader();
+        options.RouteConstraintName = "apiVersion";
+    })
+    .AddApiExplorer(options =>
+    {
+        // Giúp API explorer/Swagger nhóm endpoint theo version
+        options.GroupNameFormat = "'v'VVV";
+        options.SubstituteApiVersionInUrl = true;
+    });
 
 // =====================================================
 // Đăng ký CORS đa môi trường
@@ -234,6 +258,67 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // =====================================================
+// Tạo ApiVersionSet v1.0
+// =====================================================
+// Đây là bước bắt buộc để endpoint có "associated API version set"
+var v1Version = new ApiVersion(1, 0);
+
+var versionSet = app.NewApiVersionSet()
+    .HasApiVersion(v1Version)
+    .ReportApiVersions()
+    .Build();
+
+// =====================================================
+// 8. Route root versioned
+// =====================================================
+// Mọi route API đi qua đây sẽ mang prefix /api/v{version:apiVersion}
+var api = app.MapGroup("/api/v{version:apiVersion}")
+    .WithApiVersionSet(versionSet);
+
+// =====================================================
+// 9. Route group Recipes v1
+// =====================================================
+var recipes = api.MapGroup("/recipes");
+
+recipes.MapGet("/", () =>
+    Results.Ok(new { message = "Recipes v1.0" }))
+    .MapToApiVersion(v1Version);
+
+recipes.MapGet("/{id:guid}", (Guid id) =>
+    Results.Ok(new { id, message = "Recipe detail v1.0" }))
+    .MapToApiVersion(v1Version);
+
+// =====================================================
+// 10. Route group Categories v1
+// =====================================================
+var categories = api.MapGroup("/categories");
+
+categories.MapGet("/", () =>
+    Results.Ok(new { message = "Categories v1.0" }))
+    .MapToApiVersion(v1Version);
+
+// =====================================================
+// 11. Route group Auth v1
+// =====================================================
+var auth = api.MapGroup("/auth");
+
+auth.MapPost("/login", () =>
+    Results.Ok(new { message = "Login v1.0" }))
+    .MapToApiVersion(v1Version);
+
+auth.MapPost("/register", () =>
+    Results.Ok(new { message = "Register v1.0" }))
+    .MapToApiVersion(v1Version);
+
+auth.MapPost("/refresh", () =>
+    Results.Ok(new { message = "Refresh v1.0" }))
+    .MapToApiVersion(v1Version);
+
+auth.MapPost("/logout", () =>
+    Results.Ok(new { message = "Logout v1.0" }))
+    .MapToApiVersion(v1Version);
+
+// =====================================================
 // Routes
 // =====================================================
 app.MapControllers();
@@ -264,56 +349,9 @@ app.MapGet("/health/ready", () => Results.Ok(new
 // Route groups
 // =====================================================
 
-// Nhóm API chính: toàn bộ API dùng policy chung
-var api = app.MapGroup("/api/v1");
-
 // Ví dụ endpoint công khai / thông thường
 api.MapGet("/health", () => Results.Ok(new { status = "Healthy" }))
    .WithName("HealthCheck");
-
-// =====================================================
-// Auth endpoints
-// =====================================================
-
-// Nhóm auth riêng để login gắn policy chặt hơn
-var auth = app.MapGroup("/api/v1/auth");
-
-auth.MapPost("/login", async () =>
-{
-    // TODO: thay bằng handler login thật của bạn
-    return Results.Ok(new { message = "login ok" });
-})
-.RequireRateLimiting("login-policy");
-
-auth.MapPost("/register", async () =>
-{
-    // Endpoint này vẫn chịu api-policy từ GlobalLimiter
-    return Results.Ok(new { message = "register ok" });
-});
-
-auth.MapPost("/refresh", async () =>
-{
-    return Results.Ok(new { message = "refresh ok" });
-});
-
-auth.MapPost("/logout", async () =>
-{
-    return Results.Ok(new { message = "logout ok" });
-});
-
-// =====================================================
-// Các endpoint nghiệp vụ khác
-// =====================================================
-
-api.MapGet("/recipes", async () =>
-{
-    return Results.Ok(new { message = "recipes list" });
-});
-
-api.MapPost("/recipes", async () =>
-{
-    return Results.Ok(new { message = "create recipe" });
-});
 
 // ===================================================== 
 // Minimal API Endpoints 
