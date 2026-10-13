@@ -4,8 +4,17 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace CulinaryBlog.API.HealthChecks;
 
+/// <summary>
+/// Checks whether the application database is reachable.
+/// </summary>
 public sealed class DatabaseHealthCheck(CulinaryBlogDbContext dbContext) : IHealthCheck
 {
+    /// <summary>
+    /// Runs the database connectivity check.
+    /// </summary>
+    /// <param name="context">The health check execution context.</param>
+    /// <param name="cancellationToken">The token used to cancel the check.</param>
+    /// <returns>The health status for database connectivity.</returns>
     public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
         CancellationToken cancellationToken = default)

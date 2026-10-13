@@ -151,17 +151,30 @@ app.MapScalarApiReference();
 app.MapControllers();
 app.MapRecipeEndpoints();
 
-app.MapGet("/", () => Results.Redirect("/scalar"));
+app.MapGet("/", () => Results.Redirect("/scalar"))
+    .WithName("GetApiDocumentation")
+    .WithSummary("Mở giao diện tài liệu API")
+    .WithDescription("Chuyển hướng đến Scalar UI.")
+    .Produces(StatusCodes.Status302Found);
 
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health")
+    .WithName("HealthCheck")
+    .WithSummary("Kiểm tra tình trạng hệ thống")
+    .WithDescription("Kiểm tra tất cả các health checks đã đăng ký.");
 app.MapHealthChecks("/health/live", new HealthCheckOptions
 {
     Predicate = healthCheck => healthCheck.Tags.Contains("live")
-});
+})
+    .WithName("LivenessCheck")
+    .WithSummary("Kiểm tra ứng dụng còn hoạt động")
+    .WithDescription("Chỉ kiểm tra tiến trình ứng dụng, không phụ thuộc dịch vụ bên ngoài.");
 app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {
     Predicate = healthCheck => healthCheck.Tags.Contains("ready")
-});
+})
+    .WithName("ReadinessCheck")
+    .WithSummary("Kiểm tra ứng dụng sẵn sàng phục vụ")
+    .WithDescription("Kiểm tra các phụ thuộc cần thiết để phục vụ request.");
 
 app.Run();
 

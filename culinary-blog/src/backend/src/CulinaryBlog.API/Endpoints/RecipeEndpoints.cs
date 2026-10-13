@@ -11,13 +11,21 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CulinaryBlog.API.Endpoints;
 
+/// <summary>
+/// Maps the recipe API endpoints.
+/// </summary>
 public static class RecipeEndpoints
 {
+    /// <summary>
+    /// Registers recipe routes and their OpenAPI metadata.
+    /// </summary>
+    /// <param name="app">The endpoint route builder.</param>
+    /// <returns>The route builder with recipe endpoints registered.</returns>
     public static IEndpointRouteBuilder MapRecipeEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/v1/recipes")
             .WithTags("Recipes")
-            .WithOpenApi();
+            .WithDescription("Tạo, tìm kiếm và quản lý vòng đời công thức nấu ăn.");
 
         group.MapGet("/", async (
             [FromServices] IUnitOfWork unitOfWork,
@@ -70,6 +78,8 @@ public static class RecipeEndpoints
         })
         .WithName("GetRecipes")
         .WithSummary("Lấy danh sách công thức có phân trang, lọc theo trạng thái và danh mục")
+        .WithDescription("Trả về danh sách công thức theo trang, có thể lọc bằng từ khóa, danh mục và trạng thái.")
+        .Produces<PaginatedResult<RecipeSummaryDto>>(StatusCodes.Status200OK)
         .ProducesValidationProblem()
         .AllowAnonymous();
 
@@ -83,6 +93,9 @@ public static class RecipeEndpoints
         })
         .WithName("GetRecipeById")
         .WithSummary("Lấy chi tiết công thức theo Id")
+        .WithDescription("Trả về công thức cùng danh mục, nguyên liệu, các bước thực hiện và hình ảnh.")
+        .Produces<RecipeDetailDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound)
         .AllowAnonymous();
 
         group.MapPost("/", async (
@@ -95,6 +108,9 @@ public static class RecipeEndpoints
         })
         .WithName("CreateRecipe")
         .WithSummary("Tạo công thức mới ở trạng thái Draft")
+        .WithDescription("Tạo bản nháp công thức và trả về đường dẫn đến tài nguyên vừa tạo.")
+        .Produces<RecipeDetailDto>(StatusCodes.Status201Created)
+        .ProducesValidationProblem()
         .AllowAnonymous();
 
         group.MapPut("/{id:guid}", async (
@@ -109,6 +125,9 @@ public static class RecipeEndpoints
         })
         .WithName("UpdateRecipe")
         .WithSummary("Cập nhật thông tin công thức")
+        .WithDescription("Cập nhật nội dung, thời gian, danh mục và thông tin dinh dưỡng của công thức.")
+        .Produces<RecipeDetailDto>(StatusCodes.Status200OK)
+        .ProducesValidationProblem()
         .AllowAnonymous();
 
         group.MapPost("/{id:guid}/publish", async (
@@ -121,6 +140,10 @@ public static class RecipeEndpoints
         })
         .WithName("PublishRecipe")
         .WithSummary("Xuất bản công thức")
+        .WithDescription("Chuyển công thức sang trạng thái Published khi thỏa mãn các quy tắc nghiệp vụ.")
+        .Produces<RecipeDetailDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status404NotFound)
         .AllowAnonymous();
 
         group.MapPost("/{id:guid}/archive", async (
@@ -133,6 +156,10 @@ public static class RecipeEndpoints
         })
         .WithName("ArchiveRecipe")
         .WithSummary("Lưu trữ công thức")
+        .WithDescription("Chuyển công thức sang trạng thái Archived.")
+        .Produces<RecipeDetailDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status404NotFound)
         .AllowAnonymous();
 
         group.MapDelete("/{id:guid}", async (
@@ -145,6 +172,9 @@ public static class RecipeEndpoints
         })
         .WithName("DeleteRecipe")
         .WithSummary("Xóa mềm công thức")
+        .WithDescription("Đánh dấu công thức đã xóa; không xóa vật lý dữ liệu.")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status404NotFound)
         .AllowAnonymous();
 
         group.MapGet("/search", async (
@@ -171,6 +201,8 @@ public static class RecipeEndpoints
         })
         .WithName("SearchRecipes")
         .WithSummary("Tìm kiếm công thức nấu ăn bằng Full-Text Search")
+        .WithDescription("Tìm kiếm theo từ khóa và trả về kết quả có phân trang.")
+        .Produces<PaginatedResult<RecipeSummaryDto>>(StatusCodes.Status200OK)
         .ProducesValidationProblem()
         .AllowAnonymous();
 
@@ -181,6 +213,9 @@ public static class RecipeEndpoints
         })
         .WithName("GetRecipeBySlug")
         .WithSummary("Lấy chi tiết công thức nấu ăn theo Slug")
+        .WithDescription("Trả về thông tin chi tiết công thức khớp với slug.")
+        .Produces<RecipeDetailDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound)
         .AllowAnonymous();
 
         return app;
