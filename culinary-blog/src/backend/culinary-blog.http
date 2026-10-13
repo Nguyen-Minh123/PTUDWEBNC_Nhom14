@@ -1,7 +1,7 @@
 @baseUrl = http://localhost:5075
+@accessToken = {{$processEnv CULINARY_BLOG_ACCESS_TOKEN}}
 @seedRecipeSlug = {{seedRecipes.response.body.$.items[0].slug}}
 @categoryId = {{seedRecipes.response.body.$.items[0].categoryId}}
-@authorId = {{seedRecipes.response.body.$.items[0].authorId}}
 @createdRecipeId = {{createRecipe.response.body.$.id}}
 @updatedRecipeSlug = lab5-http-updated-{{$guid}}
 
@@ -39,6 +39,7 @@ client.test("3. Searches recipes successfully", function () {
 ### 4. Create a recipe using values from the seed response
 # @name createRecipe
 POST {{baseUrl}}/api/v1/recipes
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
@@ -50,8 +51,7 @@ Content-Type: application/json
   "cookTime": 25,
   "servings": 2,
   "difficulty": 1,
-  "categoryId": "{{categoryId}}",
-  "authorId": "{{authorId}}"
+  "categoryId": "{{categoryId}}"
 }
 
 > {%
@@ -72,6 +72,7 @@ client.test("5. Gets the created recipe", function () {
 
 ### 6. Update the created recipe
 PUT {{baseUrl}}/api/v1/recipes/{{createdRecipeId}}
+Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
@@ -95,6 +96,7 @@ client.test("6. Updates the created recipe", function () {
 
 ### 7. Reject publishing a recipe without steps and ingredients
 POST {{baseUrl}}/api/v1/recipes/{{createdRecipeId}}/publish
+Authorization: Bearer {{accessToken}}
 
 > {%
 client.test("7. Rejects publishing an incomplete recipe", function () {
@@ -104,6 +106,7 @@ client.test("7. Rejects publishing an incomplete recipe", function () {
 
 ### 8. Archive the created recipe
 POST {{baseUrl}}/api/v1/recipes/{{createdRecipeId}}/archive
+Authorization: Bearer {{accessToken}}
 
 > {%
 client.test("8. Archives the created recipe", function () {
@@ -113,6 +116,7 @@ client.test("8. Archives the created recipe", function () {
 
 ### 9. Soft-delete the created recipe
 DELETE {{baseUrl}}/api/v1/recipes/{{createdRecipeId}}
+Authorization: Bearer {{accessToken}}
 
 > {%
 client.test("9. Soft-deletes the created recipe", function () {

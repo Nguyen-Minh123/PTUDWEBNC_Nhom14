@@ -77,23 +77,49 @@ Dự án phát triển hệ thống Full-Stack cho nền tảng Blog ẩm thực
 ---
 
 ## ⚙️ Hướng dẫn Khởi chạy Hệ thống (Local Development)
-```bash
 ### Bước 1: Khởi động Hạ tầng (Docker Compose)
 Đảm bảo ứng dụng **Docker Desktop** trên máy tính đã được bật và chạy ổn định. Mở Terminal tại thư mục gốc của dự án (`culinary-blog`) và chạy[cite: 13, 15]:
 
+```bash
 docker compose up -d
+```
+
+### Cấu hình xác thực JWT cho API
+
+API yêu cầu cấu hình JWT trước khi khởi động. Các giá trị phải khớp với JWT do identity provider của môi trường phát hành:
+
+| Biến môi trường | Ý nghĩa |
+| --- | --- |
+| `Jwt__Issuer` | Issuer được phát hành trong JWT |
+| `Jwt__Audience` | Audience của API |
+| `Jwt__SigningKey` | Khóa ký HS256, tối thiểu 32 byte UTF-8 |
+
+Không đưa signing key hoặc access token vào source control. Ví dụ PowerShell (thay các giá trị placeholder bằng cấu hình được cấp riêng):
+
+```powershell
+$env:Jwt__Issuer = "<issuer>"
+$env:Jwt__Audience = "<audience>"
+$env:Jwt__SigningKey = "<secret-key-at-least-32-bytes>"
+$env:CULINARY_BLOG_ACCESS_TOKEN = "<access-token>"
+```
+
+Các endpoint tạo và thay đổi recipe yêu cầu access token dạng Bearer. File `culinary-blog/src/backend/culinary-blog.http` lấy token từ biến môi trường `CULINARY_BLOG_ACCESS_TOKEN`; nếu biến chưa được VS Code kế thừa, hãy khởi chạy hoặc khởi động lại VS Code trong môi trường đã cấu hình biến đó. JWT cần có claim `sub` (hoặc claim user id được ứng dụng hỗ trợ); thao tác quản trị cần claim vai trò `role` với giá trị `Admin`. Các thao tác đọc recipe vẫn công khai. API hiện xác thực token đã được identity provider phát hành; luồng cấp token không thuộc cấu hình API này.
 
 ### Bước 2: Khởi chạy Backend API (.NET 10)
 
+```bash
 cd src/backend
 dotnet restore
 dotnet watch run --project src/CulinaryBlog.API
+```
 
 Tài liệu API Scalar UI: Truy cập trực tiếp tại trình duyệt:
 👉 http://localhost:5075/scalar/v1
 
 ### Bước 3: Khởi chạy Frontend (Next.js)
 
+```bash
 cd src/frontend
 npm install
 npm run dev
+```

@@ -1,4 +1,5 @@
 using CulinaryBlog.API.Endpoints;
+using CulinaryBlog.API.Authorization;
 using CulinaryBlog.API.HealthChecks;
 using Amazon.S3;
 using CulinaryBlog.Application.Common.Caching;
@@ -9,10 +10,15 @@ using CulinaryBlog.Infrastructure.Persistence.Interceptors;
 using CulinaryBlog.Infrastructure.Services;
 using CulinaryBlog.Infrastructure.Storage;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using Serilog;
+using System.Security.Claims;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +39,61 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<CulinaryBlog.API.Infrastructure.GlobalExceptionHandler>();
+
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+var jwtAudience = builder.Configuration["Jwt:Audience"];
+var jwtSigningKey = builder.Configuration["Jwt:SigningKey"];
+
+if (string.IsNullOrWhiteSpace(jwtIssuer) ||
+    string.IsNullOrWhiteSpace(jwtAudience) ||
+    string.IsNullOrWhiteSpace(jwtSigningKey))
+{
+    throw new InvalidOperationException(
+        "JWT configuration is required: Jwt:Issuer, Jwt:Audience, and Jwt:SigningKey.");
+}
+
+var signingKeyBytes = Encoding.UTF8.GetBytes(jwtSigningKey);
+if (signingKeyBytes.Length < 32)
+{
+    throw new InvalidOperationException("Jwt:SigningKey must contain at least 32 UTF-8 bytes.");
+}
+
+var signingKey = new SymmetricSecurityKey(signingKeyBytes);
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.MapInboundClaims = false;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwtIssuer,
+            ValidateAudience = true,
+            ValidAudience = jwtAudience,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = signingKey,
+            ValidateLifetime = true,
+            RequireExpirationTime = true,
+            ClockSkew = TimeSpan.FromMinutes(1),
+            NameClaimType = "sub",
+            RoleClaimType = "role",
+            ValidAlgorithms = [SecurityAlgorithms.HmacSha256]
+        };
+    });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(
+        RecipeAuthorizationPolicies.AuthenticatedUser,
+        policy => policy.RequireAuthenticatedUser());
+    options.AddPolicy(
+        RecipeAuthorizationPolicies.OwnerOrAdmin,
+        policy => policy
+            .RequireAuthenticatedUser()
+            .AddRequirements(new RecipeOwnerOrAdminRequirement()));
+});
+builder.Services.AddSingleton<IAuthorizationHandler, RecipeOwnerOrAdminHandler>();
 
 builder.Services.AddCors(options =>
 {
@@ -140,6 +201,8 @@ if (app.Environment.IsDevelopment())
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
 app.UseCors("DefaultCors");
+app.UseAuthentication();
+app.UseAuthorization();
 
 // OpenAPI / Scalar
 app.MapOpenApi();
@@ -202,3 +265,8 @@ static string NormalizeServiceUrl(string endpoint)
 //     app.MapGet("/", () => "Hello World! Culinary Blog Backend is running on .NET 10.");
 // }
 // app.Run();
+
+/// <summary>Provides the API entry point for hosting and integration tests.</summary>
+public partial class Program
+{
+}

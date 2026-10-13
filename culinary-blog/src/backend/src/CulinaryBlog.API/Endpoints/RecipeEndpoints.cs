@@ -5,8 +5,10 @@ using CulinaryBlog.Application.Features.Recipes.Commands;
 using CulinaryBlog.Application.Features.Recipes.Queries.GetRecipeBySlug;
 using CulinaryBlog.Application.Features.Recipes.Queries.SearchRecipes;
 using CulinaryBlog.Application.Recipes.Commands.DeleteRecipe;
+using CulinaryBlog.API.Authorization;
 using CulinaryBlog.Domain.Entities;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CulinaryBlog.API.Endpoints;
@@ -101,72 +103,164 @@ public static class RecipeEndpoints
         group.MapPost("/", async (
             [FromBody] CreateRecipeCommand command,
             [FromServices] ISender sender,
+            [FromServices] ICurrentUserService currentUserService,
             CancellationToken ct) =>
         {
-            var recipe = await sender.Send(command, ct);
+            var authorId = currentUserService.UserId;
+            if (string.IsNullOrWhiteSpace(authorId))
+            {
+                return Results.Forbid();
+            }
+
+            var recipe = await sender.Send(command with { AuthorId = authorId }, ct);
             return Results.Created($"/api/v1/recipes/{recipe.Id}", MapToDetailDto(recipe));
         })
         .WithName("CreateRecipe")
         .WithSummary("Tạo công thức mới ở trạng thái Draft")
         .WithDescription("Tạo bản nháp công thức và trả về đường dẫn đến tài nguyên vừa tạo.")
         .Produces<RecipeDetailDto>(StatusCodes.Status201Created)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status403Forbidden)
         .ProducesValidationProblem()
-        .AllowAnonymous();
+        .RequireAuthorization(RecipeAuthorizationPolicies.AuthenticatedUser);
 
         group.MapPut("/{id:guid}", async (
             Guid id,
             [FromBody] UpdateRecipeCommand request,
             [FromServices] ISender sender,
+            [FromServices] IUnitOfWork unitOfWork,
+            [FromServices] IAuthorizationService authorizationService,
+            HttpContext httpContext,
             CancellationToken ct) =>
         {
+            var recipe = await unitOfWork.Recipes.GetByIdAsync(id, ct);
+            if (recipe is null)
+            {
+                return Results.NotFound();
+            }
+
+            var authorizationResult = await authorizationService.AuthorizeAsync(
+                httpContext.User,
+                recipe,
+                RecipeAuthorizationPolicies.OwnerOrAdmin);
+            if (!authorizationResult.Succeeded)
+            {
+                return Results.Forbid();
+            }
+
             var command = request with { Id = id };
-            var recipe = await sender.Send(command, ct);
-            return Results.Ok(MapToDetailDto(recipe));
+            var updatedRecipe = await sender.Send(command, ct);
+            return Results.Ok(MapToDetailDto(updatedRecipe));
         })
         .WithName("UpdateRecipe")
         .WithSummary("Cập nhật thông tin công thức")
         .WithDescription("Cập nhật nội dung, thời gian, danh mục và thông tin dinh dưỡng của công thức.")
         .Produces<RecipeDetailDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status403Forbidden)
+        .Produces(StatusCodes.Status404NotFound)
         .ProducesValidationProblem()
-        .AllowAnonymous();
+        .RequireAuthorization(RecipeAuthorizationPolicies.AuthenticatedUser);
 
         group.MapPost("/{id:guid}/publish", async (
             Guid id,
             [FromServices] ISender sender,
+            [FromServices] IUnitOfWork unitOfWork,
+            [FromServices] IAuthorizationService authorizationService,
+            HttpContext httpContext,
             CancellationToken ct) =>
         {
-            var recipe = await sender.Send(new PublishRecipeCommand(id), ct);
-            return recipe is null ? Results.NotFound() : Results.Ok(MapToDetailDto(recipe));
+            var existingRecipe = await unitOfWork.Recipes.GetByIdAsync(id, ct);
+            if (existingRecipe is null)
+            {
+                return Results.NotFound();
+            }
+
+            var authorizationResult = await authorizationService.AuthorizeAsync(
+                httpContext.User,
+                existingRecipe,
+                RecipeAuthorizationPolicies.OwnerOrAdmin);
+            if (!authorizationResult.Succeeded)
+            {
+                return Results.Forbid();
+            }
+
+            var publishedRecipe = await sender.Send(new PublishRecipeCommand(id), ct);
+            return publishedRecipe is null
+                ? Results.NotFound()
+                : Results.Ok(MapToDetailDto(publishedRecipe));
         })
         .WithName("PublishRecipe")
         .WithSummary("Xuất bản công thức")
         .WithDescription("Chuyển công thức sang trạng thái Published khi thỏa mãn các quy tắc nghiệp vụ.")
         .Produces<RecipeDetailDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status403Forbidden)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status404NotFound)
-        .AllowAnonymous();
+        .RequireAuthorization(RecipeAuthorizationPolicies.AuthenticatedUser);
 
         group.MapPost("/{id:guid}/archive", async (
             Guid id,
             [FromServices] ISender sender,
+            [FromServices] IUnitOfWork unitOfWork,
+            [FromServices] IAuthorizationService authorizationService,
+            HttpContext httpContext,
             CancellationToken ct) =>
         {
-            var recipe = await sender.Send(new ArchiveRecipeCommand(id), ct);
-            return recipe is null ? Results.NotFound() : Results.Ok(MapToDetailDto(recipe));
+            var existingRecipe = await unitOfWork.Recipes.GetByIdAsync(id, ct);
+            if (existingRecipe is null)
+            {
+                return Results.NotFound();
+            }
+
+            var authorizationResult = await authorizationService.AuthorizeAsync(
+                httpContext.User,
+                existingRecipe,
+                RecipeAuthorizationPolicies.OwnerOrAdmin);
+            if (!authorizationResult.Succeeded)
+            {
+                return Results.Forbid();
+            }
+
+            var archivedRecipe = await sender.Send(new ArchiveRecipeCommand(id), ct);
+            return archivedRecipe is null
+                ? Results.NotFound()
+                : Results.Ok(MapToDetailDto(archivedRecipe));
         })
         .WithName("ArchiveRecipe")
         .WithSummary("Lưu trữ công thức")
         .WithDescription("Chuyển công thức sang trạng thái Archived.")
         .Produces<RecipeDetailDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status403Forbidden)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status404NotFound)
-        .AllowAnonymous();
+        .RequireAuthorization(RecipeAuthorizationPolicies.AuthenticatedUser);
 
         group.MapDelete("/{id:guid}", async (
             Guid id,
             [FromServices] ISender sender,
+            [FromServices] IUnitOfWork unitOfWork,
+            [FromServices] IAuthorizationService authorizationService,
+            HttpContext httpContext,
             CancellationToken ct) =>
         {
+            var recipe = await unitOfWork.Recipes.GetByIdAsync(id, ct);
+            if (recipe is null)
+            {
+                return Results.NotFound();
+            }
+
+            var authorizationResult = await authorizationService.AuthorizeAsync(
+                httpContext.User,
+                recipe,
+                RecipeAuthorizationPolicies.OwnerOrAdmin);
+            if (!authorizationResult.Succeeded)
+            {
+                return Results.Forbid();
+            }
+
             var deleted = await sender.Send(new DeleteRecipeCommand(id), ct);
             return deleted ? Results.NoContent() : Results.NotFound();
         })
@@ -174,8 +268,10 @@ public static class RecipeEndpoints
         .WithSummary("Xóa mềm công thức")
         .WithDescription("Đánh dấu công thức đã xóa; không xóa vật lý dữ liệu.")
         .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status403Forbidden)
         .Produces(StatusCodes.Status404NotFound)
-        .AllowAnonymous();
+        .RequireAuthorization(RecipeAuthorizationPolicies.AuthenticatedUser);
 
         group.MapGet("/search", async (
             [FromServices] ISender sender,
