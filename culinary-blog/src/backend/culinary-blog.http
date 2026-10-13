@@ -1,0 +1,181 @@
+@baseUrl = http://localhost:5075
+@seedRecipeSlug = {{seedRecipes.response.body.$.items[0].slug}}
+@categoryId = {{seedRecipes.response.body.$.items[0].categoryId}}
+@authorId = {{seedRecipes.response.body.$.items[0].authorId}}
+@createdRecipeId = {{createRecipe.response.body.$.id}}
+@updatedRecipeSlug = lab5-http-updated-{{$guid}}
+
+### 1. List recipes and provide seed values for following requests
+# @name seedRecipes
+GET {{baseUrl}}/api/v1/recipes?page=1&pageSize=10
+Accept: application/json
+
+> {%
+client.test("1. Lists recipes successfully", function () {
+    client.assert(response.status === 200, "Expected HTTP 200");
+});
+%}
+
+### 2. Get a seeded recipe by slug
+GET {{baseUrl}}/api/v1/recipes/{{seedRecipeSlug}}
+Accept: application/json
+
+> {%
+client.test("2. Gets a recipe by slug", function () {
+    client.assert(response.status === 200, "Expected HTTP 200");
+});
+%}
+
+### 3. Search recipes using full-text search
+GET {{baseUrl}}/api/v1/recipes/search?q=pho&page=1&pageSize=10
+Accept: application/json
+
+> {%
+client.test("3. Searches recipes successfully", function () {
+    client.assert(response.status === 200, "Expected HTTP 200");
+});
+%}
+
+### 4. Create a recipe using values from the seed response
+# @name createRecipe
+POST {{baseUrl}}/api/v1/recipes
+Content-Type: application/json
+
+{
+  "title": "Lab 5 HTTP Recipe {{$guid}}",
+  "slug": "lab5-http-{{$guid}}",
+  "description": "Recipe created by the Lab 5 HTTP request suite.",
+  "instructions": "Prepare the ingredients and cook until done.",
+  "prepTime": 15,
+  "cookTime": 25,
+  "servings": 2,
+  "difficulty": 1,
+  "categoryId": "{{categoryId}}",
+  "authorId": "{{authorId}}"
+}
+
+> {%
+client.test("4. Creates a recipe", function () {
+    client.assert(response.status === 201, "Expected HTTP 201 Created");
+});
+%}
+
+### 5. Get the created recipe by id
+GET {{baseUrl}}/api/v1/recipes/{{createdRecipeId}}
+Accept: application/json
+
+> {%
+client.test("5. Gets the created recipe", function () {
+    client.assert(response.status === 200, "Expected HTTP 200");
+});
+%}
+
+### 6. Update the created recipe
+PUT {{baseUrl}}/api/v1/recipes/{{createdRecipeId}}
+Content-Type: application/json
+
+{
+  "id": "{{createdRecipeId}}",
+  "title": "Updated Lab 5 HTTP Recipe",
+  "slug": "{{updatedRecipeSlug}}",
+  "description": "Updated by the Lab 5 HTTP request suite.",
+  "instructions": "Prepare, cook, and serve.",
+  "prepTime": 20,
+  "cookTime": 30,
+  "servings": 4,
+  "difficulty": 2,
+  "categoryId": "{{categoryId}}"
+}
+
+> {%
+client.test("6. Updates the created recipe", function () {
+    client.assert(response.status === 200, "Expected HTTP 200");
+});
+%}
+
+### 7. Reject publishing a recipe without steps and ingredients
+POST {{baseUrl}}/api/v1/recipes/{{createdRecipeId}}/publish
+
+> {%
+client.test("7. Rejects publishing an incomplete recipe", function () {
+    client.assert(response.status === 400, "Expected HTTP 400 for the incomplete recipe");
+});
+%}
+
+### 8. Archive the created recipe
+POST {{baseUrl}}/api/v1/recipes/{{createdRecipeId}}/archive
+
+> {%
+client.test("8. Archives the created recipe", function () {
+    client.assert(response.status === 200, "Expected HTTP 200");
+});
+%}
+
+### 9. Soft-delete the created recipe
+DELETE {{baseUrl}}/api/v1/recipes/{{createdRecipeId}}
+
+> {%
+client.test("9. Soft-deletes the created recipe", function () {
+    client.assert(response.status === 204, "Expected HTTP 204 No Content");
+});
+%}
+
+### 10. Return not found for an unknown recipe id
+GET {{baseUrl}}/api/v1/recipes/00000000-0000-0000-0000-000000000000
+Accept: application/json
+
+> {%
+client.test("10. Returns 404 for an unknown recipe id", function () {
+    client.assert(response.status === 404, "Expected HTTP 404");
+});
+%}
+
+### 11. Return not found for an unknown recipe slug
+GET {{baseUrl}}/api/v1/recipes/lab5-http-recipe-that-does-not-exist
+Accept: application/json
+
+> {%
+client.test("11. Returns 404 for an unknown recipe slug", function () {
+    client.assert(response.status === 404, "Expected HTTP 404");
+});
+%}
+
+### 12. Reject a page number below the supported range
+GET {{baseUrl}}/api/v1/recipes?page=0&pageSize=10
+Accept: application/json
+
+> {%
+client.test("12. Rejects an invalid page number", function () {
+    client.assert(response.status === 400, "Expected HTTP 400");
+});
+%}
+
+### 13. Reject a page size above the supported range
+GET {{baseUrl}}/api/v1/recipes?page=1&pageSize=101
+Accept: application/json
+
+> {%
+client.test("13. Rejects an invalid page size", function () {
+    client.assert(response.status === 400, "Expected HTTP 400");
+});
+%}
+
+### 14. Reject an unsupported recipe status
+GET {{baseUrl}}/api/v1/recipes?status=Unknown
+Accept: application/json
+
+> {%
+client.test("14. Rejects an unsupported status", function () {
+    client.assert(response.status === 400, "Expected HTTP 400");
+});
+%}
+
+### 15. Reject an empty full-text search term
+GET {{baseUrl}}/api/v1/recipes/search?q=%20&page=1&pageSize=10
+Accept: application/json
+
+> {%
+client.test("15. Rejects an empty search term", function () {
+    client.assert(response.status === 400, "Expected HTTP 400");
+});
+%}
