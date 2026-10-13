@@ -1,3 +1,4 @@
+using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -5,19 +6,36 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CulinaryBlog.Infrastructure.Persistence;
 
+// =====================================================
+// DbContext trung tâm của hệ thống
+// - Kế thừa IdentityDbContext để dùng ASP.NET Core Identity
+// - Implement IApplicationDbContext để Application layer
+//   chỉ phụ thuộc abstraction
+// =====================================================
 public class ApplicationDbContext
-    : IdentityDbContext<ApplicationUser, IdentityRole<string>, string>
+    : IdentityDbContext<ApplicationUser>, IApplicationDbContext
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
     {
     }
 
-    public DbSet<Category> Categories => Set<Category>();
+    // -------------------------------------------------
+    // DbSet cho Recipe
+    // -------------------------------------------------
     public DbSet<Recipe> Recipes => Set<Recipe>();
+    public DbSet<Category> Categories => Set<Category>();
     public DbSet<RecipeStep> RecipeSteps => Set<RecipeStep>();
     public DbSet<RecipeIngredient> RecipeIngredients => Set<RecipeIngredient>();
     public DbSet<RecipeImage> RecipeImages => Set<RecipeImage>();
+
+    // -------------------------------------------------
+    // SaveChangesAsync để Application layer gọi qua interface
+    // -------------------------------------------------
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        return base.SaveChangesAsync(cancellationToken);
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

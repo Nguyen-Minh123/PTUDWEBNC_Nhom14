@@ -1,8 +1,11 @@
 using Amazon.S3;
 using CulinaryBlog.API.Endpoints;
+using CulinaryBlog.API.Middlewares;
+using CulinaryBlog.Application;
 using CulinaryBlog.Application.Common.Caching;
 using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Application.Features.Recipes.Queries.GetRecipesByKeyword;
+using CulinaryBlog.Infrastructure;
 using CulinaryBlog.Infrastructure.Caching;
 using CulinaryBlog.Infrastructure.Persistence;
 using CulinaryBlog.Infrastructure.Persistence.Interceptors;
@@ -17,6 +20,20 @@ var builder = WebApplication.CreateBuilder(args);
 // Khai báo cho ứng dụng biết cách kết nối PostgreSQL thông qua DbContext
 builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// ======================================================
+// ĐỌC CẤU HÌNH
+// ======================================================
+// Lấy danh sách origin hợp lệ cho Production từ appsettings.json
+// Ví dụ: Cors:AllowedOrigins = [ "https://example.com", "https://www.example.com" ]
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? Array.Empty<string>();
+
+
+// Đăng ký các layer của dự án
+builder.Services.AddApplication();
+builder.Services.AddInfrastructure(builder.Configuration);
 
 //-----------------------------------------------------------------
 // =====================================================
@@ -33,23 +50,23 @@ builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 
 // Cho phép gọi API từ frontend Next.js hoặc các client khác.
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("DefaultCors", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
-});
+// builder.Services.AddCors(options =>
+// {
+//     options.AddPolicy("DefaultCors", policy =>
+//     {
+//         policy.AllowAnyOrigin()
+//               .AllowAnyHeader()
+//               .AllowAnyMethod();
+//     });
+// });
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Missing connection string: DefaultConnection");
 
 // Đăng ký MediatR cho CQRS handlers trong Application layer. 
-builder.Services.AddMediatR(cfg => 
-{ 
-    cfg.RegisterServicesFromAssembly(typeof(GetRecipesByKeywordQuery).Assembly); 
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(typeof(GetRecipesByKeywordQuery).Assembly);
 });
 
 // Đăng ký SoftDeleteInterceptor để tự động xử lý soft delete. 
@@ -114,6 +131,8 @@ var app = builder.Build();
 // =====================================================
 // Middleware
 // =====================================================
+// Middleware xử lý lỗi toàn cục
+app.UseMiddleware<GlobalExceptionMiddleware>();
 // Chuẩn hóa exception trả về dạng ProblemDetails.
 app.UseExceptionHandler();
 // Redirect HTTP -> HTTPS nếu môi trường hỗ trợ.
@@ -131,6 +150,24 @@ app.MapRecipeIngredientsEndpoints();
 app.MapRecipeStepsEndpoints();
 // Thực hiện API Upload và Quản lý Hình ảnh
 app.MapRecipeImagesEndpoints();
+
+// ======================================================
+// ÁP DỤNG CORS THEO MÔI TRƯỜNG
+// ======================================================
+// Development: chỉ localhost:3000
+// Production: whitelist từ appsettings.json
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors("DevelopmentPolicy");
+}
+else
+{
+    app.UseCors("ProductionPolicy");
+}
+
+// Authentication / Authorization phải nằm sau UseCors
+app.UseAuthentication();
+app.UseAuthorization();
 
 // =====================================================
 // Routes
@@ -163,7 +200,7 @@ app.MapGet("/health/ready", () => Results.Ok(new
 // Minimal API Endpoints 
 // ===================================================== 
 
-MapRecipeEndpoints(app); 
+MapRecipeEndpoints(app);
 
 // ===================================================== 
 // App Start 
@@ -224,7 +261,7 @@ static string NormalizeServiceUrl(string endpoint)
 // {
 //     app.MapOpenApi();
 //     app.MapScalarApiReference(); // Chỉ giữ đúng 1 dòng này!
-    
+
 //     app.MapGet("/", () => "Hello World! Culinary Blog Backend is running on .NET 10.");
 // }
 // app.Run();

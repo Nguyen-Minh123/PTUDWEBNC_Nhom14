@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Text.Json;
 using CulinaryBlog.Application.Common.Caching;
 using Microsoft.Extensions.Caching.Distributed;
@@ -8,12 +7,8 @@ using Microsoft.Extensions.Logging;
 namespace CulinaryBlog.Infrastructure.Caching;
 
 /// <summary>
-/// Redis cache implementation dựa trên IDistributedCache.
-///
-/// Điểm khác so với bản dùng StackExchange.Redis:
-/// - Không scan key trực tiếp.
-/// - Dùng một index nhỏ theo prefix để phục vụ RemoveByPrefixAsync.
-/// - Giữ code gọn, dễ build, không phụ thuộc package Redis client trực tiếp.
+/// Triển khai cache dựa trên IDistributedCache.
+/// Hỗ trợ Get/Set/Remove/RemoveByPrefix.
 /// </summary>
 public sealed class RedisCacheService : ICacheService
 {
@@ -34,6 +29,9 @@ public sealed class RedisCacheService : ICacheService
     private readonly ILogger<RedisCacheService> _logger;
     private readonly string _keyPrefix;
 
+    /// <summary>
+    /// Khởi tạo dịch vụ cache.
+    /// </summary>
     public RedisCacheService(
         IDistributedCache cache,
         IConfiguration configuration,
@@ -48,6 +46,9 @@ public sealed class RedisCacheService : ICacheService
             ?? DefaultKeyPrefix);
     }
 
+    /// <summary>
+    /// Lấy dữ liệu từ cache.
+    /// </summary>
     public async Task<T?> GetAsync<T>(
         string key,
         CancellationToken cancellationToken = default)
@@ -78,34 +79,42 @@ public sealed class RedisCacheService : ICacheService
         }
     }
 
+    /// <summary>
+    /// Lưu dữ liệu vào cache với TTL.
+    /// </summary>
     public async Task SetAsync<T>(
         string key,
         T value,
-        TimeSpan ttl,
+        TimeSpan? absoluteExpirationRelativeToNow = null,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (ttl <= TimeSpan.Zero)
+        if (absoluteExpirationRelativeToNow.HasValue &&
+            absoluteExpirationRelativeToNow.Value <= TimeSpan.Zero)
         {
-            throw new ArgumentOutOfRangeException(nameof(ttl), "TTL must be greater than zero.");
+            throw new ArgumentOutOfRangeException(
+                nameof(absoluteExpirationRelativeToNow),
+                "TTL must be greater than zero.");
         }
 
         var fullKey = BuildKey(key);
         var payload = JsonSerializer.SerializeToUtf8Bytes(value, JsonOptions);
 
-        await _cache.SetAsync(
-            fullKey,
-            payload,
-            new DistributedCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = ttl
-            },
-            cancellationToken);
+        var options = new DistributedCacheEntryOptions();
+        if (absoluteExpirationRelativeToNow.HasValue)
+        {
+            options.AbsoluteExpirationRelativeToNow = absoluteExpirationRelativeToNow;
+        }
+
+        await _cache.SetAsync(fullKey, payload, options, cancellationToken);
 
         await AddToIndexAsync(fullKey, ExtractScope(key), cancellationToken);
     }
 
+    /// <summary>
+    /// Xóa một key cụ thể.
+    /// </summary>
     public async Task RemoveAsync(
         string key,
         CancellationToken cancellationToken = default)
@@ -118,6 +127,9 @@ public sealed class RedisCacheService : ICacheService
         await RemoveFromIndexAsync(fullKey, ExtractScope(key), cancellationToken);
     }
 
+    /// <summary>
+    /// Xóa cache theo tiền tố.
+    /// </summary>
     public async Task RemoveByPrefixAsync(
         string prefix,
         CancellationToken cancellationToken = default)
@@ -168,6 +180,9 @@ public sealed class RedisCacheService : ICacheService
             normalizedPrefix);
     }
 
+    /// <summary>
+    /// Tạo key hoàn chỉnh có prefix hệ thống.
+    /// </summary>
     private string BuildKey(string key)
     {
         if (string.IsNullOrWhiteSpace(key))
@@ -185,6 +200,9 @@ public sealed class RedisCacheService : ICacheService
         return $"{_keyPrefix}{normalized}";
     }
 
+    /// <summary>
+    /// Tạo prefix đầy đủ để so khớp key.
+    /// </summary>
     private string BuildKeyPrefix(string prefix)
     {
         var normalized = NormalizeLogicalPrefix(prefix);
@@ -197,6 +215,9 @@ public sealed class RedisCacheService : ICacheService
         return BuildKey(normalized);
     }
 
+    /// <summary>
+    /// Chuẩn hóa prefix gốc từ cấu hình.
+    /// </summary>
     private string NormalizeRootPrefix(string value)
     {
         var normalized = value.Trim();
@@ -214,6 +235,9 @@ public sealed class RedisCacheService : ICacheService
         return normalized;
     }
 
+    /// <summary>
+    /// Chuẩn hóa prefix logic người dùng truyền vào.
+    /// </summary>
     private string NormalizeLogicalPrefix(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -231,6 +255,9 @@ public sealed class RedisCacheService : ICacheService
         return normalized;
     }
 
+    /// <summary>
+    /// Lấy scope để phân nhóm index theo prefix.
+    /// </summary>
     private string ExtractScope(string keyOrPrefix)
     {
         var normalized = NormalizeLogicalPrefix(keyOrPrefix);
@@ -244,9 +271,15 @@ public sealed class RedisCacheService : ICacheService
         return normalized[..separatorIndex];
     }
 
+    /// <summary>
+    /// Tạo key lưu index theo scope.
+    /// </summary>
     private string GetIndexKey(string scope)
         => $"{_keyPrefix}{IndexPrefix}{scope}";
 
+    /// <summary>
+    /// Đọc danh sách key đang được index.
+    /// </summary>
     private async Task<HashSet<string>> ReadIndexAsync(
         string indexKey,
         CancellationToken cancellationToken)
@@ -271,16 +304,21 @@ public sealed class RedisCacheService : ICacheService
         }
     }
 
+    /// <summary>
+    /// Lưu lại index.
+    /// </summary>
     private async Task SaveIndexAsync(
         string indexKey,
         HashSet<string> index,
         CancellationToken cancellationToken)
     {
         var payload = JsonSerializer.SerializeToUtf8Bytes(index, JsonOptions);
-
         await _cache.SetAsync(indexKey, payload, IndexOptions, cancellationToken);
     }
 
+    /// <summary>
+    /// Thêm key vào index.
+    /// </summary>
     private async Task AddToIndexAsync(
         string fullKey,
         string scope,
@@ -295,6 +333,9 @@ public sealed class RedisCacheService : ICacheService
         }
     }
 
+    /// <summary>
+    /// Xóa key khỏi index.
+    /// </summary>
     private async Task RemoveFromIndexAsync(
         string fullKey,
         string scope,

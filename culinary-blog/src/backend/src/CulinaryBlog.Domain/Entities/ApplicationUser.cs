@@ -5,10 +5,14 @@ namespace CulinaryBlog.Domain.Entities;
 
 /// <summary>
 /// Người dùng hệ thống.
-/// Kế thừa IdentityUser<string> theo SRS.
+/// Theo SRS: ApplicationUser extends IdentityUser.
 /// </summary>
-public class ApplicationUser : IdentityUser<string>
+public class ApplicationUser : IdentityUser
 {
+    /// <summary>
+    /// Constructor private cho EF Core.
+    /// Khởi tạo mặc định các giá trị an toàn.
+    /// </summary>
     private ApplicationUser()
     {
         Id = Guid.NewGuid().ToString();
@@ -16,6 +20,9 @@ public class ApplicationUser : IdentityUser<string>
         IsActive = true;
     }
 
+    /// <summary>
+    /// Tạo người dùng mới với email và tên hiển thị.
+    /// </summary>
     public ApplicationUser(string email, string displayName)
         : this()
     {
@@ -61,6 +68,9 @@ public class ApplicationUser : IdentityUser<string>
     /// </summary>
     public DateTimeOffset CreatedAt { get; private set; } = DateTimeOffset.UtcNow;
 
+    /// <summary>
+    /// Cập nhật hồ sơ cơ bản.
+    /// </summary>
     public void UpdateProfile(string displayName, string? bio = null, string? avatarUrl = null)
     {
         DisplayName = NormalizeRequiredText(displayName, 100, nameof(displayName));
@@ -68,26 +78,41 @@ public class ApplicationUser : IdentityUser<string>
         AvatarUrl = NormalizeOptionalText(avatarUrl, 500);
     }
 
+    /// <summary>
+    /// Gán avatar.
+    /// </summary>
     public void SetAvatarUrl(string? avatarUrl)
     {
         AvatarUrl = NormalizeOptionalText(avatarUrl, 500);
     }
 
+    /// <summary>
+    /// Gán bio.
+    /// </summary>
     public void SetBio(string? bio)
     {
         Bio = NormalizeOptionalText(bio, int.MaxValue);
     }
 
+    /// <summary>
+    /// Kích hoạt tài khoản.
+    /// </summary>
     public void Activate()
     {
         IsActive = true;
     }
 
+    /// <summary>
+    /// Vô hiệu hóa tài khoản.
+    /// </summary>
     public void Deactivate()
     {
         IsActive = false;
     }
 
+    /// <summary>
+    /// Chuẩn hóa và kiểm tra chuỗi bắt buộc.
+    /// </summary>
     private static string NormalizeRequiredText(string? value, int maxLength, string paramName)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -107,6 +132,9 @@ public class ApplicationUser : IdentityUser<string>
         return normalized;
     }
 
+    /// <summary>
+    /// Chuẩn hóa và kiểm tra chuỗi tùy chọn.
+    /// </summary>
     private static string? NormalizeOptionalText(string? value, int maxLength)
     {
         if (string.IsNullOrWhiteSpace(value))

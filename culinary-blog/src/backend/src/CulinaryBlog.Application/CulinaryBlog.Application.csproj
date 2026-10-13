@@ -5,6 +5,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Http" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
     <ProjectReference Include="..\CulinaryBlog.Domain\CulinaryBlog.Domain.csproj" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
     <PackageReference Include="MediatR" />
   <PackageReference Include="Mapster" />
   <PackageReference Include="Mapster.DependencyInjection" />
