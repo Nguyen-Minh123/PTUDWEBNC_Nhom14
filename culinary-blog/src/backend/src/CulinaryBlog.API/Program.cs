@@ -1,6 +1,7 @@
 using Amazon.S3;
 using CulinaryBlog.API.Endpoints;
 using CulinaryBlog.API.Middlewares;
+using CulinaryBlog.API.Extensions;
 using CulinaryBlog.Application;
 using CulinaryBlog.Application.Common.Caching;
 using CulinaryBlog.Application.Common.Interfaces;
@@ -21,19 +22,18 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// ======================================================
-// ĐỌC CẤU HÌNH
-// ======================================================
-// Lấy danh sách origin hợp lệ cho Production từ appsettings.json
-// Ví dụ: Cors:AllowedOrigins = [ "https://example.com", "https://www.example.com" ]
-var allowedOrigins = builder.Configuration
-    .GetSection("Cors:AllowedOrigins")
-    .Get<string[]>() ?? Array.Empty<string>();
 
-
-// Đăng ký các layer của dự án
+// Đăng ký Application layer
 builder.Services.AddApplication();
+// Đăng ký Infrastructure layer
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// =====================================================
+// Đăng ký CORS đa môi trường
+// =====================================================
+// Development: cho phép localhost:3000
+// Production: đọc whitelist từ appsettings.json
+var isDevelopment = builder.Environment.IsDevelopment();
 
 //-----------------------------------------------------------------
 // =====================================================
@@ -50,15 +50,54 @@ builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 
 // Cho phép gọi API từ frontend Next.js hoặc các client khác.
-// builder.Services.AddCors(options =>
-// {
-//     options.AddPolicy("DefaultCors", policy =>
-//     {
-//         policy.AllowAnyOrigin()
-//               .AllowAnyHeader()
-//               .AllowAnyMethod();
-//     });
-// });
+builder.Services.AddCors(options =>
+{
+    // -------------------------------------------------
+    // DevelopmentPolicy
+    // -------------------------------------------------
+    // Dùng trực tiếp cho Next.js local dev
+    options.AddPolicy("DevelopmentPolicy", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:3000")
+            .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+            .WithHeaders("Authorization", "Content-Type", "Accept", "X-Correlation-ID")
+            .AllowCredentials()
+            .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
+    });
+
+    // -------------------------------------------------
+    // ProductionPolicy
+    // -------------------------------------------------
+    // Chỉ đăng ký khi thực sự chạy Production
+    if (!isDevelopment)
+    {
+        var allowedOrigins = builder.Configuration
+            .GetSection("Cors:AllowedOrigins")
+            .Get<string[]>() ?? Array.Empty<string>();
+
+        if (allowedOrigins.Length == 0)
+        {
+            throw new InvalidOperationException(
+                "Cors:AllowedOrigins is empty. Please configure allowed origins in appsettings.json for Production.");
+        }
+
+        options.AddPolicy("ProductionPolicy", policy =>
+        {
+            policy
+                .WithOrigins(allowedOrigins)
+                .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+                .WithHeaders("Authorization", "Content-Type", "Accept", "X-Correlation-ID")
+                .AllowCredentials()
+                .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
+        });
+    }
+});
+
+// =====================================================
+// Đăng ký Rate Limiting
+// =====================================================
+builder.Services.AddAppRateLimiting();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Missing connection string: DefaultConnection");
@@ -165,6 +204,9 @@ else
     app.UseCors("ProductionPolicy");
 }
 
+// Rate limiter chạy trước auth để chặn sớm request xấu
+app.UseRateLimiter();
+
 // Authentication / Authorization phải nằm sau UseCors
 app.UseAuthentication();
 app.UseAuthorization();
@@ -195,6 +237,61 @@ app.MapGet("/health/ready", () => Results.Ok(new
     probe = "ready",
     timestampUtc = DateTime.UtcNow
 }));
+
+// =====================================================
+// Route groups
+// =====================================================
+
+// Nhóm API chính: toàn bộ API dùng policy chung
+var api = app.MapGroup("/api/v1");
+
+// Ví dụ endpoint công khai / thông thường
+api.MapGet("/health", () => Results.Ok(new { status = "Healthy" }))
+   .WithName("HealthCheck");
+
+// =====================================================
+// Auth endpoints
+// =====================================================
+
+// Nhóm auth riêng để login gắn policy chặt hơn
+var auth = app.MapGroup("/api/v1/auth");
+
+auth.MapPost("/login", async () =>
+{
+    // TODO: thay bằng handler login thật của bạn
+    return Results.Ok(new { message = "login ok" });
+})
+.RequireRateLimiting("login-policy");
+
+auth.MapPost("/register", async () =>
+{
+    // Endpoint này vẫn chịu api-policy từ GlobalLimiter
+    return Results.Ok(new { message = "register ok" });
+});
+
+auth.MapPost("/refresh", async () =>
+{
+    return Results.Ok(new { message = "refresh ok" });
+});
+
+auth.MapPost("/logout", async () =>
+{
+    return Results.Ok(new { message = "logout ok" });
+});
+
+// =====================================================
+// Các endpoint nghiệp vụ khác
+// =====================================================
+
+api.MapGet("/recipes", async () =>
+{
+    return Results.Ok(new { message = "recipes list" });
+});
+
+api.MapPost("/recipes", async () =>
+{
+    return Results.Ok(new { message = "create recipe" });
+});
 
 // ===================================================== 
 // Minimal API Endpoints 
