@@ -204,6 +204,28 @@ else
     app.UseCors("ProductionPolicy");
 }
 
+// =====================================================
+// Pipeline middleware theo thứ tự yêu cầu
+// =====================================================
+// Correlation ID: gắn mã theo dõi request
+app.UseMiddleware<CorrelationIdMiddleware>();
+
+// Logging: ghi log request/response
+app.UseMiddleware<RequestLoggingMiddleware>();
+
+// Exception handler: bắt lỗi và trả RFC7807
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+// HSTS: chỉ bật khi không phải Development
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
+
+// Security headers: thêm header bảo mật cho response
+app.UseMiddleware<SecurityHeadersMiddleware>();
+
+
 // Rate limiter chạy trước auth để chặn sớm request xấu
 app.UseRateLimiter();
 
