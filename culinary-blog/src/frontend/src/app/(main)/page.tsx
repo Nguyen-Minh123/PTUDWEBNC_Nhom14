@@ -1,12 +1,10 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import Link from 'next/link';
 import { SearchBar } from '@/components/search/SearchBar';
 import { FilterBar } from '@/components/search/FilterBar';
 import { RecipeCard } from '@/components/search/RecipeCard';
 import { RecipeDetailModal } from '@/components/recipe/RecipeDetailModal';
-import { Navbar } from '@/components/layout/Navbar';
 import { searchRecipes } from '@/services/recipeService';
 import { RecipeSummaryDto } from '@/types';
 
@@ -52,11 +50,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50/40 via-white to-gray-50 flex flex-col font-sans">
-      {/* 1. Header Navigation Bar */}
-      <Navbar />
-
-      {/* 2. Hero Section */}
+    <div className="flex-1 bg-gradient-to-b from-amber-50/40 via-white to-gray-50 flex flex-col font-sans">
       <section className="relative py-12 sm:py-16 px-4 sm:px-6 lg:px-8 text-center max-w-4xl mx-auto">
         <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full mb-4">
           ✨ Trải nghiệm ẩm thực tuyệt đỉnh cùng Culinary Blog
@@ -77,7 +71,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 3. Main Content: Bộ lọc & Danh sách công thức */}
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 w-full">
         {/* Bộ lọc & Sắp xếp */}
         <FilterBar
@@ -167,30 +160,10 @@ export default function Home() {
         )}
       </main>
 
-      {/* 4. Modal xem chi tiết món ăn & Bình luận */}
       <RecipeDetailModal
         recipe={selectedRecipe}
         onClose={() => setSelectedRecipe(null)}
       />
-
-      {/* 5. Footer */}
-      <footer className="bg-white border-t border-gray-200/80 py-8 px-4 text-center text-xs text-gray-500">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🍲</span>
-            <span className="font-bold text-gray-800">Culinary Blog - Nhóm 14</span>
-            <span className="text-gray-400">© 2026 PTUDWeb Nâng Cao</span>
-          </div>
-
-          <div className="flex items-center gap-4 text-[11px] text-gray-400">
-            <span>FR-DOM-007 (UnsupportedSortFieldException)</span>
-            <span>•</span>
-            <span>FR-FTE-005 (Tìm kiếm & Comment)</span>
-            <span>•</span>
-            <span>FR-FTE-006 (Mapster ProjectToType DTOs)</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
