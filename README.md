@@ -53,10 +53,10 @@ Dự án phát triển hệ thống Full-Stack cho nền tảng Blog ẩm thực
 | | **FR-DB-008** | Hiện thực API Quản lý Bước thực hiện (CRUD `RecipeStep`) (Lab 4) | ✅ Done|
 | | **FR-INF-003** | Hiện thực API Upload và Quản lý Hình ảnh (`RecipeImage`) với MinIO (Lab 4) | ✅ Done|
 | | **FR-DB-009** | Xử lý Concurrency Token (`RowVersion`) cập nhật Công thức (Lab 4) | ✅ Done|
-| | **FR-INF-004** | Thiết lập CORS Policy đa môi trường (Development & Production) (Lab 5) | ⏳ To Do |
-| | **FR-INF-005** | Cấu hình Rate Limiting nâng cao (Fixed Window & Token Bucket) (Lab 5) | ⏳ To Do |
-| | **FR-INF-006** | Cấu hình Security Headers & Pipeline Middleware bảo mật (Lab 5) | ⏳ To Do |
-| | **FR-BKE-013** | Cài đặt và cấu hình API Versioning (`Asp.Versioning.Http`) (Lab 5) | ⏳ To Do |
+| | **FR-INF-004** | Thiết lập CORS Policy đa môi trường (Development & Production) (Lab 5) | ✅ Done |
+| | **FR-INF-005** | Cấu hình Rate Limiting nâng cao (Fixed Window & Token Bucket) (Lab 5) | ✅ Done |
+| | **FR-INF-006** | Cấu hình Security Headers & Pipeline Middleware bảo mật (Lab 5) | ✅ Done |
+| | **FR-BKE-013** | Cài đặt và cấu hình API Versioning (`Asp.Versioning.Http`) (Lab 5) | ✅ Done |
 | **Phan Thành Huy**<br>*(DevOps & Testing)* | **FR-DVO-001** | Cấu hình docker-compose.yml tổng hợp (Nginx, Postgres, Redis, MinIO) | ✅ Done |
 | | **FR-DVO-002** | Cấu hình 6 chỉ số dinh dưỡng | ✅ Done |
 | | **FR-TST-001** | Kiểm thử API nâng cao | ✅ Done |

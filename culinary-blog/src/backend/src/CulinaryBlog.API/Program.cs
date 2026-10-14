@@ -2,7 +2,9 @@ using Amazon.S3;
 using Asp.Versioning;
 using CulinaryBlog.API.Authorization;
 using CulinaryBlog.API.Endpoints;
+using CulinaryBlog.API.Extensions;
 using CulinaryBlog.API.HealthChecks;
+using CulinaryBlog.API.Middlewares;
 using CulinaryBlog.API.OpenApi;
 using CulinaryBlog.Application.Common.Caching;
 using CulinaryBlog.Application.Common.Interfaces;
@@ -111,39 +113,8 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 3. Rate Limiting nâng cao (.NET 10 - Fixed Window & Token Bucket)
-builder.Services.AddRateLimiter(options =>
-{
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    options.OnRejected = async (context, ct) =>
-    {
-        context.HttpContext.Response.Headers["Retry-After"] = "60";
-        await context.HttpContext.Response.WriteAsJsonAsync(new
-        {
-            type = "https://tools.ietf.org/html/rfc6585#section-4",
-            title = "Quá nhiều yêu cầu",
-            status = 429,
-            detail = "Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau 60 giây."
-        }, ct);
-    };
-
-    // Fixed Window cho Login: 5 requests/phút
-    options.AddFixedWindowLimiter("login-policy", opt =>
-    {
-        opt.Window = TimeSpan.FromMinutes(1);
-        opt.PermitLimit = 5;
-        opt.QueueLimit = 0;
-    });
-
-    // Token Bucket cho API chung: 200 requests/phút
-    options.AddTokenBucketLimiter("api-policy", opt =>
-    {
-        opt.TokenLimit = 200;
-        opt.TokensPerPeriod = 200;
-        opt.ReplenishmentPeriod = TimeSpan.FromMinutes(1);
-        opt.AutoReplenishment = true;
-    });
-});
+// 3. Rate Limiting nâng cao (.NET 10 - Fixed Window & Token Bucket) (FR-INF-005)
+builder.Services.AddAppRateLimiting();
 
 // 4. API Versioning cho Minimal APIs
 builder.Services.AddApiVersioning(options =>
@@ -238,26 +209,35 @@ if (app.Environment.IsDevelopment())
 }
 
 // =====================================================
-// Middleware
+// Middleware Pipeline (FR-INF-006)
 // =====================================================
+// 1. Correlation ID: gắn mã theo dõi request và bổ sung vào logger scope
+app.UseMiddleware<CorrelationIdMiddleware>();
+
+// 2. Logging: ghi log request/response với elapsed time và correlation ID
+app.UseMiddleware<RequestLoggingMiddleware>();
+
+// 3. Global Exception Handler: bắt lỗi và chuyển đổi RFC7807 ProblemDetails
 app.UseExceptionHandler();
+
+// 4. HTTPS Redirection / HSTS
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
 app.UseHttpsRedirection();
 
-// Security Headers (Chống XSS, Clickjacking, MIME-sniffing)
-app.Use(async (context, next) =>
-{
-    context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
-    context.Response.Headers.Append("X-Frame-Options", "DENY");
-    context.Response.Headers.Append("Referrer-Policy", "no-referrer");
-    await next();
-});
+// 5. Security Headers: gắn HTTP security headers chống XSS, Clickjacking, MIME-sniffing, CSP
+app.UseMiddleware<SecurityHeadersMiddleware>();
 
-// CORS phải đứng TRƯỚC Authentication
+// 6. CORS Policy đa môi trường (FR-INF-004) - phải đứng trước RateLimiter và Authentication
 var corsPolicy = app.Environment.IsDevelopment() ? "DevelopmentPolicy" : "ProductionPolicy";
 app.UseCors(corsPolicy);
 
+// 7. Rate Limiter (FR-INF-005)
 app.UseRateLimiter();
 
+// 8. Authentication & Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
