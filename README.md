@@ -20,7 +20,9 @@ Dự án phát triển hệ thống Full-Stack cho nền tảng Blog ẩm thực
 
 ---
 
-# 👥 Phân công Nhiệm vụ (Lab 01-05: ✅ Done)
+Chuẩn bị thêm phần kế hoạch quản lý cho các chức năng bài LAB
+
+# 👥 Phân công Nhiệm vụ (Lab 01-05: ✅ Done, Lab 06: ⏳ To Do)
 | Thành viên / Vai trò | Mã Issue | Tên Nhiệm vụ chi tiết | Trạng thái |
 | :--- | :--- | :--- | :--- |
 | **Nguyễn Nhất Minh**<br>*(Trưởng nhóm / Backend)* | **FR-BKE-001** | Dựng Backend Skeleton (.NET 10) | ✅ Done |
