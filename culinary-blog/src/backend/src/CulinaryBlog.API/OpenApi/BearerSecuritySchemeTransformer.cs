@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.OpenApi;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 
 namespace CulinaryBlog.API.OpenApi;
 
@@ -18,28 +18,15 @@ internal sealed class BearerSecuritySchemeTransformer(IAuthenticationSchemeProvi
             return;
         }
 
-        document.Components ??= new OpenApiComponents();
-        document.Components.SecuritySchemes ??= new Dictionary<string, OpenApiSecurityScheme>();
+        var components = document.Components ??= new OpenApiComponents();
+        components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
 
-        document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
+        components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
         {
             Type = SecuritySchemeType.Http,
             Scheme = "bearer",
             BearerFormat = "JWT",
             Description = "Nhập access token JWT của bạn để xác thực API."
         };
-
-        document.SecurityRequirements ??= [];
-        document.SecurityRequirements.Add(new OpenApiSecurityRequirement
-        {
-            [new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            }] = Array.Empty<string>()
-        });
     }
 }

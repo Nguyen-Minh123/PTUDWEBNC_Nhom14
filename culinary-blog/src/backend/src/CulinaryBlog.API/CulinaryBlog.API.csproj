@@ -28,7 +28,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- Tạo XML comments để OpenAPI có thể lấy tài liệu từ các API types. -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);1591;AV0013;AV0021</NoWarn>
+    <NoWarn>$(NoWarn);1591;AV0013;AV0021;ASPDEPR002</NoWarn>
   </PropertyGroup>
 
 </Project>
