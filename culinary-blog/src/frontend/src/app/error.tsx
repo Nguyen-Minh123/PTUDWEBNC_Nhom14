@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
+import Link from 'next/link';
 
 export default function ErrorBoundary({
   error,
@@ -30,12 +31,12 @@ export default function ErrorBoundary({
           >
             Thử lại
           </button>
-          <button
-            onClick={() => window.location.href = '/'}
-            className="px-5 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-sm font-semibold rounded-xl transition-all cursor-pointer"
+          <Link
+            href="/"
+            className="px-5 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-sm font-semibold rounded-xl transition-all cursor-pointer inline-flex items-center justify-center"
           >
             Về trang chủ
-          </button>
+          </Link>
         </div>
       </div>
     </div>

@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   images: {
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
         protocol: 'https',
@@ -22,6 +23,10 @@ const nextConfig: NextConfig = {
         protocol: 'http',
         hostname: '127.0.0.1',
         port: '9000', // MinIO loopback
+      },
+      {
+        protocol: 'https',
+        hostname: 'api.culinaryblog.vn',
       },
     ],
   },

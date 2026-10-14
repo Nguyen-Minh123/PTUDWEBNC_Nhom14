@@ -1,9 +1,34 @@
-/**
- * DTOs đại diện cho Recipe đồng bộ 100% với Backend ASP.NET Core
- */
-export type RecipeDifficulty = 'Easy' | 'Medium' | 'Hard';
+import { RecipeIngredientDto } from './ingredient.dto';
+import { RecipeStepDto } from './step.dto';
+import { RecipeImageDto } from './image.dto';
+
+export type RecipeDifficulty = 'Easy' | 'Medium' | 'Hard' | 'Expert';
 export type RecipeStatus = 'Draft' | 'Published' | 'Archived';
 
+/**
+ * 6 chỉ số dinh dưỡng chính (FR-DVO-002)
+ */
+export interface RecipeNutritionDto {
+  calories: number;
+  proteinGrams: number;
+  fatGrams: number;
+  carbsGrams: number;
+  fiberGrams?: number;
+  sodiumMg?: number;
+  // Bổ sung các trường tùy chọn cho tương thích ngược
+  fat?: number | null;
+  saturatedFat?: number | null;
+  carbohydrates?: number | null;
+  sugar?: number | null;
+  fiber?: number | null;
+  protein?: number | null;
+  sodium?: number | null;
+}
+
+/**
+ * DTO đại diện cho công thức tóm tắt dùng trên giao diện danh sách, tìm kiếm và phân trang
+ * Đồng bộ 100% với RecipeSummaryDto tại Backend .NET (Mapster ProjectToType)
+ */
 export interface RecipeSummaryDto {
   id: string;
   title: string;
@@ -23,74 +48,31 @@ export interface RecipeSummaryDto {
   createdAt: string;
   averageRating: number;
   reviewCount: number;
-}
-
-export interface RecipeIngredientDto {
-  id: string;
-  recipeId?: string;
-  name: string;
-  quantity?: number | null;
-  unit?: string | null;
-  orderIndex: number;
-}
-
-export interface RecipeStepDto {
-  id: string;
-  recipeId?: string;
-  stepNumber: number;
-  instruction: string;
-  imageUrl?: string | null;
-}
-
-export interface RecipeImageDto {
-  id: string;
-  recipeId?: string;
-  originalUrl: string;
-  mediumUrl?: string | null;
-  thumbnailUrl?: string | null;
-  altText?: string | null;
-  isPrimary: boolean;
-  orderIndex: number;
-}
-
-export interface RecipeNutritionDto {
-  calories?: number | null;
-  fat?: number | null;
-  saturatedFat?: number | null;
-  carbohydrates?: number | null;
-  sugar?: number | null;
-  fiber?: number | null;
-  protein?: number | null;
-  sodium?: number | null;
-}
-
-export interface RecipeDetailDto extends RecipeSummaryDto {
-  instructions: string;
   nutrition?: RecipeNutritionDto | null;
+}
+
+/**
+ * DTO đại diện cho chi tiết toàn bộ công thức bao gồm nguyên liệu, các bước và hình ảnh
+ */
+export interface RecipeDetailDto extends RecipeSummaryDto {
+  instructions?: string;
   ingredients: RecipeIngredientDto[];
   steps: RecipeStepDto[];
   images: RecipeImageDto[];
   rowVersion?: string;
 }
 
-export interface RecipeSearchParams {
-  keyword?: string;
-  categoryId?: string;
-  difficulty?: string;
-  sort?: string; // Ví dụ: "-createdAt", "title", "-prepTime"
-  page?: number;
-  pageSize?: number;
-}
-
 export interface CreateRecipeRequest {
   title: string;
   description: string;
-  prepTime: number;
-  cookTime: number;
+  prepTimeMinutes?: number;
+  cookTimeMinutes?: number;
+  prepTime?: number;
+  cookTime?: number;
   servings: number;
   difficulty: RecipeDifficulty | string;
   categoryId: string;
-  instructions: string;
+  instructions?: string;
   ingredients?: Array<{
     name: string;
     quantity?: number | null;
@@ -105,5 +87,19 @@ export interface CreateRecipeRequest {
 }
 
 export interface UpdateRecipeRequest extends CreateRecipeRequest {
+  id?: string;
   rowVersion?: string;
 }
+
+export interface RecipeSearchParams {
+  keyword?: string;
+  categoryId?: string;
+  difficulty?: string;
+  sort?: string; // Ví dụ: "-createdAt", "title", "-prepTime"
+  page?: number;
+  pageSize?: number;
+}
+
+// Aliases
+export type RecipeDto = RecipeDetailDto;
+export type RecipeListDto = RecipeSummaryDto;
