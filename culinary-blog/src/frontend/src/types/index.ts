@@ -7,4 +7,3 @@ export * from './image.dto';
 export * from './paged-result.dto';
 export * from './auth.dto';
 export * from './api.types';
-export * from './problem-details';
