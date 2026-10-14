@@ -6,11 +6,19 @@ using System.Diagnostics;
 
 namespace CulinaryBlog.API.Infrastructure;
 
+/// <summary>
+/// Converts unhandled application exceptions into Problem Details responses.
+/// </summary>
 public class GlobalExceptionHandler : IExceptionHandler
 {
     private readonly ILogger<GlobalExceptionHandler> _logger;
     private readonly IProblemDetailsService _problemDetailsService;
 
+    /// <summary>
+    /// Creates an exception handler that logs failures and writes Problem Details.
+    /// </summary>
+    /// <param name="logger">The application logger.</param>
+    /// <param name="problemDetailsService">The service that writes Problem Details.</param>
     public GlobalExceptionHandler(
         ILogger<GlobalExceptionHandler> logger,
         IProblemDetailsService problemDetailsService)
@@ -19,6 +27,13 @@ public class GlobalExceptionHandler : IExceptionHandler
         _problemDetailsService = problemDetailsService;
     }
 
+    /// <summary>
+    /// Handles an exception and writes its corresponding Problem Details response.
+    /// </summary>
+    /// <param name="httpContext">The current HTTP request context.</param>
+    /// <param name="exception">The exception to handle.</param>
+    /// <param name="cancellationToken">The token used to cancel response writing.</param>
+    /// <returns><see langword="true"/> when the exception was handled.</returns>
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
         Exception exception,

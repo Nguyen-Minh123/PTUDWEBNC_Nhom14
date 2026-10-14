@@ -1,4 +1,6 @@
+using Amazon.S3;
 using Asp.Versioning;
+using CulinaryBlog.API.Authorization;
 using CulinaryBlog.API.Endpoints;
 using CulinaryBlog.API.HealthChecks;
 using CulinaryBlog.API.OpenApi;
@@ -10,15 +12,16 @@ using CulinaryBlog.Infrastructure.Persistence;
 using CulinaryBlog.Infrastructure.Persistence.Interceptors;
 using CulinaryBlog.Infrastructure.Services;
 using CulinaryBlog.Infrastructure.Storage;
-using Amazon.S3;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using Serilog;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 
@@ -29,8 +32,6 @@ builder.Host.UseSerilog((context, services, loggerConfiguration) =>
         .ReadFrom.Configuration(context.Configuration)
         .Enrich.FromLogContext());
 
-
-//-----------------------------------------------------------------
 // =====================================================
 // Services
 // =====================================================
@@ -40,37 +41,54 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddProblemDetails();
 
 // 1. Phân quyền tập trung (RBAC, Policy-based, Resource-based)
-builder.Services.AddAuthorizationBuilder()
-    .AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"))
-    .AddPolicy("AuthorOrAdmin", policy => policy.RequireRole("Author", "Admin"))
-    .AddPolicy("CanPublishRecipe", policy => policy.RequireRole("Author", "Admin"))
-    .AddPolicy("AuthenticatedUser", policy => policy.RequireAuthenticatedUser());
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "CulinaryBlog";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "CulinaryBlogClient";
+var jwtSigningKey = builder.Configuration["Jwt:SigningKey"] 
+    ?? builder.Configuration["Jwt:Secret"] 
+    ?? "super-secret-key-that-is-very-long-for-hmac-sha256-1234567890";
 
-builder.Services.AddSingleton<IAuthorizationHandler, RecipeAuthorizationHandler>();
+var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSigningKey));
 
-// 2. Xác thực JWT Bearer nâng cao
-var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "super-secret-key-that-is-very-long-for-hmac-sha256-1234567890";
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // Tắt auto-mapping claim names, bảo toàn nguyên vẹn sub, role, email
         options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
+            ValidateIssuer = !string.IsNullOrEmpty(builder.Configuration["Jwt:Issuer"]),
+            ValidIssuer = jwtIssuer,
+            ValidateAudience = !string.IsNullOrEmpty(builder.Configuration["Jwt:Audience"]),
+            ValidAudience = jwtAudience,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
-            ValidateIssuer = false, // Simplified for local dev
-            ValidateAudience = false,
+            IssuerSigningKey = signingKey,
             ValidateLifetime = true,
+            RequireExpirationTime = true,
             ClockSkew = TimeSpan.FromSeconds(30),
-            ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
-            NameClaimType = "name",
-            RoleClaimType = "role"
+            NameClaimType = "sub",
+            RoleClaimType = "role",
+            ValidAlgorithms = [SecurityAlgorithms.HmacSha256]
         };
     });
 
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("AuthorOrAdmin", policy => policy.RequireRole("Author", "Admin"));
+    options.AddPolicy("CanPublishRecipe", policy => policy.RequireRole("Author", "Admin"));
+    options.AddPolicy(RecipeAuthorizationPolicies.AuthenticatedUser, policy => policy.RequireAuthenticatedUser());
+    options.AddPolicy(RecipeAuthorizationPolicies.OwnerOrAdmin, policy => policy
+        .RequireAuthenticatedUser()
+        .AddRequirements(new RecipeOwnerOrAdminRequirement()));
+});
+
+builder.Services.AddSingleton<IAuthorizationHandler, RecipeAuthorizationHandler>();
+builder.Services.AddSingleton<IAuthorizationHandler, RecipeOwnerOrAdminHandler>();
+
 builder.Services.AddExceptionHandler<CulinaryBlog.API.Infrastructure.GlobalExceptionHandler>();
 
-// 3. CORS Policy đa môi trường (Development & Production)
+// 2. CORS Policy đa môi trường (Development & Production)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("DevelopmentPolicy", policy =>
@@ -93,7 +111,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 4. Rate Limiting nâng cao (.NET 10 - Fixed Window & Token Bucket)
+// 3. Rate Limiting nâng cao (.NET 10 - Fixed Window & Token Bucket)
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -127,7 +145,7 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
-// 5. API Versioning cho Minimal APIs
+// 4. API Versioning cho Minimal APIs
 builder.Services.AddApiVersioning(options =>
 {
     options.DefaultApiVersion = new ApiVersion(1, 0);
@@ -160,13 +178,15 @@ builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
 });
 
 builder.Services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<CulinaryBlogDbContext>());
-
 builder.Services.AddScoped<SoftDeleteInterceptor>();
 
+// 5. OpenAPI 3.1 & Scalar UI
 builder.Services.AddOpenApi(options =>
 {
+    options.OpenApiVersion = OpenApiSpecVersion.OpenApi3_1;
     options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
 });
+
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<CulinaryBlog.Application.Features.Recipes.Commands.CreateRecipeCommand>());
 
 // HttpContext / Current user
@@ -178,7 +198,7 @@ builder.Services.AddScoped<IPasswordHasherService, PasswordHasherService>();
 builder.Services.AddScoped<IRecipeRepository, CulinaryBlog.Infrastructure.Persistence.Repositories.RecipeRepository>();
 builder.Services.AddScoped<IUnitOfWork, CulinaryBlog.Infrastructure.Persistence.Repositories.UnitOfWork>();
 
-// Cache (build-safe fallback)
+// Cache
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddScoped<ICacheService, RedisCacheService>();
 
@@ -248,11 +268,10 @@ app.MapScalarApiReference(options =>
     options.WithTitle("Culinary Blog API")
            .WithTheme(ScalarTheme.Purple);
 });
-// Thực hiện API Quản lý Nguyên liệu
+
+// Sub-endpoints
 app.MapRecipeIngredientsEndpoints();
-// Thực hiện API Quản lý Bước thực hiện
 app.MapRecipeStepsEndpoints();
-// Thực hiện API Upload và Quản lý Hình ảnh
 app.MapRecipeImagesEndpoints();
 
 // =====================================================
@@ -264,17 +283,32 @@ app.MapCategoryEndpoints();
 app.MapAuthEndpoints();
 app.MapUserEndpoints();
 
-app.MapGet("/", () => Results.Redirect("/scalar"));
+app.MapGet("/", () => Results.Redirect("/scalar/v1"))
+    .WithName("GetApiDocumentation")
+    .WithSummary("Mở giao diện tài liệu API")
+    .WithDescription("Chuyển hướng đến Scalar UI.")
+    .Produces(StatusCodes.Status302Found);
 
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health")
+    .WithName("HealthCheck")
+    .WithSummary("Kiểm tra tình trạng hệ thống")
+    .WithDescription("Kiểm tra tất cả các health checks đã đăng ký.");
+
 app.MapHealthChecks("/health/live", new HealthCheckOptions
 {
     Predicate = healthCheck => healthCheck.Tags.Contains("live")
-});
+})
+    .WithName("LivenessCheck")
+    .WithSummary("Kiểm tra ứng dụng còn hoạt động")
+    .WithDescription("Chỉ kiểm tra tiến trình ứng dụng, không phụ thuộc dịch vụ bên ngoài.");
+
 app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {
     Predicate = healthCheck => healthCheck.Tags.Contains("ready")
-});
+})
+    .WithName("ReadinessCheck")
+    .WithSummary("Kiểm tra ứng dụng sẵn sàng phục vụ")
+    .WithDescription("Kiểm tra các phụ thuộc cần thiết để phục vụ request.");
 
 app.Run();
 
@@ -289,4 +323,9 @@ static string NormalizeServiceUrl(string endpoint)
     }
 
     return value.TrimEnd('/');
+}
+
+/// <summary>Provides the API entry point for hosting and integration tests.</summary>
+public partial class Program
+{
 }

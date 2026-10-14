@@ -1,142 +1,190 @@
-@baseUrl = http://localhost:5075/api/v1
-@contentType = application/json
+@baseUrl = http://localhost:5075
+# REST Client reads the token from the local environment; never paste a secret into this tracked file.
+@accessToken = {{$processEnv CULINARY_BLOG_ACCESS_TOKEN}}
+# These values are extracted from request 1, so subsequent requests use actual seeded identifiers.
+@seedRecipeSlug = {{seedRecipes.response.body.$.items[0].slug}}
+@categoryId = {{seedRecipes.response.body.$.items[0].categoryId}}
+# Reuse the created resource for read/update/lifecycle/delete scenarios below.
+@createdRecipeId = {{createRecipe.response.body.$.id}}
+@updatedRecipeSlug = lab5-http-updated-{{$guid}}
 
-### 1. Đăng ký tài khoản mới hợp lệ (201 Created)
-# @name register
-POST {{baseUrl}}/auth/register
-Content-Type: {{contentType}}
+### 1. List recipes and provide seed values for following requests
+# Named responses expose the seed recipe/category fields to REST Client variables.
+# @name seedRecipes
+GET {{baseUrl}}/api/v1/recipes?page=1&pageSize=10
+Accept: application/json
 
-{
-  "email": "chef_lab5@culinaryblog.vn",
-  "password": "Password@123",
-  "displayName": "Bếp Trưởng Lab 5",
-  "firstName": "Minh",
-  "lastName": "Nguyễn"
-}
+> {%
+client.test("1. Lists recipes successfully", function () {
+    client.assert(response.status === 200, "Expected HTTP 200");
+});
+%}
 
-### 2. Đăng ký trùng email (409 Conflict)
-POST {{baseUrl}}/auth/register
-Content-Type: {{contentType}}
+### 2. Get a seeded recipe by slug
+GET {{baseUrl}}/api/v1/recipes/{{seedRecipeSlug}}
+Accept: application/json
 
-{
-  "email": "chef_lab5@culinaryblog.vn",
-  "password": "Password@123",
-  "displayName": "Trùng Email"
-}
+> {%
+client.test("2. Gets a recipe by slug", function () {
+    client.assert(response.status === 200, "Expected HTTP 200");
+});
+%}
 
-### 3. Đăng nhập thành công (200 OK)
-# @name login
-POST {{baseUrl}}/auth/login
-Content-Type: {{contentType}}
+### 3. Search recipes using full-text search
+GET {{baseUrl}}/api/v1/recipes/search?q=pho&page=1&pageSize=10
+Accept: application/json
 
-{
-  "email": "chef_lab5@culinaryblog.vn",
-  "password": "Password@123"
-}
+> {%
+client.test("3. Searches recipes successfully", function () {
+    client.assert(response.status === 200, "Expected HTTP 200");
+});
+%}
 
-### 4. Đăng nhập sai mật khẩu (401 Unauthorized - Chống dò tài khoản)
-POST {{baseUrl}}/auth/login
-Content-Type: {{contentType}}
-
-{
-  "email": "chef_lab5@culinaryblog.vn",
-  "password": "SaiMatKhau123"
-}
-
-### 5. Thử Rate Limiting: Gửi 6 lần liên tiếp trong 1 phút (Lần 6 nhận 429 Too Many Requests)
-POST {{baseUrl}}/auth/login
-Content-Type: {{contentType}}
-
-{
-  "email": "spam@culinaryblog.vn",
-  "password": "Password@123"
-}
-
-### Lưu biến token sau khi đăng nhập thành công
-@accessToken = {{login.response.body.accessToken}}
-@refreshToken = {{login.response.body.refreshToken}}
-
-### 6. Lấy thông tin người dùng hiện tại có Bearer Token (200 OK)
-GET {{baseUrl}}/users/me
-Authorization: Bearer {{accessToken}}
-
-### 7. Lấy thông tin người dùng KHÔNG có Token (401 Unauthorized)
-GET {{baseUrl}}/users/me
-
-### 8. Cập nhật hồ sơ cá nhân (200 OK)
-PUT {{baseUrl}}/users/me
-Content-Type: {{contentType}}
-Authorization: Bearer {{accessToken}}
-
-{
-  "displayName": "Bếp Trưởng Michelin Lab 5",
-  "bio": "Đam mê ẩm thực Việt Nam và các món ăn truyền thống.",
-  "avatarUrl": "https://lh3.googleusercontent.com/avatar_chef.png"
-}
-
-### 9. Lấy danh sách danh mục công thức (200 OK)
-# @name getCategories
-GET {{baseUrl}}/categories
-
-### Lưu Category Id đầu tiên
-@categoryId = {{getCategories.response.body.value[0].id}}
-
-### 10. Tạo công thức mới ở trạng thái Draft (201 Created)
+### 4. Create a recipe using values from the seed response
+# Authenticated write: authorId is intentionally omitted; the API derives it from the token.
 # @name createRecipe
-POST {{baseUrl}}/recipes
-Content-Type: {{contentType}}
+POST {{baseUrl}}/api/v1/recipes
 Authorization: Bearer {{accessToken}}
+Content-Type: application/json
 
 {
-  "title": "Phở Bò Tái Lăn Hà Nội Lab 5",
-  "description": "Món phở bò tái lăn chuẩn phong vị Hà Nội với thịt bò xào lăn thơm phức.",
-  "instructions": "1. Sơ chế thịt bò và xương ống. 2. Hầm nước dùng. 3. Xào lăn thịt bò với tỏi. 4. Trụng phở và thưởng thức.",
-  "prepTime": 30,
-  "cookTime": 120,
-  "servings": 4,
+  "title": "Lab 5 HTTP Recipe {{$guid}}",
+  "slug": "lab5-http-{{$guid}}",
+  "description": "Recipe created by the Lab 5 HTTP request suite.",
+  "instructions": "Prepare the ingredients and cook until done.",
+  "prepTime": 15,
+  "cookTime": 25,
+  "servings": 2,
   "difficulty": 1,
   "categoryId": "{{categoryId}}"
 }
 
-### Lưu Recipe Id
-@recipeId = {{createRecipe.response.body.id}}
+> {%
+client.test("4. Creates a recipe", function () {
+    client.assert(response.status === 201, "Expected HTTP 201 Created");
+});
+%}
 
-### 11. Cập nhật công thức bởi tác giả sở hữu (200 OK)
-PUT {{baseUrl}}/recipes/{{recipeId}}
-Content-Type: {{contentType}}
+### 5. Get the created recipe by id
+GET {{baseUrl}}/api/v1/recipes/{{createdRecipeId}}
+Accept: application/json
+
+> {%
+client.test("5. Gets the created recipe", function () {
+    client.assert(response.status === 200, "Expected HTTP 200");
+});
+%}
+
+### 6. Update the created recipe
+PUT {{baseUrl}}/api/v1/recipes/{{createdRecipeId}}
 Authorization: Bearer {{accessToken}}
+Content-Type: application/json
 
 {
-  "title": "Phở Bò Tái Lăn Hà Nội Đặc Biệt Lab 5",
-  "description": "Món phở bò tái lăn đặc biệt nước dùng đậm đà thơm ngậy.",
-  "instructions": "Sơ chế chi tiết và xào lăn lửa lớn.",
-  "prepTime": 35,
-  "cookTime": 150,
+  "id": "{{createdRecipeId}}",
+  "title": "Updated Lab 5 HTTP Recipe",
+  "slug": "{{updatedRecipeSlug}}",
+  "description": "Updated by the Lab 5 HTTP request suite.",
+  "instructions": "Prepare, cook, and serve.",
+  "prepTime": 20,
+  "cookTime": 30,
   "servings": 4,
-  "difficulty": 1,
+  "difficulty": 2,
   "categoryId": "{{categoryId}}"
 }
 
-### 12. Xuất bản công thức (Publish) (200 OK)
-POST {{baseUrl}}/recipes/{{recipeId}}/publish
+> {%
+client.test("6. Updates the created recipe", function () {
+    client.assert(response.status === 200, "Expected HTTP 200");
+});
+%}
+
+### 7. Reject publishing a recipe without steps and ingredients
+POST {{baseUrl}}/api/v1/recipes/{{createdRecipeId}}/publish
 Authorization: Bearer {{accessToken}}
 
-### 13. Tìm kiếm công thức nấu ăn bằng Full-Text Search (200 OK)
-GET {{baseUrl}}/recipes/search?q=pho+bo&page=1&pageSize=10
+> {%
+client.test("7. Rejects publishing an incomplete recipe", function () {
+    client.assert(response.status === 400, "Expected HTTP 400 for the incomplete recipe");
+});
+%}
 
-### 14. Xoay vòng Refresh Token (Token Rotation) (200 OK)
-POST {{baseUrl}}/auth/refresh
-Content-Type: {{contentType}}
-
-{
-  "refreshToken": "{{refreshToken}}"
-}
-
-### 15. Đăng xuất và thu hồi Refresh Token (204 No Content)
-POST {{baseUrl}}/auth/logout
-Content-Type: {{contentType}}
+### 8. Archive the created recipe
+POST {{baseUrl}}/api/v1/recipes/{{createdRecipeId}}/archive
 Authorization: Bearer {{accessToken}}
 
-{
-  "refreshToken": "{{refreshToken}}"
-}
+> {%
+client.test("8. Archives the created recipe", function () {
+    client.assert(response.status === 200, "Expected HTTP 200");
+});
+%}
+
+### 9. Soft-delete the created recipe
+DELETE {{baseUrl}}/api/v1/recipes/{{createdRecipeId}}
+Authorization: Bearer {{accessToken}}
+
+> {%
+client.test("9. Soft-deletes the created recipe", function () {
+    client.assert(response.status === 204, "Expected HTTP 204 No Content");
+});
+%}
+
+### 10. Return not found for an unknown recipe id
+GET {{baseUrl}}/api/v1/recipes/00000000-0000-0000-0000-000000000000
+Accept: application/json
+
+> {%
+client.test("10. Returns 404 for an unknown recipe id", function () {
+    client.assert(response.status === 404, "Expected HTTP 404");
+});
+%}
+
+### 11. Return not found for an unknown recipe slug
+GET {{baseUrl}}/api/v1/recipes/lab5-http-recipe-that-does-not-exist
+Accept: application/json
+
+> {%
+client.test("11. Returns 404 for an unknown recipe slug", function () {
+    client.assert(response.status === 404, "Expected HTTP 404");
+});
+%}
+
+### 12. Reject a page number below the supported range
+GET {{baseUrl}}/api/v1/recipes?page=0&pageSize=10
+Accept: application/json
+
+> {%
+client.test("12. Rejects an invalid page number", function () {
+    client.assert(response.status === 400, "Expected HTTP 400");
+});
+%}
+
+### 13. Reject a page size above the supported range
+GET {{baseUrl}}/api/v1/recipes?page=1&pageSize=101
+Accept: application/json
+
+> {%
+client.test("13. Rejects an invalid page size", function () {
+    client.assert(response.status === 400, "Expected HTTP 400");
+});
+%}
+
+### 14. Reject an unsupported recipe status
+GET {{baseUrl}}/api/v1/recipes?status=Unknown
+Accept: application/json
+
+> {%
+client.test("14. Rejects an unsupported status", function () {
+    client.assert(response.status === 400, "Expected HTTP 400");
+});
+%}
+
+### 15. Reject an empty full-text search term
+GET {{baseUrl}}/api/v1/recipes/search?q=%20&page=1&pageSize=10
+Accept: application/json
+
+> {%
+client.test("15. Rejects an empty search term", function () {
+    client.assert(response.status === 400, "Expected HTTP 400");
+});
+%}
