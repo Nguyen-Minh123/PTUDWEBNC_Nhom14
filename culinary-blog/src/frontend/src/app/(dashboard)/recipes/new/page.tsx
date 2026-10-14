@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { CreateRecipeWizard } from './CreateRecipeWizard';
-import { Navbar } from '../../../components/layout/Navbar';
+import { Navbar } from '@/components/layout/Navbar';
 
 export default function CreateRecipePage() {
   return (

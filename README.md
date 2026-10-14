@@ -3,24 +3,24 @@
 Dự án phát triển hệ thống Full-Stack cho nền tảng Blog ẩm thực (**Culinary Blog**) theo tiêu chuẩn kiến trúc **Clean Architecture** và tài liệu đặc tả **SRS v1.0.0**. Hệ thống sử dụng **.NET 10 (Minimal APIs)**, **Next.js (App Router)**, **PostgreSQL 16**, **Redis 7**, và **MinIO**.
 
 ## 🎯 Mục tiêu Lab & Chuẩn hóa SRS
-* **Kiến trúc Nền tảng (Lab 1):** Khởi tạo Clean Architecture 4 tầng, thiết lập CQRS với MediatR, xây dựng API CRUD có phân trang và tích hợp Scalar UI làm tài liệu OpenAPI[cite: 4].
-* **Soft Delete Pattern (Lab 2):** Áp dụng xóa mềm (`IsDeleted = true`) cho các thực thể cốt lõi (Recipe, Category) kết hợp Global Query Filters trong EF Core[cite: 12].
-* **Bảo mật Nâng cao (Chương 2):** Mã hóa Refresh Token bằng SHA-256 (`TokenHash varchar(64)`), hiện thực hóa Token Rotation và chống Reuse Attack[cite: 10, 12].
-* **Business Rules Khắt khe:** Ràng buộc công thức phải có ít nhất 1 Nguyên liệu và 1 Bước thực hiện mới được phép xuất bản (`RECIPE_PUBLISH_INCOMPLETE`)[cite: 12].
-* **Cấu trúc Dữ liệu & Sắp xếp:** Chuẩn hóa Owned Entity cho 6 chỉ số dinh dưỡng, tự động hóa số thứ tự bước (`StepNumber` renumbering), cú pháp sắp xếp linh hoạt (`?sort=-field`) và định dạng lỗi chuẩn RFC 7807[cite: 12].
+* **Kiến trúc Nền tảng (Lab 1):** Khởi tạo Clean Architecture 4 tầng, thiết lập CQRS với MediatR, xây dựng API CRUD có phân trang và tích hợp Scalar UI làm tài liệu OpenAPI.
+* **Soft Delete Pattern (Lab 2):** Áp dụng xóa mềm (`IsDeleted = true`) cho các thực thể cốt lõi (Recipe, Category) kết hợp Global Query Filters trong EF Core.
+* **Bảo mật Nâng cao (Chương 2 & Lab 5):** Mã hóa Refresh Token bằng SHA-256 (`TokenHash varchar(64)`), hiện thực hóa Token Rotation, chống Token Theft, Policy-based & Resource-based Authorization chống BOLA (OWASP API1).
+* **Business Rules Khắt khe:** Ràng buộc công thức phải có ít nhất 1 Nguyên liệu và 1 Bước thực hiện mới được phép xuất bản (`RECIPE_PUBLISH_INCOMPLETE`).
+* **Cấu trúc Dữ liệu & Sắp xếp:** Chuẩn hóa Owned Entity cho 6 chỉ số dinh dưỡng, tự động hóa số thứ tự bước (`StepNumber` renumbering), cú pháp sắp xếp linh hoạt (`?sort=-field`) và định dạng lỗi chuẩn RFC 7807 Problem Details.
 
 ---
 
 ## 🛠 Công nghệ Sử dụng
-* **Backend:** .NET 10 Minimal APIs, C#, EF Core 10, ASP.NET Core Identity[cite: 10, 13]
-* **Frontend:** Next.js App Router, TypeScript, Tailwind CSS, TanStack Query
-* **Database & Caching:** PostgreSQL 16, Redis 7[cite: 13]
-* **Storage & Background Jobs:** MinIO (S3-compatible Object Storage), Hangfire[cite: 13]
-* **API Documentation:** Scalar UI (`/scalar/v1`)
+* **Backend:** .NET 10 Minimal APIs, C#, EF Core 10, ASP.NET Core Identity
+* **Frontend:** Next.js 16 App Router (Route Groups), TypeScript, Tailwind CSS, TanStack Query v5, Zustand, Axios
+* **Database & Caching:** PostgreSQL 16, Redis 7
+* **Storage & Background Jobs:** MinIO (S3-compatible Object Storage), Hangfire
+* **API Documentation:** OpenAPI 3.1 & Scalar UI (`/scalar/v1`)
 
 ---
 
-# 👥 Phân công Nhiệm vụ (Lab 01-04: ✅ Done, Lab 05: ⏳ To Do)
+# 👥 Phân công Nhiệm vụ (Lab 01-05: ✅ Done)
 | Thành viên / Vai trò | Mã Issue | Tên Nhiệm vụ chi tiết | Trạng thái |
 | :--- | :--- | :--- | :--- |
 | **Nguyễn Nhất Minh**<br>*(Trưởng nhóm / Backend)* | **FR-BKE-001** | Dựng Backend Skeleton (.NET 10) | ✅ Done |
@@ -36,10 +36,10 @@ Dự án phát triển hệ thống Full-Stack cho nền tảng Blog ẩm thực
 | | **FR-BKE-007** | Hiện thực API Quản lý Danh mục (CRUD: Thêm, Sửa, Xóa) cho Admin (Lab 4) | ✅ Done|
 | | **FR-BKE-008** | Tích hợp API xác thực Google OAuth 2.0 (Social Login) (Lab 4) | ✅ Done|
 | | **FR-BKE-009** | Xử lý Authorization (RBAC và Resource-Based) bảo vệ endpoints (Lab 4) | ✅ Done|
-| | **FR-SEC-003** | Chuẩn hóa JWT Bearer & Cấu hình Token Validation nâng cao (Lab 5) | ⏳ To Do |
-| | **FR-BKE-011** | Hiện thực phân quyền RBAC, Policy-based & Fallback Policy (Lab 5) | ⏳ To Do |
-| | **FR-BKE-012** | Hoàn thiện Resource-Based Authorization chống BOLA (OWASP API1) (Lab 5) | ⏳ To Do |
-| | **FR-SEC-004** | Xử lý Token Theft Detection trong Refresh Token Rotation (Lab 5) | ⏳ To Do |
+| | **FR-SEC-003** | Chuẩn hóa JWT Bearer & Cấu hình Token Validation nâng cao (Lab 5) | ✅ Done |
+| | **FR-BKE-011** | Hiện thực phân quyền RBAC, Policy-based & Fallback Policy (Lab 5) | ✅ Done |
+| | **FR-BKE-012** | Hoàn thiện Resource-Based Authorization chống BOLA (OWASP API1) (Lab 5) | ✅ Done |
+| | **FR-SEC-004** | Xử lý Token Theft Detection trong Refresh Token Rotation (Lab 5) | ✅ Done |
 | **Nguyễn Thế Khải**<br>*(Database & Infra)* | **FR-DB-001** | Khởi tạo EF Core Migrations | ✅ Done |
 | | **FR-DB-002** | Định nghĩa BaseEntity, ApplicationUser | ✅ Done |
 | | **FR-DB-003** | Cấu hình PostgreSQL 16 trên Docker | ✅ Done |
@@ -53,10 +53,10 @@ Dự án phát triển hệ thống Full-Stack cho nền tảng Blog ẩm thực
 | | **FR-DB-008** | Hiện thực API Quản lý Bước thực hiện (CRUD `RecipeStep`) (Lab 4) | ✅ Done|
 | | **FR-INF-003** | Hiện thực API Upload và Quản lý Hình ảnh (`RecipeImage`) với MinIO (Lab 4) | ✅ Done|
 | | **FR-DB-009** | Xử lý Concurrency Token (`RowVersion`) cập nhật Công thức (Lab 4) | ✅ Done|
-| | **FR-INF-004** | Thiết lập CORS Policy đa môi trường (Development & Production) (Lab 5) | ⏳ To Do |
-| | **FR-INF-005** | Cấu hình Rate Limiting nâng cao (Fixed Window & Token Bucket) (Lab 5) | ⏳ To Do |
-| | **FR-INF-006** | Cấu hình Security Headers & Pipeline Middleware bảo mật (Lab 5) | ⏳ To Do |
-| | **FR-BKE-013** | Cài đặt và cấu hình API Versioning (`Asp.Versioning.Http`) (Lab 5) | ⏳ To Do |
+| | **FR-INF-004** | Thiết lập CORS Policy đa môi trường (Development & Production) (Lab 5) | ✅ Done |
+| | **FR-INF-005** | Cấu hình Rate Limiting nâng cao (Fixed Window & Token Bucket) (Lab 5) | ✅ Done |
+| | **FR-INF-006** | Cấu hình Security Headers & Pipeline Middleware bảo mật (Lab 5) | ✅ Done |
+| | **FR-BKE-013** | Cài đặt và cấu hình API Versioning (`Asp.Versioning.Http`) (Lab 5) | ✅ Done |
 | **Phan Thành Huy**<br>*(DevOps & Testing)* | **FR-DVO-001** | Cấu hình docker-compose.yml tổng hợp (Nginx, Postgres, Redis, MinIO) | ✅ Done |
 | | **FR-DVO-002** | Cấu hình 6 chỉ số dinh dưỡng | ✅ Done |
 | | **FR-TST-001** | Kiểm thử API nâng cao | ✅ Done |
@@ -71,10 +71,10 @@ Dự án phát triển hệ thống Full-Stack cho nền tảng Blog ẩm thực
 | | **FR-DVO-003** | Cài đặt Health Check Endpoints (`/health`, `/health/live`, `/ready`) (Lab 4) | ✅ Done|
 | | **FR-DVO-004** | Thiết lập Structured Logging toàn hệ thống bằng `Serilog` (Lab 4) | ✅ Done|
 | | **FR-TST-006** | Cập nhật Seeder cho Steps/Ingredients & Viết Test cho API mới (Lab 4) | ✅ Done|
-| | **FR-DVO-005** | Tích hợp OpenAPI 3.1 & Scalar UI kèm Bearer Security Scheme (Lab 5) | ⏳ To Do |
-| | **FR-DVO-006** | Bật XML Documentation Comments & Metadata chuẩn cho Endpoints (Lab 5) | ⏳ To Do |
-| | **FR-TST-007** | Xây dựng bộ 15 kịch bản kiểm thử API tự động (`culinary-blog.http`) (Lab 5) | ⏳ To Do |
-| | **FR-TST-008** | Viết Integration Tests kiểm thử ma trận phân quyền (`TestAuthHandler`) (Lab 5) | ⏳ To Do |
+| | **FR-DVO-005** | Tích hợp OpenAPI 3.1 & Scalar UI kèm Bearer Security Scheme (Lab 5) | ✅ Done |
+| | **FR-DVO-006** | Bật XML Documentation Comments & Metadata chuẩn cho Endpoints (Lab 5) | ✅ Done |
+| | **FR-TST-007** | Xây dựng bộ 15 kịch bản kiểm thử API tự động (`culinary-blog.http`) (Lab 5) | ✅ Done |
+| | **FR-TST-008** | Viết Integration Tests kiểm thử ma trận phân quyền (`TestAuthHandler`) (Lab 5) | ✅ Done |
 | **Bùi Trung Hiếu**<br>*(Frontend Next.js)* | **FR-FTE-001** | Dựng Frontend Skeleton (Next.js 15 App Router + Tailwind CSS) | ✅ Done |
 | | **FR-FTE-002** | Đồng bộ TypeScript Interfaces | ✅ Done |
 | | **FR-FTE-003** | Chuẩn hóa cú pháp sắp xếp (?sort=-field) | ✅ Done |
@@ -86,17 +86,18 @@ Dự án phát triển hệ thống Full-Stack cho nền tảng Blog ẩm thực
 | | **FR-FTE-008** | Xây dựng Dashboard quản lý Profile và danh sách Recipe cá nhân (Lab 4) | ✅ Done |
 | | **FR-FTE-009** | Xây dựng Form tạo Recipe đa bước (React Hook Form + Zod) (Lab 4) | ✅ Done |
 | | **FR-FTE-010** | Tích hợp API Upload hình ảnh, thêm Bước thực hiện và Nguyên liệu (Lab 4) | ✅ Done |
-| | **FR-FTE-011** | Thiết lập môi trường (`.env.local`) & Cấu hình `next.config.ts` tối ưu (Lab 5) | ⏳ To Do |
-| | **FR-FTE-012** | Chuẩn hóa cấu trúc thư mục Next.js 15 App Router theo Route Groups (Lab 5) | ⏳ To Do |
-| | **FR-FTE-013** | Cài đặt & cấu hình thư viện cốt lõi (TanStack Query, Zustand, Axios) (Lab 5) | ⏳ To Do |
-| | **FR-FTE-014** | Cài đặt toàn bộ kiểu dữ liệu TypeScript (TS Types/DTOs) đồng bộ Backend (Lab 5) | ⏳ To Do |
+| | **FR-FTE-011** | Thiết lập môi trường (`.env.local`) & Cấu hình `next.config.ts` tối ưu (Lab 5) | ✅ Done |
+| | **FR-FTE-012** | Chuẩn hóa cấu trúc thư mục Next.js 15 App Router theo Route Groups (Lab 5) | ✅ Done |
+| | **FR-FTE-013** | Cài đặt & cấu hình thư viện cốt lõi (TanStack Query, Zustand, Axios) (Lab 5) | ✅ Done |
+| | **FR-FTE-014** | Cài đặt toàn bộ kiểu dữ liệu TypeScript (TS Types/DTOs) đồng bộ Backend (Lab 5) | ✅ Done |
 ---
 
 ## ⚙️ Hướng dẫn Khởi chạy Hệ thống
-Để chạy dự án, bạn cần cài đặt sẵn `Docker`, `.NET 10.0 SDK` (hoặc tương đương theo version dự án), và `Node.js`.
+
+Để chạy dự án, bạn cần cài đặt sẵn `Docker`, `.NET 10.0 SDK`, và `Node.js`.
 
 ### Bước 1: Khởi động các dịch vụ nền (Database, Cache, Storage)
-Mở Terminal tại thư mục gốc của dự án (thư mục chứa file `docker-compose.yml`) và chạy lệnh:
+Mở Terminal tại thư mục gốc của dự án và chạy:
 ```bash
 docker compose up -d
 ```
@@ -105,12 +106,21 @@ Lệnh này sẽ tải và chạy ngầm các container:
 - **Redis**: Dùng để lưu trữ bộ nhớ đệm (Cache) (cổng `6379`).
 - **MinIO**: Server lưu trữ file hình ảnh chuẩn S3 (cổng `9000` và `9001`).
 
+### Cấu hình biến môi trường JWT cho API (Tùy chọn)
+Các endpoint tạo và thay đổi recipe yêu cầu access token dạng Bearer. File `culinary-blog/src/backend/culinary-blog.http` lấy token từ biến môi trường `CULINARY_BLOG_ACCESS_TOKEN`.
+```powershell
+$env:Jwt__Issuer = "CulinaryBlog"
+$env:Jwt__Audience = "CulinaryBlogClient"
+$env:Jwt__SigningKey = "super-secret-key-that-is-very-long-for-hmac-sha256-1234567890"
+$env:CULINARY_BLOG_ACCESS_TOKEN = "<access-token>"
+```
+
 ### Bước 2: Cập nhật CSDL và Khởi chạy Backend (.NET Core API)
 Di chuyển vào thư mục API:
 ```bash
 cd src/backend/src/CulinaryBlog.API
 ```
-Cập nhật cơ sở dữ liệu (tự động tạo bảng dựa trên code):
+Cập nhật cơ sở dữ liệu:
 ```bash
 dotnet ef database update --project ../CulinaryBlog.Infrastructure
 ```
@@ -118,7 +128,7 @@ Khởi chạy Backend:
 ```bash
 dotnet run
 ```
-> **Lưu ý:** Backend sẽ chạy tại **http://localhost:5075**. Bạn có thể truy cập `http://localhost:5075/scalar/v1` để xem tài liệu chi tiết của các API.
+> **Tài liệu API:** Truy cập trực tiếp tại trình duyệt: **http://localhost:5075/scalar/v1**
 
 ### Bước 3: Cài đặt và Khởi chạy Frontend (Next.js)
 Di chuyển vào thư mục Frontend:
@@ -148,19 +158,18 @@ Dự án phân bổ dữ liệu vào 3 nơi chuyên biệt để tối ưu hiệ
 
 ## 🔗 Danh sách các API cốt lõi
 
-Dưới đây là các API chính được Frontend sử dụng thường xuyên để giao tiếp với hệ thống:
-
 ### Xác thực (Authentication)
-- `POST /api/auth/login`: Xác thực Email/Mật khẩu và cấp `Token JWT`.
-- `POST /api/auth/google`: Đăng nhập/Đăng ký nhanh bằng tài khoản Google.
-- `POST /api/auth/refresh`: Cấp lại Token mới khi Token cũ sắp hết hạn.
+- `POST /api/v1/auth/register`: Đăng ký tài khoản người dùng mới.
+- `POST /api/v1/auth/login`: Xác thực Email/Mật khẩu và cấp `Token JWT`.
+- `POST /api/v1/auth/google-login`: Đăng nhập/Đăng ký nhanh bằng tài khoản Google.
+- `POST /api/v1/auth/refresh`: Cấp lại Token mới (Token Rotation).
 
 ### Công thức nấu ăn (Recipes)
-- `GET /api/recipes`: Lấy danh sách công thức (hỗ trợ tìm kiếm Full-text search không dấu, lọc theo độ khó, thời gian nấu).
-- `POST /api/recipes`: Tạo một công thức mới (Yêu cầu phải có Token).
-- `GET /api/recipes/{id}`: Xem chi tiết cách làm và nguyên liệu.
-- `POST /api/recipes/{id}/images`: Upload hình ảnh của công thức lên server MinIO.
-
-### Tương tác (Comments)
-- `GET /api/recipes/{id}/comments`: Tải danh sách bình luận của món ăn.
-- `POST /api/recipes/{id}/comments`: Gửi bình luận và đánh giá mới.
+- `GET /api/v1/recipes`: Lấy danh sách công thức (phân trang, lọc theo độ khó, thời gian nấu).
+- `GET /api/v1/recipes/search`: Tìm kiếm Full-Text Search không dấu.
+- `POST /api/v1/recipes`: Tạo một công thức mới (Yêu cầu có Token).
+- `GET /api/v1/recipes/{id}`: Xem chi tiết cách làm và nguyên liệu.
+- `PUT /api/v1/recipes/{id}`: Cập nhật công thức (Yêu cầu là tác giả hoặc Admin).
+- `POST /api/v1/recipes/{id}/publish`: Xuất bản công thức (Domain Rules).
+- `POST /api/v1/recipes/{id}/archive`: Lưu trữ công thức.
+- `DELETE /api/v1/recipes/{id}`: Xóa mềm công thức (Yêu cầu là tác giả hoặc Admin).

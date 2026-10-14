@@ -4,10 +4,10 @@ import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Navbar } from '../../components/layout/Navbar';
-import { RecipeSummaryDto, RecipeStatus } from '../../types';
-import { authService } from '../../services/authService';
-import { recipeManagementService } from '../../services/recipeManagementService';
+import { Navbar } from '@/components/layout/Navbar';
+import { RecipeSummaryDto, RecipeStatus } from '@/types';
+import { authService } from '@/services/authService';
+import { recipeManagementService } from '@/services/recipeManagementService';
 
 function DashboardContent() {
   const { data: session, update: updateSession } = useSession();

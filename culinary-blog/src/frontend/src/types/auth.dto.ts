@@ -36,3 +36,11 @@ export interface UpdateUserProfileRequestDto {
   bio?: string | null;
   avatarUrl?: string | null;
 }
+
+// Aliases for flexibility across frontend services & components
+export type LoginRequest = LoginRequestDto;
+export type RegisterRequest = RegisterRequestDto;
+export type GoogleLoginRequest = GoogleLoginRequestDto;
+export type UpdateProfileRequest = UpdateUserProfileRequestDto;
+export type AuthResponse = AuthResponseDto;
+export type UserProfile = UserProfileDto;

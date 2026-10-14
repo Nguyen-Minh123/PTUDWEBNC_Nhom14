@@ -1,8 +1,6 @@
 /**
-/// <summary>
-/// Đại diện cho kết quả phân trang chuẩn API PagedResult<T>
-/// </summary>
-*/
+ * Đại diện cho kết quả phân trang chuẩn API PagedResult<T>
+ */
 export interface PagedResult<T> {
   items: T[];
   pageNumber: number;
@@ -12,3 +10,6 @@ export interface PagedResult<T> {
   hasPreviousPage: boolean;
   hasNextPage: boolean;
 }
+
+// Alias
+export type PaginatedResult<T> = PagedResult<T>;

@@ -1,9 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
+    <PackageReference Include="Asp.Versioning.Http" />
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
     <ProjectReference Include="..\CulinaryBlog.Application\CulinaryBlog.Application.csproj" />
     <ProjectReference Include="..\CulinaryBlog.Infrastructure\CulinaryBlog.Infrastructure.csproj" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Scalar.AspNetCore" />
     <PackageReference Include="Serilog.AspNetCore" />
@@ -24,6 +26,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Tạo XML comments để OpenAPI có thể lấy tài liệu từ các API types. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591;AV0013;AV0021;ASPDEPR002</NoWarn>
   </PropertyGroup>
 
 </Project>
