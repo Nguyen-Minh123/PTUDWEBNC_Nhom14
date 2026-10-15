@@ -4,12 +4,15 @@ import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { EmptyState } from '@/components/feedback/EmptyState';
+import { useUIStore, type ToastType } from '@/stores/useUIStore';
 import { RecipeSummaryDto, RecipeStatus } from '@/types';
 import { authService } from '@/services/authService';
 import { recipeManagementService } from '@/services/recipeManagementService';
 
 function DashboardContent() {
   const { data: session, update: updateSession } = useSession();
+  const addToast = useUIStore((state) => state.addToast);
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') === 'profile' ? 'profile' : 'recipes';
 
@@ -17,7 +20,6 @@ function DashboardContent() {
   const [recipes, setRecipes] = useState<RecipeSummaryDto[]>([]);
   const [recipeStatusFilter, setRecipeStatusFilter] = useState<'all' | RecipeStatus>('all');
   const [loading, setLoading] = useState(true);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Profile Form States
   const [displayName, setDisplayName] = useState('');
@@ -41,16 +43,16 @@ function DashboardContent() {
         }
       } catch (err) {
         console.error('Lỗi nạp dữ liệu dashboard:', err);
+        addToast('error', 'Không thể tải đầy đủ dữ liệu dashboard.');
       } finally {
         setLoading(false);
       }
     }
     loadData();
-  }, [session]);
+  }, [session, addToast]);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+  const showToast = (message: string, type: ToastType = 'success') => {
+    addToast(type, message);
   };
 
   // Cập nhật hồ sơ cá nhân (FR-BKE-006 / FR-FTE-008)
@@ -75,7 +77,7 @@ function DashboardContent() {
         showToast('Đã lưu thông tin hồ sơ thành công!');
       }
     } catch {
-      showToast('Không thể cập nhật hồ sơ cá nhân.');
+      showToast('Không thể cập nhật hồ sơ cá nhân.', 'error');
     } finally {
       setProfileSaving(false);
     }
@@ -135,15 +137,6 @@ function DashboardContent() {
 
   return (
     <div className="flex-1 bg-stone-50 flex flex-col font-sans">
-
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 px-4 py-3 bg-gray-900 text-white rounded-xl shadow-xl text-xs font-semibold flex items-center gap-2 animate-bounce">
-          <span>🔔</span>
-          <span>{toastMessage}</span>
-        </div>
-      )}
-
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         {/* Banner Chào mừng */}
         <div className="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 rounded-2xl p-6 sm:p-8 text-white shadow-xl shadow-amber-900/10 mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
@@ -253,19 +246,19 @@ function DashboardContent() {
             {loading ? (
               <div className="text-center py-12 text-sm text-gray-400">Đang tải danh sách công thức...</div>
             ) : filteredRecipes.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-2xl border border-gray-200 p-8">
-                <span className="text-4xl">🍳</span>
-                <h3 className="text-base font-bold text-gray-800 mt-2">Chưa có công thức nào</h3>
-                <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
-                  Bạn chưa tạo công thức nào ở trạng thái này. Hãy bắt đầu chia sẻ công thức đầu tiên!
-                </p>
+              <EmptyState
+                icon="🍳"
+                title="Chưa có công thức nào"
+                description="Bạn chưa tạo công thức nào ở trạng thái này. Hãy bắt đầu chia sẻ công thức đầu tiên!"
+                className="py-16 bg-white rounded-2xl border border-gray-200 p-8"
+              >
                 <Link
                   href="/recipes/new"
                   className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition-all shadow-xs"
                 >
                   <span>✍️</span> Tạo Công Thức Ngay
                 </Link>
-              </div>
+              </EmptyState>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredRecipes.map((recipe) => (

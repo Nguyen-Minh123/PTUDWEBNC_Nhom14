@@ -6,6 +6,7 @@ import { FilterBar } from '@/components/search/FilterBar';
 import { RecipeCard } from '@/components/search/RecipeCard';
 import { Pagination } from '@/components/search/Pagination';
 import { RecipeDetailModal } from '@/components/recipe/RecipeDetailModal';
+import { EmptyState } from '@/components/feedback/EmptyState';
 import { searchRecipes } from '@/services/recipeService';
 import { RecipeSummaryDto } from '@/types';
 
@@ -100,14 +101,12 @@ export default function Home() {
 
         {/* Grid thẻ công thức */}
         {pagedResult.items.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-gray-200 p-8 my-6">
-            <span className="text-4xl">🔍</span>
-            <h3 className="text-base font-bold text-gray-800 mt-3">
-              Không tìm thấy công thức nào phù hợp
-            </h3>
-            <p className="text-xs text-gray-500 mt-1">
-              Hãy thử tìm kiếm với từ khóa khác hoặc đặt lại bộ lọc danh mục và độ khó.
-            </p>
+          <EmptyState
+            icon="🔍"
+            title="Không tìm thấy công thức nào phù hợp"
+            description="Hãy thử tìm kiếm với từ khóa khác hoặc đặt lại bộ lọc danh mục và độ khó."
+            className="py-16 bg-white rounded-3xl border border-dashed border-gray-200 p-8 my-6"
+          >
             <button
               type="button"
               onClick={() => {
@@ -115,12 +114,13 @@ export default function Home() {
                 setSelectedCategory('all');
                 setSelectedDifficulty('all');
                 setSelectedSort('-createdAt');
+                setPage(1);
               }}
               className="mt-4 px-4 py-2 bg-amber-500 text-white font-medium text-xs rounded-full hover:bg-amber-600 transition-colors"
             >
               Đặt lại bộ lọc
             </button>
-          </div>
+          </EmptyState>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 my-6">
             {pagedResult.items.map((recipe) => (
