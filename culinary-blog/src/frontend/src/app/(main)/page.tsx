@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { SearchBar } from '@/components/search/SearchBar';
 import { FilterBar } from '@/components/search/FilterBar';
 import { RecipeCard } from '@/components/search/RecipeCard';
+import { Pagination } from '@/components/search/Pagination';
 import { RecipeDetailModal } from '@/components/recipe/RecipeDetailModal';
 import { searchRecipes } from '@/services/recipeService';
 import { RecipeSummaryDto } from '@/types';
@@ -133,31 +134,13 @@ export default function Home() {
         )}
 
         {/* Phân trang */}
-        {pagedResult.totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-8">
-            <button
-              type="button"
-              disabled={!pagedResult.hasPreviousPage}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="px-4 py-2 text-xs font-semibold rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
-            >
-              ← Trang trước
-            </button>
-
-            <span className="text-xs font-medium text-gray-600 px-3">
-              Trang {pagedResult.pageNumber} / {pagedResult.totalPages}
-            </span>
-
-            <button
-              type="button"
-              disabled={!pagedResult.hasNextPage}
-              onClick={() => setPage((p) => p + 1)}
-              className="px-4 py-2 text-xs font-semibold rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
-            >
-              Trang sau →
-            </button>
-          </div>
-        )}
+        <Pagination
+          pageNumber={pagedResult.pageNumber}
+          totalPages={pagedResult.totalPages}
+          hasPreviousPage={pagedResult.hasPreviousPage}
+          hasNextPage={pagedResult.hasNextPage}
+          onPageChange={setPage}
+        />
       </main>
 
       <RecipeDetailModal
