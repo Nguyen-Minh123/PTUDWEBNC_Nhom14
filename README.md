@@ -104,10 +104,10 @@ Chuẩn bị thêm phần kế hoạch quản lý cho các chức năng bài LAB
 | | **FR-FTE-012** | Chuẩn hóa cấu trúc thư mục Next.js 15 App Router theo Route Groups (Lab 5) | ✅ Done |
 | | **FR-FTE-013** | Cài đặt & cấu hình thư viện cốt lõi (TanStack Query, Zustand, Axios) (Lab 5) | ✅ Done |
 | | **FR-FTE-014** | Cài đặt toàn bộ kiểu dữ liệu TypeScript (TS Types/DTOs) đồng bộ Backend (Lab 5) | ✅ Done |
-| | **FR-FTE-015** | Cài đặt và cấu hình bộ thư viện giao diện shadcn/ui (Lab 6) | ⏳ To Do |
-| | **FR-FTE-016** | Xây dựng hệ thống bố cục chung (Layout System) cho Blog App (Lab 6) | ⏳ To Do |
-| | **FR-FTE-017** | Thiết kế giao diện tĩnh Trang chủ & Trang khám phá công thức (Lab 6) | ⏳ To Do |
-| | **FR-FTE-018** | Thiết kế giao diện tĩnh Trang chi tiết công thức (Lab 6) | ⏳ To Do |
+| | **FR-FTE-015** | Cài đặt và cấu hình bộ thư viện giao diện shadcn/ui (Lab 6) | ✅ Done |
+| | **FR-FTE-016** | Xây dựng hệ thống bố cục chung (Layout System) cho Blog App (Lab 6) | ✅ Done |
+| | **FR-FTE-017** | Thiết kế giao diện tĩnh Trang chủ & Trang khám phá công thức (Lab 6) | ✅ Done |
+| | **FR-FTE-018** | Thiết kế giao diện tĩnh Trang chi tiết công thức (Lab 6) | ✅ Done |
 ---
 
 ## ⚙️ Hướng dẫn Khởi chạy Hệ thống
