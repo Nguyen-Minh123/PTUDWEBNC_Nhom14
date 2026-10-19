@@ -5,7 +5,19 @@ import { Heart, ChefHat, Mail, Globe, Code2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-export function Footer() {
+type FooterProps = {
+  variant?: 'main' | 'compact';
+};
+
+export function Footer({ variant = 'main' }: FooterProps) {
+  if (variant === 'compact') {
+    return (
+      <footer className="w-full text-center py-6 text-xs text-stone-400">
+        © 2026 CulinaryBlog • PTUD Web Nâng Cao Nhóm 14
+      </footer>
+    );
+  }
+
   return (
     <footer className="w-full bg-stone-900 text-stone-300 border-t border-stone-800 mt-auto">
       <MainContainer size="default" className="py-12 sm:py-16">

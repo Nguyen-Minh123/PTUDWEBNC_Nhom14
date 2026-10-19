@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { CommentDto } from '../../types';
 import { getCommentsByRecipeId, addComment, likeComment } from '../../services/commentService';
+import { EmptyState } from '@/components/feedback/EmptyState';
 
 interface CommentSectionProps {
   recipeId: string;
@@ -179,9 +180,11 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ recipeId, recipe
       {/* Danh sách bình luận */}
       <div className="space-y-4">
         {comments.length === 0 ? (
-          <div className="text-center py-8 text-gray-400 text-xs">
-            Chưa có bình luận nào cho công thức này. Hãy là người đầu tiên để lại đánh giá!
-          </div>
+          <EmptyState
+            title="Chưa có bình luận nào cho công thức này."
+            description="Hãy là người đầu tiên để lại đánh giá!"
+            className="py-8 text-gray-400 text-xs"
+          />
         ) : (
           comments.map((comment) => (
             <div

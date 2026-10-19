@@ -1,12 +1,9 @@
 import Link from 'next/link';
 import { CreateRecipeWizard } from './CreateRecipeWizard';
-import { Navbar } from '@/components/layout/Navbar';
 
 export default function CreateRecipePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50/40 via-white to-gray-50 flex flex-col font-sans">
-      <Navbar />
-
+    <div className="flex-1 bg-gradient-to-b from-amber-50/40 via-white to-gray-50 flex flex-col font-sans">
       <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
         <div className="mb-6">
           <Link
