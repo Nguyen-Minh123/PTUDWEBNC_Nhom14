@@ -1,6 +1,7 @@
 using CulinaryBlog.Application.Features.Auth.Commands.GoogleLogin;
 using CulinaryBlog.Application.Features.Auth.Commands.Login;
 using CulinaryBlog.Application.Features.Auth.Commands.Logout;
+using CulinaryBlog.Application.Features.Auth.Commands.RefreshTokens;
 using CulinaryBlog.Application.Features.Auth.Commands.Register;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -84,7 +85,25 @@ public static class AuthEndpoints
         .WithSummary("Đăng nhập bằng Google (Social Login)")
         .AllowAnonymous();
 
-        // 4. Đăng xuất (FR-AUTH-005)
+        // 4. Silent Token Refresh & Rotation (FR-SEC-002, FR-SEC-004, FR-FTE-029)
+        group.MapPost("/refresh-token", async (
+            [FromServices] ISender sender,
+            [FromBody] RefreshTokenRequest request,
+            CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.RefreshToken))
+            {
+                return Results.BadRequest("RefreshToken is required.");
+            }
+
+            var result = await sender.Send(new RefreshTokenCommand(request.RefreshToken), ct);
+            return Results.Ok(result);
+        })
+        .WithName("RefreshToken")
+        .WithSummary("Làm mới Access Token & Xoay vòng Refresh Token (Token Rotation)")
+        .AllowAnonymous();
+
+        // 5. Đăng xuất (FR-AUTH-005)
         group.MapPost("/logout", async (
             [FromServices] ISender sender,
             [FromBody] LogoutRequest request,
@@ -130,3 +149,9 @@ public class GoogleLoginRequest
 {
     public string IdToken { get; set; } = string.Empty;
 }
+
+public class RefreshTokenRequest
+{
+    public string RefreshToken { get; set; } = string.Empty;
+}
+
