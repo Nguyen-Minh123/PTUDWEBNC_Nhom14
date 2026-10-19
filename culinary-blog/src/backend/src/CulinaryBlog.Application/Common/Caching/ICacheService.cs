@@ -33,12 +33,12 @@ public interface ICacheService
     /// <typeparam name="T">Kiểu dữ liệu cần serialize.</typeparam>
     /// <param name="key">Khóa cache.</param>
     /// <param name="value">Giá trị cần lưu.</param>
-    /// <param name="ttl">Thời gian sống của cache.</param>
+    /// <param name="absoluteExpirationRelativeToNow">Thời gian sống của cache.</param>
     /// <param name="cancellationToken">Token hủy tác vụ.</param>
     Task SetAsync<T>(
         string key,
         T value,
-        TimeSpan ttl,
+        TimeSpan? absoluteExpirationRelativeToNow = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
