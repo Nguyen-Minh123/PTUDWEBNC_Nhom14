@@ -1,16 +1,48 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 
 export function Navbar() {
+  const router = useRouter();
   const { data: session } = useSession();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // Tự đóng dropdown khi click ra ngoài hoặc nhấn Esc
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const handleLogout = async () => {
     setDropdownOpen(false);
     await signOut({ callbackUrl: '/' });
+  };
+
+  // Đóng menu trước rồi điều hướng để tránh lỗi click trong dropdown
+  const handleNavigate = (path: string) => {
+    setDropdownOpen(false);
+    router.push(path);
   };
 
   return (
@@ -76,28 +108,30 @@ export function Navbar() {
               {dropdownOpen && (
                 <div
                   className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50 text-xs"
-                  onClick={() => setDropdownOpen(false)}
+                  onClick={(e) => e.stopPropagation()} // Tránh lan truyền click không cần thiết
                 >
                   <div className="px-3.5 py-2.5 border-b border-gray-100 bg-amber-50/50">
                     <p className="font-bold text-gray-800 truncate">{session.user.name}</p>
                     <p className="text-[11px] text-gray-500 truncate">{session.user.email}</p>
                   </div>
 
-                  <Link
-                    href="/dashboard"
-                    className="flex items-center gap-2 px-3.5 py-2 hover:bg-gray-50 text-gray-700 font-medium transition-colors"
+                  <button
+                    type="button"
+                    onClick={() => handleNavigate('/dashboard')} // Điều hướng rõ ràng
+                    className="w-full text-left flex items-center gap-2 px-3.5 py-2 hover:bg-gray-50 text-gray-700 font-medium transition-colors"
                   >
                     <span>📊</span>
                     <span>Dashboard & Quản lý</span>
-                  </Link>
+                  </button>
 
-                  <Link
-                    href="/dashboard?tab=profile"
-                    className="flex items-center gap-2 px-3.5 py-2 hover:bg-gray-50 text-gray-700 font-medium transition-colors"
+                  <button
+                    type="button"
+                    onClick={() => handleNavigate('/dashboard?tab=profile')} // Mở thẳng tab hồ sơ
+                    className="w-full text-left flex items-center gap-2 px-3.5 py-2 hover:bg-gray-50 text-gray-700 font-medium transition-colors"
                   >
                     <span>👤</span>
                     <span>Hồ sơ cá nhân</span>
-                  </Link>
+                  </button>
 
                   <div className="border-t border-gray-100 my-1" />
 
