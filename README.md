@@ -42,10 +42,10 @@ Chuẩn bị thêm phần kế hoạch quản lý cho các chức năng bài LAB
 | | **FR-BKE-011** | Hiện thực phân quyền RBAC, Policy-based & Fallback Policy (Lab 5) | ✅ Done |
 | | **FR-BKE-012** | Hoàn thiện Resource-Based Authorization chống BOLA (OWASP API1) (Lab 5) | ✅ Done |
 | | **FR-SEC-004** | Xử lý Token Theft Detection trong Refresh Token Rotation (Lab 5) | ✅ Done |
-| | **FR-FTE-027** | Xây dựng lớp tiện ích gọi API (Axios Client Instance & Interceptors) (Lab 6) | ⏳ To Do |
-| | **FR-FTE-028** | Xây dựng lớp tiện ích Xử lý lỗi tập trung & Chuẩn hóa RFC 7807 (Lab 6) | ⏳ To Do |
-| | **FR-FTE-029** | Hiện thực hóa cơ chế Silent Token Refresh Interceptor (Lab 6) | ⏳ To Do |
-| | **FR-FTE-030** | Thiết kế giao diện tĩnh Trang Đăng nhập & Đăng ký (Lab 6) | ⏳ To Do |
+| | **FR-FTE-027** | Xây dựng lớp tiện ích gọi API (Axios Client Instance & Interceptors) (Lab 6) | ✅ Done |
+| | **FR-FTE-028** | Xây dựng lớp tiện ích Xử lý lỗi tập trung & Chuẩn hóa RFC 7807 (Lab 6) | ✅ Done |
+| | **FR-FTE-029** | Hiện thực hóa cơ chế Silent Token Refresh Interceptor (Lab 6) | ✅ Done |
+| | **FR-FTE-030** | Thiết kế giao diện tĩnh Trang Đăng nhập & Đăng ký (Lab 6) | ✅ Done |
 | **Nguyễn Thế Khải**<br>*(Database & Infra)* | **FR-DB-001** | Khởi tạo EF Core Migrations | ✅ Done |
 | | **FR-DB-002** | Định nghĩa BaseEntity, ApplicationUser | ✅ Done |
 | | **FR-DB-003** | Cấu hình PostgreSQL 16 trên Docker | ✅ Done |
@@ -63,10 +63,10 @@ Chuẩn bị thêm phần kế hoạch quản lý cho các chức năng bài LAB
 | | **FR-INF-005** | Cấu hình Rate Limiting nâng cao (Fixed Window & Token Bucket) (Lab 5) | ✅ Done |
 | | **FR-INF-006** | Cấu hình Security Headers & Pipeline Middleware bảo mật (Lab 5) | ✅ Done |
 | | **FR-BKE-013** | Cài đặt và cấu hình API Versioning (`Asp.Versioning.Http`) (Lab 5) | ✅ Done |
-| | **FR-FTE-023** | Cài đặt store quản lý trạng thái xác thực (`auth-store.ts`) (Lab 6) | ⏳ To Do |
-| | **FR-FTE-024** | Cài đặt store quản lý giao diện người dùng (`ui-store.ts`) (Lab 6) | ⏳ To Do |
-| | **FR-FTE-025** | Cài đặt store quản lý bộ lọc và tìm kiếm (`filter-store.ts`) (Lab 6) | ⏳ To Do |
-| | **FR-FTE-026** | Thiết kế giao diện tĩnh Trang Dashboard quản trị cá nhân (Lab 6) | ⏳ To Do |
+| | **FR-FTE-023** | Cài đặt store quản lý trạng thái xác thực (`auth-store.ts`) (Lab 6) | ✅ Done |
+| | **FR-FTE-024** | Cài đặt store quản lý giao diện người dùng (`ui-store.ts`) (Lab 6) | ✅ Done |
+| | **FR-FTE-025** | Cài đặt store quản lý bộ lọc và tìm kiếm (`filter-store.ts`) (Lab 6) | ✅ Done |
+| | **FR-FTE-026** | Thiết kế giao diện tĩnh Trang Dashboard quản trị cá nhân (Lab 6) | ✅ Done |
 | **Phan Thành Huy**<br>*(DevOps & Testing)* | **FR-DVO-001** | Cấu hình docker-compose.yml tổng hợp (Nginx, Postgres, Redis, MinIO) | ✅ Done |
 | | **FR-DVO-002** | Cấu hình 6 chỉ số dinh dưỡng | ✅ Done |
 | | **FR-TST-001** | Kiểm thử API nâng cao | ✅ Done |
@@ -85,10 +85,10 @@ Chuẩn bị thêm phần kế hoạch quản lý cho các chức năng bài LAB
 | | **FR-DVO-006** | Bật XML Documentation Comments & Metadata chuẩn cho Endpoints (Lab 5) | ✅ Done |
 | | **FR-TST-007** | Xây dựng bộ 15 kịch bản kiểm thử API tự động (`culinary-blog.http`) (Lab 5) | ✅ Done |
 | | **FR-TST-008** | Viết Integration Tests kiểm thử ma trận phân quyền (`TestAuthHandler`) (Lab 5) | ✅ Done |
-| | **FR-FTE-019** | Xây dựng bộ component điều hướng dùng chung (Header & Footer) (Lab 6) | ⏳ To Do |
-| | **FR-FTE-020** | Xây dựng component Pagination (Phân trang) tái sử dụng (Lab 6) | ⏳ To Do |
-| | **FR-FTE-021** | Xây dựng hệ thống Loading & Skeleton States (Lab 6) | ⏳ To Do |
-| | **FR-FTE-022** | Xây dựng hệ thống Error & User Feedback Components (Toast, EmptyState) (Lab 6) | ⏳ To Do |
+| | **FR-FTE-019** | Xây dựng bộ component điều hướng dùng chung (Header & Footer) (Lab 6) | ✅ Done |
+| | **FR-FTE-020** | Xây dựng component Pagination (Phân trang) tái sử dụng (Lab 6) | ✅ Done |
+| | **FR-FTE-021** | Xây dựng hệ thống Loading & Skeleton States (Lab 6) | ✅ Done |
+| | **FR-FTE-022** | Xây dựng hệ thống Error & User Feedback Components (Toast, EmptyState) (Lab 6) | ✅ Done |
 | **Bùi Trung Hiếu**<br>*(Frontend Next.js)* | **FR-FTE-001** | Dựng Frontend Skeleton (Next.js 15 App Router + Tailwind CSS) | ✅ Done |
 | | **FR-FTE-002** | Đồng bộ TypeScript Interfaces | ✅ Done |
 | | **FR-FTE-003** | Chuẩn hóa cú pháp sắp xếp (?sort=-field) | ✅ Done |
