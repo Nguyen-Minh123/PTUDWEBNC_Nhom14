@@ -1,4 +1,4 @@
-# 🍲 Culinary Blog - Nhóm 14
+﻿# 🍲 Culinary Blog - Nhóm 14
 
 Dự án phát triển hệ thống Full-Stack cho nền tảng Blog ẩm thực (**Culinary Blog**) theo tiêu chuẩn kiến trúc **Clean Architecture** và tài liệu đặc tả **SRS v1.0.0**. Hệ thống sử dụng **.NET 10 (Minimal APIs)**, **Next.js (App Router)**, **PostgreSQL 16**, **Redis 7**, và **MinIO**.
 
@@ -46,7 +46,7 @@ Chuẩn bị thêm phần kế hoạch quản lý cho các chức năng bài LAB
 | | **FR-FTE-028** | Xây dựng lớp tiện ích Xử lý lỗi tập trung & Chuẩn hóa RFC 7807 (Lab 6) | ✅ Done |
 | | **FR-FTE-029** | Hiện thực hóa cơ chế Silent Token Refresh Interceptor (Lab 6) | ✅ Done |
 | | **FR-FTE-030** | Thiết kế giao diện tĩnh Trang Đăng nhập & Đăng ký (Lab 6) | ✅ Done |
-| | **FR-BKE-014** | Hiện thực hóa API Quên mật khẩu & Đổi mật khẩu (Identity Reset/Change Password) (Lab 7) | ⏳ To Do |
+| | **FR-BKE-014** | Hiện thực hóa API Quên mật khẩu & Đổi mật khẩu (Identity Reset/Change Password) (Lab 7) | ✅ Done |
 | | **FR-FTE-031** | Hoàn thiện tích hợp API Đăng nhập, Đăng ký & Đăng xuất trên Frontend (Lab 7) | ⏳ To Do |
 | | **FR-FTE-032** | Xây dựng giao diện và tích hợp API Quên mật khẩu (Forgot/Reset Password) (Lab 7) | ⏳ To Do |
 | | **FR-FTE-033** | Xây dựng giao diện và tích hợp API Đổi mật khẩu (Change Password) (Lab 7) | ⏳ To Do |
