@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
 import { MainContainer } from '@/components/layout/MainContainer';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { RecipeHero } from '@/components/recipe-detail/RecipeHero';
@@ -11,12 +10,14 @@ import { RecipeNutrition } from '@/components/recipe-detail/RecipeNutrition';
 import { RecipeIngredients } from '@/components/recipe-detail/RecipeIngredients';
 import { RecipeSteps } from '@/components/recipe-detail/RecipeSteps';
 import { RecipeReviews } from '@/components/recipe-detail/RecipeReviews';
+import { RecipeDetailSkeleton } from '@/components/recipe/RecipeDetailSkeleton';
 import { RecipeCard } from '@/components/recipe/RecipeCard';
 import { INITIAL_RECIPES } from '@/services/recipeService';
-import { RecipeDetailDto, RecipeIngredientDto, RecipeStepDto } from '@/types';
+import { useRecipeDetail } from '@/hooks/queries/useRecipes';
+import { extractErrorMessage } from '@/lib/axios';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChefHat, Lightbulb, ArrowLeft, Share2, Bookmark } from 'lucide-react';
+import { Lightbulb } from 'lucide-react';
 
 interface RecipeDetailPageProps {
   params: Promise<{ id: string }>;
@@ -25,62 +26,72 @@ interface RecipeDetailPageProps {
 export default function RecipeDetailPage({ params }: RecipeDetailPageProps) {
   const unwrappedParams = React.use(params);
   const { id } = unwrappedParams;
+  const {
+    data: fullRecipe,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useRecipeDetail(id);
 
-  // Tìm kiếm recipe trong INITIAL_RECIPES
-  const baseRecipe = INITIAL_RECIPES.find((r) => r.id === id) || INITIAL_RECIPES[0];
+  if (isLoading) {
+    return (
+      <div className="py-8 md:py-12">
+        <MainContainer size="default">
+          <RecipeDetailSkeleton />
+        </MainContainer>
+      </div>
+    );
+  }
 
-  // Chi tiết nguyên liệu mẫu đầy đủ
-  const mockIngredients: RecipeIngredientDto[] = [
-    { id: '1', recipeId: id, name: 'Thịt bò (thăn / gầu / nạm)', quantity: 500, unit: 'g', orderIndex: 1 },
-    { id: '2', recipeId: id, name: 'Bánh phở tươi sợi nhỏ', quantity: 800, unit: 'g', orderIndex: 2 },
-    { id: '3', recipeId: id, name: 'Xương ống bò hầm nước dùng', quantity: 1.5, unit: 'kg', orderIndex: 3 },
-    { id: '4', recipeId: id, name: 'Gừng già nướng thơm', quantity: 2, unit: 'củ', orderIndex: 4 },
-    { id: '5', recipeId: id, name: 'Hành tím nướng vàng', quantity: 5, unit: 'củ', orderIndex: 5 },
-    { id: '6', recipeId: id, name: 'Gói gia vị thảo mộc (quế, hồi, thảo quả, hạt mùi)', quantity: 1, unit: 'gói', orderIndex: 6 },
-    { id: '7', recipeId: id, name: 'Hành hoa, ngò gai (mùi tàu)', quantity: 100, unit: 'g', orderIndex: 7 },
-    { id: '8', recipeId: id, name: 'Gia vị: Nước mắm cốt nhĩ, muối hạt, đường phèn', quantity: 3, unit: 'thìa', orderIndex: 8 },
-  ];
+  if (isError) {
+    return (
+      <div className="py-8 md:py-12">
+        <MainContainer size="narrow">
+          <Card>
+            <CardHeader>
+              <CardTitle>Không thể tải công thức</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p role="alert" className="text-sm text-stone-600 dark:text-stone-300">
+                {extractErrorMessage(error)}
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Button onClick={() => void refetch()}>Thử lại</Button>
+                <Link href="/recipes">
+                  <Button variant="outline">Quay lại danh sách</Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </MainContainer>
+      </div>
+    );
+  }
 
-  // Chi tiết các bước làm chuẩn
-  const mockSteps: RecipeStepDto[] = [
-    {
-      id: 's1',
-      stepNumber: 1,
-      instruction:
-        'Sơ chế và khử mùi xương bò: Ngâm xương trong nước muối loãng 30 phút, chần qua nước sôi cùng gừng giã nhuyễn trong 5 phút rồi rửa lại thật sạch dưới vòi nước lạnh.',
-      imageUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 's2',
-      stepNumber: 2,
-      instruction:
-        'Hầm nước dùng: Cho xương vào nồi lớn với 4 lít nước. Đun sôi rồi hạ nhỏ lửa, liên tục hớt bọt để nước dùng trong vắt. Hầm liu riu trong ít nhất 3 đến 4 tiếng.',
-      imageUrl: 'https://images.unsplash.com/photo-1547496502-affa22d38842?w=600&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 's3',
-      stepNumber: 3,
-      instruction:
-        'Thêm hương vị thảo mộc: Quế, hồi, thảo quả và hạt mùi đem rang nhỏ lửa cho dậy mùi thơm nức, cho vào túi lọc rồi thả vào nồi nước dùng hầm tiếp 45 phút. Nêm nếm nước mắm ngon và chút đường phèn cho ngọt thanh.',
-    },
-    {
-      id: 's4',
-      stepNumber: 4,
-      instruction:
-        'Thái thịt bò mỏng tang ngang thớ. Chần bánh phở qua nước sôi xếp vào tô, đặt thịt bò tái/chín lên trên, rắc hành hoa, ngò gai thái nhỏ rồi chan nước dùng đang sôi sùng sục vào ngập tô. Thưởng thức kèm chanh, ớt tươi.',
-      imageUrl: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=600&auto=format&fit=crop&q=80',
-    },
-  ];
+  if (!fullRecipe) {
+    return (
+      <div className="py-8 md:py-12">
+        <MainContainer size="narrow">
+          <Card>
+            <CardHeader>
+              <CardTitle>Không tìm thấy công thức</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-stone-600 dark:text-stone-300">
+                Công thức có thể đã bị xóa hoặc đường dẫn không chính xác.
+              </p>
+              <Link href="/recipes">
+                <Button variant="outline">Quay lại danh sách</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </MainContainer>
+      </div>
+    );
+  }
 
-  const fullRecipe: RecipeDetailDto = {
-    ...baseRecipe,
-    ingredients: mockIngredients,
-    steps: mockSteps,
-    images: [],
-  };
-
-  // Món ăn liên quan (lấy các món khác món hiện tại)
-  const relatedRecipes = INITIAL_RECIPES.filter((r) => r.id !== baseRecipe.id).slice(0, 3);
+  const relatedRecipes = INITIAL_RECIPES.filter((recipe) => recipe.id !== fullRecipe.id).slice(0, 3);
 
   return (
     <div className="py-8 md:py-12">
