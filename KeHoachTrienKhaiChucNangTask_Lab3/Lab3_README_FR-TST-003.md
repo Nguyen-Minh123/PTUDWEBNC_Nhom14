@@ -3,37 +3,39 @@
 ## Mục tiêu
 
 Tạo dữ liệu mẫu đa dạng, nhất quán và đủ quan hệ để kiểm thử danh sách, chi tiết,
-tìm kiếm, nguyên liệu, bước nấu và thông tin dinh dưỡng của công thức. Dữ liệu
-ngẫu nhiên phải có thể tái tạo khi cần debug và không được tạo bản ghi trùng mỗi
-lần ứng dụng khởi động.
+tìm kiếm, nguyên liệu, bước nấu và thông tin dinh dưỡng của công thức. Seeding
+phải tuân thủ Domain API, tạo đủ category/author và không tạo bản ghi trùng khi
+được gọi lại.
 
 ## Hiện trạng đã đối chiếu
 
 - Seeding nằm ở `culinary-blog/src/backend/src/CulinaryBlog.Infrastructure/Persistence/RecipeDataSeeder.cs`;
   thư viện `Bogus` đã được sử dụng thông qua `Faker`.
-- Bản đang có trong working tree hiện là thay đổi chưa commit. Bản đó tạo tên
-  món từ danh sách, sinh ngẫu nhiên nguyên liệu, bước và dinh dưỡng rồi chỉ thêm
-  `Recipes`.
-- `culinary-blog/src/backend/tests/CulinaryBlog.UnitTests/Seeder/RecipeDataSeederTests.cs`
-  hiện vẫn mong đợi bốn `Categories`, dữ liệu recipe không rỗng và gọi seeder
-  hai lần không nhân đôi dữ liệu. Vì vậy test và seeder hiện tại chưa đồng nhất;
-  cần đối chiếu lại trước khi xác nhận task hoàn tất.
+- Seeder tạo bốn Category, đảm bảo seeder author, sau đó tạo 25 Recipe cùng
+  ingredients, steps và sáu giá trị nutrition bằng Bogus.
+- Các entity được tạo đúng constructor hiện tại của Domain; recipe chỉ được
+  publish sau khi đã có cả ingredient và step.
+- `SeedAsync` giữ guard `Recipes.AnyAsync` để tránh thêm dữ liệu lần nữa khi
+  database đã có recipe.
+- `RecipeDataSeederTests` xác nhận category/author, đủ quan hệ và số lượng bản
+  ghi liên quan không tăng ở lần seed thứ hai.
 - `culinary-blog/src/backend/tests/CulinaryBlog.UnitTests/CulinaryBlog.UnitTests.csproj`
   hiện có `Compile Remove="UnitTest1.cs"`; file này không tham gia compile/test
   của unit-test project.
-- Build unit-test/integration-test project hiện đang dừng ở các lỗi compile
-  trong seeder cục bộ: constructor `Recipe`, `AddIngredient`, `AddStep` và API
-  dinh dưỡng được gọi không khớp với Domain model hiện tại. Cần đồng bộ cách
-  tạo recipe/ingredient/step/nutrition theo API thực tế rồi build lại.
-- Không chỉnh sửa hoặc đưa phần thay đổi cục bộ đang có trong seeder vào commit
-  kế hoạch này.
+- Trước khi sửa, build báo lỗi do seeder dùng constructor `Recipe` cũ, gọi
+  `AddIngredient`/`AddStep` sai overload và tham chiếu `NutritionInfo`/
+  `SetNutritionInfo` không tồn tại. Các lỗi đó đã được xử lý theo API Domain
+  hiện hành.
+- Build Infrastructure, API, UnitTests và IntegrationTests đều thành công;
+  toàn bộ 14 unit tests và 22 authorization + 8 validation/nutrition
+  integration tests đã pass.
 
 ## File liên quan
 
 | File | Vai trò / nội dung cần kiểm tra |
 | --- | --- |
-| `culinary-blog/src/backend/src/CulinaryBlog.Infrastructure/Persistence/RecipeDataSeeder.cs` | Khai báo tập dữ liệu mẫu, dùng Bogus tạo thuộc tính biến thiên, tạo công thức cùng các bước/nguyên liệu và lưu bằng EF Core. Đây hiện là file có thay đổi cục bộ chưa commit. |
-| `culinary-blog/src/backend/tests/CulinaryBlog.UnitTests/Seeder/RecipeDataSeederTests.cs` | Kiểm tra chất lượng dữ liệu tạo ra và tính idempotent của seeder. |
+| `culinary-blog/src/backend/src/CulinaryBlog.Infrastructure/Persistence/RecipeDataSeeder.cs` | Khai báo categories và tập món mẫu; tạo recipe đầy đủ theo constructor Domain, gắn author/category, sinh ingredients/steps/nutrition rồi publish và lưu bằng EF Core. |
+| `culinary-blog/src/backend/tests/CulinaryBlog.UnitTests/Seeder/RecipeDataSeederTests.cs` | Kiểm tra đủ 4 category, 25 recipe, user tác giả, quan hệ con, trạng thái published và idempotency của recipe/ingredients/steps. |
 | `culinary-blog/src/backend/src/CulinaryBlog.Domain/Entities/Recipe.cs` | Chứa các quy tắc tạo công thức và thêm bước/nguyên liệu mà dữ liệu seed phải tuân thủ. |
 
 ## Ý tưởng triển khai và giải thích code
@@ -42,7 +44,8 @@ lần ứng dụng khởi động.
    nội dung sinh ra vẫn có ý nghĩa, không phải chuỗi ký tự ngẫu nhiên.
 2. Tạo một `Faker` với locale phù hợp; dùng `Random.Int`, `Random.Decimal`,
    `PickRandom` hoặc `ArrayElements` để sinh thời gian, khẩu phần, dinh dưỡng,
-   nguyên liệu và bước trong các khoảng hợp lệ.
+   nguyên liệu và bước trong các khoảng hợp lệ. Giá trị Bogus là dữ liệu mẫu,
+   không phải số liệu dinh dưỡng đã được kiểm chứng.
 3. Tạo quan hệ trước khi lưu: mỗi recipe cần các `RecipeIngredient` và
    `RecipeStep` thuộc đúng recipe; nếu schema bắt buộc category/author thì seed
    các thực thể cha trước và gán khóa ngoại hợp lệ.
@@ -70,9 +73,12 @@ lần ứng dụng khởi động.
   thêm dữ liệu trùng ngoài dự kiến.
 - **Vì sao phải kiểm tra quan hệ?** Recipe có thể hợp lệ về chuỗi nhưng vẫn lỗi
   khi lưu nếu thiếu khóa ngoại hoặc ingredient/step không thuộc đúng recipe.
+- **Dữ liệu có giống nhau giữa các lần chạy không?** Bogus tạo giá trị giả lập;
+  ID entity vẫn được sinh mới. Muốn tái lập fixture hoàn toàn cần cấu hình seed
+  riêng, còn việc tránh nhân đôi được đảm bảo bởi guard idempotency.
 
 ## Trạng thái
 
-- [x] Đã xác định mã task và các file liên quan.
-- [ ] Cần đồng bộ seeder đang sửa với `RecipeDataSeederTests` và chạy test trước
-  khi xác nhận hoàn thành.
+- [x] Đồng bộ lời gọi seeder với Domain API hiện hành.
+- [x] Kiểm tra seeder tạo dữ liệu đủ quan hệ và chạy lại không nhân đôi.
+- [x] Build backend projects và chạy focused/full test suites thành công.
