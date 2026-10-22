@@ -2,11 +2,15 @@ import {
   AuthResponseDto,
   UserProfileDto,
   UpdateUserProfileRequestDto,
+  ForgotPasswordResponseDto,
+  AuthMessageResponseDto,
+  ResetPasswordRequestDto,
+  ChangePasswordRequestDto,
 } from '../types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5075';
 
-// Mock user dùng cho fallback khi backend không hoạt động
+// Mock user dùng cho fallback khi backend chưa khởi động
 const MOCK_USERS: Record<string, UserProfileDto> = {
   'admin@culinary.com': {
     id: 'user-admin-01',
@@ -47,7 +51,7 @@ let currentLocalUser: UserProfileDto | null = MOCK_USERS['chef.hieu@culinary.com
 
 export const authService = {
   /**
-   * Đăng nhập với Email và Mật khẩu
+   * Đăng nhập với Email và Mật khẩu (FR-AUTH-002 / FR-FTE-031)
    */
   async login(email: string, password?: string): Promise<AuthResponseDto> {
     try {
@@ -62,36 +66,53 @@ export const authService = {
         currentLocalUser = data.user;
         return data;
       }
-    } catch {
-      // Backend không phản hồi, fallback mock dữ liệu
+
+      // Nếu backend trả về lỗi nghiệp vụ (400, 401, 403, 409...), quăng lỗi để UI hiển thị thông báo chính xác
+      const errorData = await response.json().catch(() => null);
+      if (errorData) {
+        throw errorData;
+      }
+      throw new Error(`Đăng nhập không thành công (HTTP ${response.status})`);
+    } catch (err: unknown) {
+      // Nếu là lỗi nghiệp vụ từ backend trả về, quăng tiếp lên cho caller
+      if (err && typeof err === 'object' && ('status' in err || 'detail' in err || 'title' in err || 'message' in err)) {
+        throw err;
+      }
+
+      // Trường hợp không thể kết nối tới server (offline demo), fallback dữ liệu mẫu
+      const matched = MOCK_USERS[email.toLowerCase()] || {
+        id: 'user-' + Date.now(),
+        email,
+        displayName: email.split('@')[0],
+        roles: ['User'],
+        createdAt: new Date().toISOString(),
+      };
+
+      currentLocalUser = matched;
+
+      return {
+        accessToken: 'mock_jwt_access_token_' + Date.now(),
+        refreshToken: 'mock_refresh_token_' + Date.now(),
+        user: matched,
+      };
     }
-
-    const matched = MOCK_USERS[email.toLowerCase()] || {
-      id: 'user-' + Date.now(),
-      email,
-      displayName: email.split('@')[0],
-      roles: ['User'],
-      createdAt: new Date().toISOString(),
-    };
-
-    currentLocalUser = matched;
-
-    return {
-      accessToken: 'mock_jwt_access_token_' + Date.now(),
-      refreshToken: 'mock_refresh_token_' + Date.now(),
-      user: matched,
-    };
   },
 
   /**
-   * Đăng ký tài khoản mới
+   * Đăng ký tài khoản mới (FR-AUTH-001 / FR-FTE-031)
    */
-  async register(email: string, password: string, displayName: string): Promise<AuthResponseDto> {
+  async register(
+    email: string,
+    password: string,
+    displayName: string,
+    firstName?: string,
+    lastName?: string
+  ): Promise<AuthResponseDto> {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, displayName }),
+        body: JSON.stringify({ email, password, displayName, firstName, lastName }),
       });
 
       if (response.ok) {
@@ -99,46 +120,126 @@ export const authService = {
         currentLocalUser = data.user;
         return data;
       }
-    } catch {
-      // Fallback
+
+      const errorData = await response.json().catch(() => null);
+      if (errorData) {
+        throw errorData;
+      }
+      throw new Error(`Đăng ký không thành công (HTTP ${response.status})`);
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && ('status' in err || 'detail' in err || 'title' in err || 'message' in err)) {
+        throw err;
+      }
+
+      const newUser: UserProfileDto = {
+        id: 'user-' + Date.now(),
+        email,
+        displayName,
+        firstName,
+        lastName,
+        roles: ['User'],
+        createdAt: new Date().toISOString(),
+      };
+
+      currentLocalUser = newUser;
+
+      return {
+        accessToken: 'mock_jwt_access_token_' + Date.now(),
+        refreshToken: 'mock_refresh_token_' + Date.now(),
+        user: newUser,
+      };
     }
-
-    const newUser: UserProfileDto = {
-      id: 'user-' + Date.now(),
-      email,
-      displayName,
-      roles: ['User'],
-      createdAt: new Date().toISOString(),
-    };
-
-    currentLocalUser = newUser;
-
-    return {
-      accessToken: 'mock_jwt_access_token_' + Date.now(),
-      refreshToken: 'mock_refresh_token_' + Date.now(),
-      user: newUser,
-    };
   },
 
   /**
-   * Đăng xuất (Revoke Refresh Token)
+   * Đăng xuất - Thu hồi Refresh Token (FR-AUTH-005 / FR-FTE-031)
    */
-  async logout(refreshToken?: string): Promise<void> {
+  async logout(refreshToken?: string, accessToken?: string): Promise<void> {
     try {
       if (refreshToken) {
         await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          },
           body: JSON.stringify({ refreshToken }),
         });
       }
     } catch {
-      // Bỏ qua lỗi kết nối
+      // Bỏ qua lỗi kết nối mạng khi logout
+    } finally {
+      currentLocalUser = null;
     }
   },
 
   /**
-   * Đăng nhập qua Google OAuth
+   * Quên mật khẩu - Yêu cầu Token đặt lại mật khẩu (FR-BKE-014 / FR-FTE-032)
+   */
+  async forgotPassword(email: string): Promise<ForgotPasswordResponseDto> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw errorData || new Error(`Yêu cầu thất bại (HTTP ${response.status})`);
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Đặt lại mật khẩu mới với Token khôi phục (FR-BKE-014 / FR-FTE-032)
+   */
+  async resetPassword(payload: ResetPasswordRequestDto): Promise<AuthMessageResponseDto> {
+    const response = await fetch(`${API_BASE_URL}/api/v1/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw errorData || new Error(`Đặt lại mật khẩu thất bại (HTTP ${response.status})`);
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Đổi mật khẩu người dùng đã xác thực (FR-BKE-014 / FR-FTE-033)
+   */
+  async changePassword(
+    payload: ChangePasswordRequestDto,
+    accessToken?: string
+  ): Promise<AuthMessageResponseDto> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/v1/auth/change-password`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw errorData || new Error(`Đổi mật khẩu thất bại (HTTP ${response.status})`);
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Đăng nhập qua Google OAuth (FR-AUTH-003)
    */
   async loginWithGoogle(idToken: string): Promise<AuthResponseDto> {
     try {
@@ -176,7 +277,7 @@ export const authService = {
   },
 
   /**
-   * Lấy hồ sơ người dùng hiện tại
+   * Lấy hồ sơ người dùng hiện tại (GET /api/v1/users/me)
    */
   async getProfile(token?: string): Promise<UserProfileDto> {
     try {
@@ -197,7 +298,7 @@ export const authService = {
   },
 
   /**
-   * Cập nhật hồ sơ người dùng hiện tại
+   * Cập nhật hồ sơ người dùng hiện tại (PUT /api/v1/users/me)
    */
   async updateProfile(data: UpdateUserProfileRequestDto, token?: string): Promise<UserProfileDto> {
     try {

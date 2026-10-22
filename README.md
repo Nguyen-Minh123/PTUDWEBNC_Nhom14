@@ -47,9 +47,9 @@ Chuẩn bị thêm phần kế hoạch quản lý cho các chức năng bài LAB
 | | **FR-FTE-029** | Hiện thực hóa cơ chế Silent Token Refresh Interceptor (Lab 6) | ✅ Done |
 | | **FR-FTE-030** | Thiết kế giao diện tĩnh Trang Đăng nhập & Đăng ký (Lab 6) | ✅ Done |
 | | **FR-BKE-014** | Hiện thực hóa API Quên mật khẩu & Đổi mật khẩu (Identity Reset/Change Password) (Lab 7) | ✅ Done |
-| | **FR-FTE-031** | Hoàn thiện tích hợp API Đăng nhập, Đăng ký & Đăng xuất trên Frontend (Lab 7) | ⏳ To Do |
-| | **FR-FTE-032** | Xây dựng giao diện và tích hợp API Quên mật khẩu (Forgot/Reset Password) (Lab 7) | ⏳ To Do |
-| | **FR-FTE-033** | Xây dựng giao diện và tích hợp API Đổi mật khẩu (Change Password) (Lab 7) | ⏳ To Do |
+| | **FR-FTE-031** | Hoàn thiện tích hợp API Đăng nhập, Đăng ký & Đăng xuất trên Frontend (Lab 7) | ✅ Done |
+| | **FR-FTE-032** | Xây dựng giao diện và tích hợp API Quên mật khẩu (Forgot/Reset Password) (Lab 7) | ✅ Done |
+| | **FR-FTE-033** | Xây dựng giao diện và tích hợp API Đổi mật khẩu (Change Password) (Lab 7) | ✅ Done |
 | **Nguyễn Thế Khải**<br>*(Database & Infra)* | **FR-DB-001** | Khởi tạo EF Core Migrations | ✅ Done |
 | | **FR-DB-002** | Định nghĩa BaseEntity, ApplicationUser | ✅ Done |
 | | **FR-DB-003** | Cấu hình PostgreSQL 16 trên Docker | ✅ Done |
