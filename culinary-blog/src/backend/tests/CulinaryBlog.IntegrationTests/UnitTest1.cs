@@ -22,6 +22,7 @@ public class UnitTest1
         await using var connection = new NpgsqlConnection(GetConnectionString());
         await connection.OpenAsync();
 
+        // PostgreSQL phải có extension này để chuẩn hóa chữ có dấu trong phép tìm kiếm.
         await using (var extensionCommand = new NpgsqlCommand("CREATE EXTENSION IF NOT EXISTS unaccent;", connection))
         {
             await extensionCommand.ExecuteNonQueryAsync();
@@ -60,6 +61,7 @@ public class UnitTest1
         await LoadRecipesAsync(asNoTracking: true);
         dbContext.ChangeTracker.Clear();
 
+        // Dùng cùng query và số lượt cho hai chế độ; đây là số liệu tham khảo, không phải benchmark tuyệt đối.
         const int iterations = 10;
         var trackedTimer = Stopwatch.StartNew();
         var trackedRecipeCount = 0;
@@ -103,6 +105,7 @@ public class UnitTest1
                 .Include(recipe => recipe.Steps)
                 .AsSplitQuery();
 
+            // Query chỉ đọc không cần giữ entity trong ChangeTracker.
             if (asNoTracking)
             {
                 query = query.AsNoTracking();

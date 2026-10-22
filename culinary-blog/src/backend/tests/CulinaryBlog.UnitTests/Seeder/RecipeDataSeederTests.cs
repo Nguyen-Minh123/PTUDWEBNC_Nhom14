@@ -45,6 +45,7 @@ public sealed class RecipeDataSeederTests
         await seeder.SeedAsync();
         await seeder.SeedAsync();
 
+        // Lần seed thứ hai không được tạo thêm category hoặc recipe trùng.
         Assert.Equal(4, await dbContext.Categories.CountAsync());
         Assert.True(await dbContext.Recipes.CountAsync() > 0);
     }
