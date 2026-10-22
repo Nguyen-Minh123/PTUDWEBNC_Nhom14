@@ -14,18 +14,27 @@ phụ thuộc PostgreSQL thật nếu test đang dùng stub/in-memory.
   list, detail theo ID/slug, create/update, publish/archive/delete và search.
 - Có `RecipeAuthorizationMatrixTests` dùng `WebApplicationFactory<Program>`,
   `TestAuthHandler` và test doubles để kiểm tra anonymous/owner/other user/admin.
+- Đã thêm `RecipeEndpointValidationTests` cho query sai, problem details và
+  404; ma trận quyền hiện có tiếp tục cover các trường hợp đọc/ghi theo danh
+  tính.
 - Project integration tests tham chiếu API và `Microsoft.AspNetCore.Mvc.Testing`.
 - Test tích hợp khác trong `UnitTest1.cs` kết nối PostgreSQL thật; cần tách rõ
   test HTTP không phụ thuộc DB với test yêu cầu PostgreSQL.
+- Build test project hiện chưa xác nhận được vì `RecipeDataSeeder.cs` đang có
+  thay đổi cục bộ không khớp constructor/API của Domain.
+- Test source compile được với project references đã có sẵn, nhưng runtime
+  validation test dùng output Infrastructure cũ bị `TypeLoadException`
+  (`RedisCacheService.SetAsync` chưa khớp interface); cần rebuild sạch các
+  references sau khi seeder được đồng bộ.
 
 ## File dự kiến sửa/thêm
 
 | File | Thay đổi |
 | --- | --- |
-| `culinary-blog/src/backend/tests/CulinaryBlog.IntegrationTests/RecipeAuthorizationMatrixTests.cs` | Mở rộng/đối chiếu ma trận HTTP authorization đang có; tránh tạo lại ca đã được cover. |
-| `culinary-blog/src/backend/tests/CulinaryBlog.IntegrationTests/RecipeApiTests.cs` | Tạo test HTTP theo contract cho list/detail/search/validation/lifecycle nếu hiện chưa được cover. |
-| `culinary-blog/src/backend/tests/CulinaryBlog.IntegrationTests/CulinaryBlog.IntegrationTests.csproj` | Chỉ cập nhật package/test configuration nếu test thực sự cần. |
-| `culinary-blog/src/backend/src/CulinaryBlog.API/Endpoints/RecipeEndpoints.cs` | Chỉ sửa khi kiểm thử phát hiện sai contract/status/validation; không thay đổi endpoint để làm test pass giả. |
+| `culinary-blog/src/backend/tests/CulinaryBlog.IntegrationTests/RecipeAuthorizationMatrixTests.cs` | Duy trì ma trận HTTP authorization anonymous/owner/other/Admin hiện có. |
+| `culinary-blog/src/backend/tests/CulinaryBlog.IntegrationTests/RecipeEndpointValidationTests.cs` | Kiểm tra validation problem cho page/pageSize/status/search và 404 cho recipe thiếu. |
+| `culinary-blog/src/backend/tests/CulinaryBlog.IntegrationTests/CulinaryBlog.IntegrationTests.csproj` | Không đổi; test dùng WebApplicationFactory và package đã có. |
+| `culinary-blog/src/backend/src/CulinaryBlog.API/Endpoints/RecipeEndpoints.cs` | Endpoint validation hiện hành được kiểm tra qua HTTP; không sửa khi contract đáp ứng assertion. |
 
 ## Kịch bản kiểm thử đề xuất
 
@@ -58,7 +67,10 @@ phụ thuộc PostgreSQL thật nếu test đang dùng stub/in-memory.
 
 ## Kiểm tra sau triển khai
 
-- Chạy riêng `CulinaryBlog.IntegrationTests` và xem số test được discover.
+- Đã thêm test HTTP độc lập database cho validation và 404.
+- Đã compile integration test sources với project references hiện có.
+- Chưa xác nhận runtime integration tests do assembly mismatch; standard build
+  bị chặn bởi lỗi compile ở seeder cục bộ.
 - Chạy các nhóm test PostgreSQL với connection string/database đã cấu hình;
   ghi rõ nếu môi trường local chưa sẵn sàng.
 - Kiểm tra build và test filter để xác nhận các ca được yêu cầu thực sự chạy.
@@ -80,5 +92,6 @@ phụ thuộc PostgreSQL thật nếu test đang dùng stub/in-memory.
 
 ## Trạng thái
 
-- [x] Đã xác định endpoint surface và test host hiện có.
-- [ ] Rà coverage hiện tại, bổ sung ca còn thiếu và chạy test phù hợp môi trường.
+- [x] Đã xác định endpoint surface/test host, thêm ca validation và not-found.
+- [x] Test sources compile với output references sẵn có.
+- [ ] Rebuild/run integration project đồng bộ sau khi lỗi compile ở seeder cục bộ được xử lý.

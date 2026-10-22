@@ -8,12 +8,15 @@ hoặc một step, đồng thời bảo đảm lần publish hợp lệ ghi nh�
 
 ## Hiện trạng đã đối chiếu
 
-- `PublishRecipeCommandHandler` hiện kiểm tra `Ingredients` và `Steps`; thiếu
-  một trong hai thì ném `DomainException`, sau đó gọi `recipe.Publish()` và
-  lưu unit of work.
-- `Recipe.Publish()` trong `culinary-blog/src/backend/src/CulinaryBlog.Domain/Entities/Recipe.cs`
-  hiện chỉ cập nhật status và `PublishedAt`; rule thành phần bắt buộc chưa nằm
-  trực tiếp ở method Domain.
+- `Recipe.Publish()` kiểm tra aggregate phải có ít nhất một ingredient và một
+  step; recipe đã Published bị chặn bằng `RecipeAlreadyPublishedException`.
+- `PublishRecipeCommandHandler` chỉ điều phối: nạp recipe, gọi domain method,
+  sau đó lưu unit of work. Lỗi domain được API ánh xạ thành HTTP 400.
+- Đã thêm `RecipePublishRuleTests.cs` cho thiếu ingredients, thiếu steps,
+  publish hợp lệ và publish lặp.
+- Bốn test `RecipePublishRuleTests` đã pass khi build test project mà không
+  rebuild project references; build chuẩn toàn bộ test project bị chặn bởi
+  lỗi compile trong `RecipeDataSeeder.cs` cục bộ.
 - `culinary-blog/src/backend/tests/CulinaryBlog.UnitTests/UnitTest1.cs` có các
   test về thiếu ingredient/step và publish lần đầu/lặp lại, nhưng
   `CulinaryBlog.UnitTests.csproj` hiện loại `UnitTest1.cs` khỏi compile. Không
@@ -23,38 +26,33 @@ hoặc một step, đồng thời bảo đảm lần publish hợp lệ ghi nh�
 
 | File | Thay đổi |
 | --- | --- |
-| `culinary-blog/src/backend/src/CulinaryBlog.Domain/Entities/Recipe.cs` | Chốt vị trí chịu trách nhiệm của rule; nếu chuyển rule vào aggregate, expose kiểm tra theo collection và ném domain exception cụ thể. |
-| `culinary-blog/src/backend/src/CulinaryBlog.Application/Features/Recipes/Commands/PublishRecipe/PublishRecipeCommandHandler.cs` | Giữ handler làm orchestration; nạp recipe, gọi domain operation, lưu thay đổi và truyền cancellation token. |
-| `culinary-blog/src/backend/src/CulinaryBlog.Domain/Common/RecipeAlreadyPublishedException.cs` | Dùng exception cụ thể cho publish lặp nếu quy tắc task yêu cầu không cho publish lại. |
-| `culinary-blog/src/backend/tests/CulinaryBlog.UnitTests/` | Đưa test domain vào file được compile; kiểm tra thiếu ingredients, thiếu steps, hợp lệ, publish lặp và timestamp. |
-| `culinary-blog/src/backend/tests/CulinaryBlog.UnitTests/CulinaryBlog.UnitTests.csproj` | Bỏ exclude test file cũ hoặc chuyển test sang file test được project compile. |
-| `culinary-blog/src/backend/tests/CulinaryBlog.IntegrationTests/` | Thêm HTTP test cho endpoint publish: resource không tồn tại, rule violation và publish thành công. |
+| `culinary-blog/src/backend/src/CulinaryBlog.Domain/Entities/Recipe.cs` | Kiểm tra collection nội bộ trước khi publish; không đổi status/time nếu vi phạm rule. |
+| `culinary-blog/src/backend/src/CulinaryBlog.Application/Features/Recipes/Commands/PublishRecipe/PublishRecipeCommandHandler.cs` | Orchestrate use case; domain method bảo vệ invariant trước khi save. |
+| `culinary-blog/src/backend/src/CulinaryBlog.Domain/Common/RecipeAlreadyPublishedException.cs` | Exception riêng cho publish lặp, kế thừa `DomainException` để API trả domain-rule status. |
+| `culinary-blog/src/backend/tests/CulinaryBlog.UnitTests/RecipePublishRuleTests.cs` | Kiểm tra thiếu ingredients, thiếu steps, state/timestamp, publish hợp lệ và publish lặp. |
+| `culinary-blog/src/backend/tests/CulinaryBlog.IntegrationTests/RecipeAuthorizationMatrixTests.cs` | Test hiện có xác nhận authorization; domain rule được kiểm tra trực tiếp qua unit test. |
 
 ## Ý tưởng triển khai
 
-1. Xác định ranh giới domain/application nhất quán: điều kiện “phải có
-   ingredients và steps” là invariant của Recipe nếu recipe không bao giờ
-   được publish khi thiếu thành phần. Khi đó `Recipe.Publish()` nên tự bảo vệ
-   invariant để mọi caller đều tuân thủ.
-2. Nếu giữ validation ở command handler theo thiết kế hiện tại, bảo đảm mọi
-   đường gọi publish đều đi qua handler; không nhân đôi rule ở nhiều tầng nếu
-   chưa có lý do.
-3. Khi vi phạm, ném domain exception rõ nghĩa trước khi đổi status hoặc
+1. Điều kiện “phải có ingredients và steps” là invariant của Recipe, nên
+   `Recipe.Publish()` kiểm tra trực tiếp collection mà aggregate sở hữu.
+2. Nếu recipe đã Published, ném `RecipeAlreadyPublishedException`; exception
+   kế thừa `DomainException` để GlobalExceptionHandler trả HTTP 400 thay vì 500.
+3. Khi bất kỳ rule nào vi phạm, ném exception trước khi đổi status hoặc
    `PublishedAt`; map exception ra response HTTP theo GlobalExceptionHandler.
-4. Test từng nhánh độc lập: thiếu ingredient, thiếu step, thiếu cả hai, đủ cả
-   hai, và publish lặp nếu rule quy định cấm. Xác nhận trạng thái không đổi khi
-   thao tác thất bại.
+4. Test từng nhánh độc lập: thiếu ingredient, thiếu step, đủ cả hai và publish
+   lặp. Xác nhận trạng thái không đổi khi thao tác thất bại.
 5. Test handler với repository/unit-of-work fake để xác nhận không gọi
    `SaveChangesAsync` khi rule không đạt; test endpoint riêng để kiểm tra HTTP
    contract.
 
 ## Kiểm tra sau triển khai
 
-- Unit test Domain/handler phải được test runner discover và chạy; kiểm tra
-  không còn `Compile Remove` loại file chứa các assertion cần thiết.
+- Unit test Domain/handler phải được test runner discover và chạy. Test mới
+  nằm trong file riêng, không bị `Compile Remove="UnitTest1.cs"` loại bỏ.
 - Chạy test cases vi phạm/hợp lệ và xác nhận state/timestamp/save call.
-- Chạy integration test endpoint publish; xác nhận lỗi nghiệp vụ không bị đổi
-  thành HTTP 500 ngoài ý muốn.
+- Khi API build được, có thể bổ sung test HTTP riêng cho publish-invalid để
+  xác nhận GlobalExceptionHandler chuyển domain failure thành HTTP 400.
 - Build backend sau khi xác định seeder cục bộ đã được đồng bộ với Domain API.
 
 ## Giải thích code để trình bày
@@ -70,6 +68,6 @@ hoặc một step, đồng thời bảo đảm lần publish hợp lệ ghi nh�
 
 ## Trạng thái
 
-- [x] Đã xác định rule hiện tại, vị trí kiểm tra và vấn đề test bị loại khỏi build.
-- [ ] Chọn ranh giới invariant Domain/Application, đưa test vào project đang
-  chạy và xác nhận endpoint publish.
+- [x] Đưa invariant về Domain aggregate và thêm unit test trong file được compile.
+- [x] Chạy focused tests: 4 passed với Domain assembly đã build.
+- [ ] Chạy lại qua build chuẩn sau khi lỗi compile ở seeder cục bộ được xử lý.

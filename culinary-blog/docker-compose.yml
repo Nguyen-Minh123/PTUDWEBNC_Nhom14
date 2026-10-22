@@ -1,5 +1,21 @@
 # Stack phục vụ phát triển local; không dùng credential mặc định này cho production.
 services:
+  nginx:
+    image: nginx:alpine
+    container_name: culinary-nginx
+    profiles:
+      - edge
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
   postgres:
     image: postgres:16-alpine
     container_name: culinary-postgres

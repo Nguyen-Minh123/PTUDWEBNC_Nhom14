@@ -19,12 +19,7 @@ public sealed class PublishRecipeCommandHandler : IRequestHandler<PublishRecipeC
         var recipe = await _unitOfWork.Recipes.GetByIdWithDetailsAsync(request.Id, cancellationToken)
             ?? throw new RecipeNotFoundException(request.Id);
 
-        // Validate aggregate contents before changing its status or persisting it.
-        if (!recipe.Ingredients.Any() || !recipe.Steps.Any())
-        {
-            throw new DomainException("A recipe must include at least one ingredient and one step before publishing.");
-        }
-
+        // The aggregate enforces publish invariants before its state can change.
         recipe.Publish();
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return recipe;

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using CulinaryBlog.Domain.Common;
+using CulinaryBlog.Domain.Exceptions;
 
 namespace CulinaryBlog.Domain.Entities;
 
@@ -183,6 +184,16 @@ public class Recipe : BaseEntity
 
     public void Publish(DateTimeOffset? publishedAt = null)
     {
+        if (Status == RecipeStatus.Published)
+        {
+            throw new RecipeAlreadyPublishedException();
+        }
+
+        if (_ingredients.Count == 0 || _steps.Count == 0)
+        {
+            throw new DomainException("A recipe must include at least one ingredient and one step before publishing.");
+        }
+
         Status = RecipeStatus.Published;
         PublishedAt ??= publishedAt ?? DateTimeOffset.UtcNow;
     }

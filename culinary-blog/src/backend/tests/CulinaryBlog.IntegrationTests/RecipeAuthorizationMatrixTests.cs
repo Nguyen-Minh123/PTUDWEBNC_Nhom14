@@ -301,7 +301,16 @@ internal sealed class RecipeRepositoryStub : IRecipeRepository
         2,
         RecipeDifficulty.Easy,
         CategoryId,
-        "recipe-owner");
+        "recipe-owner",
+        new RecipeNutrition
+        {
+            Calories = 321.5m,
+            Protein = 18.25m,
+            Carbohydrates = 42.75m,
+            Fat = 9.5m,
+            Fiber = 6.25m,
+            Sodium = 725m
+        });
 
     // Return one deterministic recipe so the endpoint exercises authorization without a database.
     public Task<Recipe?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
