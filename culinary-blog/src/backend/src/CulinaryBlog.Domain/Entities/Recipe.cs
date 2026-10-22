@@ -371,6 +371,7 @@ public class Recipe : BaseEntity
 
 public sealed class RecipeNutrition
 {
+    // Nutrition là nhóm giá trị tùy chọn; các đơn vị cần thống nhất ở API contract.
     public decimal? Calories { get; set; }
     public decimal? Protein { get; set; }
     public decimal? Carbohydrates { get; set; }

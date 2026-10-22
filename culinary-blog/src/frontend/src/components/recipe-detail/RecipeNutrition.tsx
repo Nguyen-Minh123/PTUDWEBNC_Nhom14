@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Activity } from 'lucide-react';
 
 export function RecipeNutrition({ nutrition }: { nutrition?: RecipeNutritionDto | null }) {
-  // Dữ liệu mẫu dinh dưỡng nếu backend chưa cung cấp
+  // Giá trị này chỉ là fallback giao diện, không đại diện cho dữ liệu đã lưu của recipe.
   const data = nutrition || {
     calories: 450,
     proteinGrams: 28,
@@ -14,6 +14,7 @@ export function RecipeNutrition({ nutrition }: { nutrition?: RecipeNutritionDto 
     sodiumMg: 850,
   };
 
+  // Các tỷ lệ hiện dùng cho trực quan; chúng chưa được tính động từ khẩu phần.
   const items = [
     { label: 'Năng lượng', value: `${data.calories} kcal`, percent: 23, color: 'bg-amber-500' },
     { label: 'Chất đạm (Protein)', value: `${data.proteinGrams || data.protein || 28} g`, percent: 45, color: 'bg-rose-500' },

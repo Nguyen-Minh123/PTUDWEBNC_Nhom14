@@ -1,3 +1,4 @@
+# Stack phục vụ phát triển local; không dùng credential mặc định này cho production.
 services:
   postgres:
     image: postgres:16-alpine
@@ -9,6 +10,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
+      # Named volume giữ database khi container bị recreate.
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
 
@@ -30,6 +32,7 @@ services:
       - "9001:9001"
     command: server /data --console-address ":9001"
     volumes:
+      # Dữ liệu object storage tồn tại độc lập với vòng đời container.
       - minio_data:/data
     restart: unless-stopped
 
