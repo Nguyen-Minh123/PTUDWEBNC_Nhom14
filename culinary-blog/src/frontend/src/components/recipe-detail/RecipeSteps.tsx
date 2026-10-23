@@ -4,12 +4,12 @@ import * as React from 'react';
 import Image from 'next/image';
 import { RecipeStepDto } from '@/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { ChefHat, Timer, CheckCircle2, Play, Pause, RotateCcw } from 'lucide-react';
+import { ChefHat, Timer, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function RecipeSteps({ steps }: { steps: RecipeStepDto[] }) {
   const [completedSteps, setCompletedSteps] = React.useState<Record<number, boolean>>({});
+  const orderedSteps = [...steps].sort((first, second) => first.stepNumber - second.stepNumber);
 
   const toggleComplete = (stepNumber: number) => {
     setCompletedSteps((prev) => ({
@@ -28,18 +28,23 @@ export function RecipeSteps({ steps }: { steps: RecipeStepDto[] }) {
       </CardHeader>
 
       <CardContent className="pt-6">
-        <div className="space-y-8 relative before:absolute before:inset-0 before:left-5 before:w-0.5 before:bg-stone-200 dark:before:bg-stone-800 before:-z-0">
-          {steps.map((step) => {
-            const isDone = !!completedSteps[step.stepNumber];
+        {orderedSteps.length === 0 ? (
+          <p className="py-4 text-sm text-stone-500" role="status">
+            Chưa có hướng dẫn thực hiện cho công thức này.
+          </p>
+        ) : (
+          <div className="space-y-8 relative before:absolute before:inset-0 before:left-5 before:w-0.5 before:bg-stone-200 dark:before:bg-stone-800 before:-z-0">
+            {orderedSteps.map((step) => {
+              const isDone = !!completedSteps[step.stepNumber];
 
-            return (
-              <div
-                key={step.stepNumber}
-                className={cn(
-                  'relative flex items-start gap-4 sm:gap-6 z-10 transition-opacity',
-                  isDone && 'opacity-60'
-                )}
-              >
+              return (
+                <div
+                  key={step.stepNumber}
+                  className={cn(
+                    'relative flex items-start gap-4 sm:gap-6 z-10 transition-opacity',
+                    isDone && 'opacity-60'
+                  )}
+                >
                 {/* Step Circle Badge */}
                 <button
                   type="button"
@@ -64,12 +69,18 @@ export function RecipeSteps({ steps }: { steps: RecipeStepDto[] }) {
                         isDone && 'line-through text-stone-500'
                       )}
                     >
-                      Bước {step.stepNumber}
+                      {step.title || `Bước ${step.stepNumber}`}
                     </h4>
+                    {step.timerMinutes != null && (
+                      <span className="inline-flex items-center gap-1 text-xs text-stone-500">
+                        <Timer className="h-3.5 w-3.5" />
+                        {step.timerMinutes} phút
+                      </span>
+                    )}
                   </div>
 
                   <p className="text-stone-700 dark:text-stone-300 text-sm sm:text-base leading-relaxed">
-                    {step.instruction}
+                    {step.description}
                   </p>
 
                   {/* Step Image (if provided) */}
@@ -85,10 +96,11 @@ export function RecipeSteps({ steps }: { steps: RecipeStepDto[] }) {
                     </div>
                   )}
                 </div>
-              </div>
-            );
-          })}
-        </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
