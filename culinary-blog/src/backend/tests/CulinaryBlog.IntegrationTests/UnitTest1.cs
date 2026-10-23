@@ -119,6 +119,8 @@ public class UnitTest1
     public async Task Register_saves_user_and_refresh_token()
     {
         await using var dbContext = CreateDbContext();
+        await dbContext.Database.MigrateAsync();
+
         var email = $"test_{Guid.NewGuid()}@example.com";
         var user = new ApplicationUser(email, "Test User");
         dbContext.Users.Add(user);
@@ -144,7 +146,8 @@ public class UnitTest1
 
     private static string GetConnectionString() =>
         Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
-        ?? "Host=localhost;Port=5432;Database=CulinaryBlogDb;Username=postgres;Password=postgres";
+        ?? throw new InvalidOperationException(
+            "Set ConnectionStrings__DefaultConnection to an isolated PostgreSQL test database before running database integration tests.");
 
     private static CulinaryBlogDbContext CreateDbContext()
     {
