@@ -9,7 +9,7 @@ import { RecipeQuickStats } from '@/components/recipe-detail/RecipeQuickStats';
 import { RecipeNutrition } from '@/components/recipe-detail/RecipeNutrition';
 import { RecipeIngredients } from '@/components/recipe-detail/RecipeIngredients';
 import { RecipeSteps } from '@/components/recipe-detail/RecipeSteps';
-import { RecipeReviews } from '@/components/recipe-detail/RecipeReviews';
+import { CommentSection } from '@/components/comments/CommentSection';
 import { RecipeDetailSkeleton } from '@/components/recipe/RecipeDetailSkeleton';
 import { RecipeCard } from '@/components/recipe/RecipeCard';
 import { INITIAL_RECIPES } from '@/services/recipeService';
@@ -107,7 +107,7 @@ export default function RecipeDetailPage({ params }: RecipeDetailPageProps) {
         />
 
         {/* 1. Recipe Hero Section */}
-        <RecipeHero recipe={fullRecipe} />
+        <RecipeHero key={fullRecipe.id} recipe={fullRecipe} />
 
         {/* 2. Quick Stats Grid */}
         <div className="my-8">
@@ -131,7 +131,7 @@ export default function RecipeDetailPage({ params }: RecipeDetailPageProps) {
             <RecipeNutrition nutrition={fullRecipe.nutrition} />
 
             {/* Đánh giá và nhận xét */}
-            <RecipeReviews recipeId={fullRecipe.id} />
+            <CommentSection recipeId={fullRecipe.id} recipeTitle={fullRecipe.title} />
           </div>
 
           {/* CỘT PHỤ (1/3): Mẹo nấu ăn & Thông tin bổ sung */}

@@ -2,29 +2,83 @@
 
 import * as React from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import {
-  Clock,
-  Users,
   Star,
   Bookmark,
   Share2,
   Printer,
-  Heart,
-  ChefHat,
   Calendar,
   Check,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { RecipeDetailDto } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
 export function RecipeHero({ recipe }: { recipe: RecipeDetailDto }) {
   const [isBookmarked, setIsBookmarked] = React.useState(false);
   const [isCopied, setIsCopied] = React.useState(false);
   const [isFollowing, setIsFollowing] = React.useState(false);
+  const [isLightboxOpen, setIsLightboxOpen] = React.useState(false);
+  const [activeImageIndex, setActiveImageIndex] = React.useState(0);
+
+  const galleryImages = React.useMemo(() => {
+    const images = [...(recipe.images ?? [])]
+      .filter((image) => image.originalUrl)
+      .sort(
+        (first, second) =>
+          Number(second.isPrimary) - Number(first.isPrimary) ||
+          (first.orderIndex ?? 0) - (second.orderIndex ?? 0)
+      )
+      .map((image) => ({
+        id: image.id,
+        src: image.originalUrl,
+        previewSrc: image.mediumUrl || image.thumbnailUrl || image.originalUrl,
+        alt: image.altText || recipe.title,
+      }));
+
+    if (recipe.coverImageUrl && !images.some((image) => image.src === recipe.coverImageUrl)) {
+      images.push({
+        id: 'recipe-cover',
+        src: recipe.coverImageUrl,
+        previewSrc: recipe.coverImageUrl,
+        alt: recipe.title,
+      });
+    }
+
+    if (images.length === 0) {
+      images.push({
+        id: 'default-cover',
+        src: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=1200&auto=format&fit=crop&q=80',
+        previewSrc: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=1200&auto=format&fit=crop&q=80',
+        alt: recipe.title,
+      });
+    }
+
+    return images;
+  }, [recipe.coverImageUrl, recipe.images, recipe.title]);
+
+  const activeImage = galleryImages[activeImageIndex] ?? galleryImages[0];
+
+  React.useEffect(() => {
+    if (!isLightboxOpen || galleryImages.length < 2) return;
+
+    const handleGalleryKeys = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowRight') {
+        setActiveImageIndex((index) => (index + 1) % galleryImages.length);
+      }
+      if (event.key === 'ArrowLeft') {
+        setActiveImageIndex((index) => (index - 1 + galleryImages.length) % galleryImages.length);
+      }
+    };
+
+    window.addEventListener('keydown', handleGalleryKeys);
+    return () => window.removeEventListener('keydown', handleGalleryKeys);
+  }, [galleryImages.length, isLightboxOpen]);
 
   const handleShare = () => {
     if (typeof window !== 'undefined') {
@@ -40,8 +94,13 @@ export function RecipeHero({ recipe }: { recipe: RecipeDetailDto }) {
     }
   };
 
+  const showAdjacentImage = (direction: -1 | 1) => {
+    setActiveImageIndex((index) => (index + direction + galleryImages.length) % galleryImages.length);
+  };
+
   return (
-    <div className="space-y-6">
+    <Dialog open={isLightboxOpen} onOpenChange={setIsLightboxOpen}>
+      <div className="space-y-6">
       {/* Category & Status */}
       <div className="flex flex-wrap items-center gap-2">
         {recipe.categoryName && (
@@ -128,15 +187,18 @@ export function RecipeHero({ recipe }: { recipe: RecipeDetailDto }) {
       {/* Hero Cover Image */}
       <div className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden shadow-lg border border-stone-200/80 dark:border-stone-800 bg-stone-100">
         <Image
-          src={
-            recipe.coverImageUrl ||
-            'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=1200&auto=format&fit=crop&q=80'
-          }
-          alt={recipe.title}
+          src={activeImage.previewSrc}
+          alt={activeImage.alt}
           fill
           priority
           sizes="(max-width: 1200px) 100vw, 1200px"
           className="object-cover"
+        />
+        <button
+          type="button"
+          onClick={() => setIsLightboxOpen(true)}
+          aria-label={`Phóng to ảnh ${activeImage.alt}`}
+          className="absolute inset-0 z-[1] cursor-zoom-in"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
 
@@ -146,7 +208,62 @@ export function RecipeHero({ recipe }: { recipe: RecipeDetailDto }) {
           <span>{recipe.averageRating?.toFixed(1) || '4.9'}</span>
           <span className="text-stone-300 font-normal">({recipe.reviewCount || 0} nhận xét)</span>
         </div>
+        {galleryImages.length > 1 && (
+          <span className="absolute bottom-4 right-4 z-10 rounded-md bg-black/60 px-2.5 py-1.5 text-xs font-medium text-white">
+            {activeImageIndex + 1} / {galleryImages.length}
+          </span>
+        )}
       </div>
-    </div>
+      </div>
+
+      <DialogContent
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Ảnh công thức: ${activeImage.alt}`}
+        className="max-w-6xl border-stone-700 bg-stone-950 p-3 text-white"
+      >
+        <DialogHeader className="sr-only">
+          <DialogTitle>{activeImage.alt}</DialogTitle>
+        </DialogHeader>
+        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-md bg-black sm:aspect-video">
+          <Image
+            src={activeImage.src}
+            alt={activeImage.alt}
+            fill
+            sizes="(max-width: 1200px) 100vw, 1200px"
+            className="object-contain"
+          />
+          {galleryImages.length > 1 && (
+            <>
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon"
+                aria-label="Ảnh trước"
+                onClick={() => showAdjacentImage(-1)}
+                className="absolute left-3 top-1/2 -translate-y-1/2"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon"
+                aria-label="Ảnh tiếp theo"
+                onClick={() => showAdjacentImage(1)}
+                className="absolute right-3 top-1/2 -translate-y-1/2"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+            </>
+          )}
+        </div>
+        {galleryImages.length > 1 && (
+          <p className="text-center text-xs text-stone-300" aria-live="polite">
+            Ảnh {activeImageIndex + 1} / {galleryImages.length}
+          </p>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
