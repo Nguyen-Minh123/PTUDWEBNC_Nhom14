@@ -1,5 +1,12 @@
 'use client';
 
+/**
+ * Chức năng:
+ * - Hiển thị ô tìm kiếm.
+ * - Hiển thị nút xóa nhanh.
+ * - Nhận dữ liệu từ hook cha để đồng bộ với query params.
+ */
+
 import React from 'react';
 
 interface SearchBarProps {

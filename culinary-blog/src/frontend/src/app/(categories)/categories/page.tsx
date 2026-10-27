@@ -4,9 +4,10 @@
  * - Render CategoryGrid trong layout đã có Sidebar.
  * - Dùng dữ liệu mẫu để dựng giao diện tĩnh trước khi nối API.
  */
-
-import CategoryGrid from '@/components/categories/CategoryGrid';
+import { Suspense } from 'react';
+import Loading from './loading';
 import type { CategoryDto } from '@/types/category.dto';
+import CategoriesPageClient from '@/components/categories/CategoriesPageClient';
 
 /**
  * Dữ liệu mẫu cho giao diện tĩnh.
@@ -68,22 +69,10 @@ const categories: CategoryDto[] = [
  * Trang danh sách Category.
  */
 export default function Page() {
-    return (
-        <section>
-            <div className="mb-6">
-                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-                    Browse Categories
-                </p>
-                <h1 className="mt-2 text-2xl font-black text-slate-900 sm:text-3xl">
-                    Danh sách tất cả Category
-                </h1>
-                <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-                    Trang tổng hợp các danh mục công thức theo nhóm món ăn, trình bày dạng lưới để người dùng
-                    truy cập nhanh vào từng chủ đề nấu ăn.
-                </p>
-            </div>
 
-            <CategoryGrid categories={categories} />
-        </section>
+    return (
+        <Suspense fallback={<Loading />}>
+            <CategoriesPageClient />
+        </Suspense>
     );
 }
