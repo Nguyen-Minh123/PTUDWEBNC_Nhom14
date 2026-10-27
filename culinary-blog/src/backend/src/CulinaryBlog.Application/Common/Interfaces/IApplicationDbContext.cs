@@ -43,5 +43,6 @@ public interface IApplicationDbContext
     /// </summary>
     /// <param name="cancellationToken">Token hủy tác vụ từ HTTP request hoặc pipeline.</param>
     /// <returns>Số lượng bản ghi bị ảnh hưởng.</returns>
+    // Chuẩn hóa lại contract lưu dữ liệu cho toàn bộ Application layer.
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

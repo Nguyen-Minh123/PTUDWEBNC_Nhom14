@@ -71,7 +71,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddProblemDetails();
 
 // Đăng ký OpenAPI generator cho Minimal APIs. 
-builder.Services.AddOpenApi();
+// builder.Services.AddOpenApi();
 
 // Cho phép gọi API từ frontend Next.js hoặc các client khác.
 builder.Services.AddCors(options =>
@@ -213,6 +213,8 @@ app.MapRecipeIngredientsEndpoints();
 app.MapRecipeStepsEndpoints();
 // Thực hiện API Upload và Quản lý Hình ảnh
 app.MapRecipeImagesEndpoints();
+// Thực hiện API Category (Danh mục kèm thống kê số bài viết)
+app.MapCategoriesEndpoints();
 
 // ======================================================
 // ÁP DỤNG CORS THEO MÔI TRƯỜNG

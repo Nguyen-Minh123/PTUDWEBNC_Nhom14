@@ -1,122 +1,108 @@
+using CulinaryBlog.Application.Common.Caching;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using CulinaryBlog.Application.Common.Caching;
+using Microsoft.Extensions.Options;
 
-namespace CulinaryBlog.Application.Common.Behaviors;
+namespace CulinaryBlog.Application.Behaviors;
 
 /// <summary>
-/// MediatR pipeline behavior cho các query có thể cache.
-/// 
-/// Luồng xử lý:
-/// 1. Nếu request không hỗ trợ cache => đi thẳng vào handler.
-/// 2. Nếu có cache key hợp lệ => thử lấy từ cache.
-/// 3. Cache hit => trả về ngay.
-/// 4. Cache miss => gọi handler, sau đó lưu kết quả vào cache theo TTL.
+/// Pipeline behavior dùng để cache kết quả của các query có hỗ trợ cache.
+///
+/// Chức năng:
+/// - Đọc cache trước khi query chạy.
+/// - Bỏ qua cache nếu request yêu cầu bypass.
+/// - Lưu kết quả vào cache sau khi query thành công.
+/// - Dùng TTL mặc định từ CacheOptions nếu query không tự khai báo TTL.
 /// </summary>
-/// <typeparam name="TRequest">Loại request.</typeparam>
-/// <typeparam name="TResponse">Loại response.</typeparam>
-public sealed class QueryCacheBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+public sealed class QueryCacheBehavior<TRequest, TResponse>
+    : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
     private readonly ICacheService _cacheService;
+    private readonly CacheOptions _cacheOptions;
     private readonly ILogger<QueryCacheBehavior<TRequest, TResponse>> _logger;
 
+    /// <summary>
+    /// Khởi tạo pipeline cache.
+    /// </summary>
     public QueryCacheBehavior(
         ICacheService cacheService,
+        IOptions<CacheOptions> cacheOptions,
         ILogger<QueryCacheBehavior<TRequest, TResponse>> logger)
     {
         _cacheService = cacheService;
+        _cacheOptions = cacheOptions.Value;
         _logger = logger;
     }
 
+    /// <summary>
+    /// Xử lý request qua cache trước, sau đó mới gọi handler nếu cần.
+    /// </summary>
     public async Task<TResponse> Handle(
         TRequest request,
         RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
-        if (request is not ICacheableQuery cacheableQuery)
+        // Chỉ cache những request implement ICacheableQuery.
+        if (request is not ICacheableQuery cacheableRequest)
         {
             return await next();
         }
 
-        if (cacheableQuery.BypassCache)
+        // Cho phép query chủ động bỏ qua cache.
+        if (cacheableRequest.BypassCache)
         {
-            _logger.LogDebug(
-                "Cache bypassed for request {RequestName}",
-                typeof(TRequest).Name);
-
-            return await next();
-        }
-
-        if (string.IsNullOrWhiteSpace(cacheableQuery.CacheKey))
-        {
-            _logger.LogWarning(
-                "Cache key is empty for request {RequestName}. Bypassing cache.",
-                typeof(TRequest).Name);
-
-            return await next();
-        }
-
-        if (cacheableQuery.CacheDuration <= TimeSpan.Zero)
-        {
-            _logger.LogWarning(
-                "Invalid cache duration for request {RequestName}. Bypassing cache. Duration={Duration}",
+            _logger.LogInformation(
+                "Cache bypassed for query {QueryName} with key {CacheKey}.",
                 typeof(TRequest).Name,
-                cacheableQuery.CacheDuration);
+                cacheableRequest.CacheKey);
 
             return await next();
         }
 
-        try
+        var cacheKey = cacheableRequest.CacheKey;
+
+        // [MỚI] Đọc cache trước khi thực thi handler.
+        var cachedResponse = await _cacheService.GetAsync<TResponse>(cacheKey, cancellationToken);
+        if (cachedResponse is not null)
         {
-            var cachedResponse = await _cacheService.GetAsync<TResponse>(
-                cacheableQuery.CacheKey,
-                cancellationToken);
-
-            if (cachedResponse is not null)
-            {
-                _logger.LogDebug(
-                    "Cache hit for request {RequestName}. Key={CacheKey}",
-                    typeof(TRequest).Name,
-                    cacheableQuery.CacheKey);
-
-                return cachedResponse;
-            }
-
-            _logger.LogDebug(
-                "Cache miss for request {RequestName}. Key={CacheKey}",
+            _logger.LogInformation(
+                "Cache hit for query {QueryName} with key {CacheKey}.",
                 typeof(TRequest).Name,
-                cacheableQuery.CacheKey);
+                cacheKey);
 
-            var response = await next();
+            return cachedResponse;
+        }
 
-            if (response is null)
-            {
-                return response;
-            }
+        _logger.LogInformation(
+            "Cache miss for query {QueryName} with key {CacheKey}.",
+            typeof(TRequest).Name,
+            cacheKey);
 
-            await _cacheService.SetAsync(
-                cacheableQuery.CacheKey,
-                response,
-                cacheableQuery.CacheDuration,
-                cancellationToken);
+        // Không có cache thì gọi handler thật.
+        var response = await next();
 
-            _logger.LogDebug(
-                "Cached response for request {RequestName}. Key={CacheKey}, TTL={TTL}",
-                typeof(TRequest).Name,
-                cacheableQuery.CacheKey,
-                cacheableQuery.CacheDuration);
-
+        // [MỚI] Không cache response null để tránh ghi trạng thái rỗng không chủ đích.
+        if (response is null)
+        {
             return response;
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(
-                ex,
-                "Cache pipeline failed for request {RequestName}. Fallback to handler.",
-                typeof(TRequest).Name);
 
-            return await next();
+        // TTL ưu tiên từ query, nếu không có thì dùng default của hệ thống.
+        var ttl = cacheableRequest.CacheDuration ?? _cacheOptions.DefaultTtl;
+
+        // [MỚI] Chỉ lưu cache khi cache đang bật.
+        if (_cacheOptions.Enabled)
+        {
+            await _cacheService.SetAsync(cacheKey, response, ttl, cancellationToken);
+
+            _logger.LogInformation(
+                "Cache stored for query {QueryName} with key {CacheKey} and ttl {Ttl}.",
+                typeof(TRequest).Name,
+                cacheKey,
+                ttl);
         }
+
+        return response;
     }
 }

@@ -229,17 +229,19 @@ public class CulinaryBlogDbContext
         entity.HasIndex(x => x.PublishedAt);
         entity.HasIndex(x => x.Difficulty);
 
+        // Quan hệ Recipe -> Category được giữ dạng Restrict để tránh xóa dây chuyền ngoài ý muốn.
         entity.HasOne<Category>()
             .WithMany()
             .HasForeignKey(x => x.CategoryId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // Quan hệ Recipe -> ApplicationUser để truy vết tác giả bài viết.
         entity.HasOne<ApplicationUser>()
             .WithMany()
             .HasForeignKey(x => x.AuthorId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Value object Nutrition được map vào cùng bảng Recipes.
+        // Value object Nutrition được map trực tiếp vào cùng bảng Recipes.
         entity.OwnsOne(x => x.Nutrition, nutrition =>
         {
             nutrition.Property(x => x.Calories)
