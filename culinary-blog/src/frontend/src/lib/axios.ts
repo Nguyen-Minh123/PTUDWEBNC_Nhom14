@@ -28,7 +28,12 @@ apiClient.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    if (error?.message === 'Network Error') {
+      console.error('[API Client] Network error / Server unreachable:', error.message);
+    }
+    return Promise.reject(error);
+  }
 );
 
 /**
