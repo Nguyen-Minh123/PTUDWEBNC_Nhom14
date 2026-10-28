@@ -1,5 +1,5 @@
 # Lab 7 – README – FR-BKE-015  
-## Tối ưu API Danh mục (Get All Categories kèm thống kê số bài viết) & Caching
+## [FR-BKE-015] Tối ưu API Danh mục (Get All Categories kèm thống kê số bài viết) và Caching
 
 ### 1. Mục tiêu
 - Tối ưu API danh mục để trả về danh sách Category kèm số lượng Recipe theo từng danh mục.
@@ -71,20 +71,16 @@ Phần core của giải pháp đã xác định rõ: DTO, Query, Handler, Cache
 
 ### 9. Câu hỏi giáo viên có thể hỏi
 1. Vì sao không trả về toàn bộ entity `Category` mà phải dùng DTO?
-2. `RecipeCount` được tính ở đâu và vì sao không đếm ở frontend?
+2. `RecipeCount` được tính ở đâu và vì sao không đếm ở Frontend?
 3. Vì sao dùng `AsNoTracking()` cho API đọc?
 4. Cache key của danh mục được thiết kế như thế nào để dễ invalidate?
 5. Khi nào cần xóa cache của danh mục?
 6. Nếu dữ liệu Recipe thay đổi thì cache Category có bị stale không?
-7. Vì sao chọn cache cho API này thay vì tối ưu bằng index בלבד?
+7. Vì sao chọn cache cho API này thay vì tối ưu bằng index?
 8. Cơ chế nào đảm bảo API vẫn đúng kiến trúc Clean Architecture?
 9. Nếu Redis gặp sự cố thì API có còn hoạt động không?
 10. Vì sao TTL của danh mục nên ngắn hơn dữ liệu ít thay đổi khác?
 
 ### Kết luận
 FR-BKE-015 tập trung vào hai mục tiêu chính: **tăng hiệu năng** và **giữ dữ liệu trả về gọn, đúng nhu cầu**.  
-Giải pháp được triển khai theo hướng:
-- truy vấn tối ưu,
-- cache có kiểm soát,
-- invalidate rõ ràng,
-- và giữ đúng nguyên tắc phân lớp của dự án Culinary Blog.
+Giải pháp được triển khai theo hướng: truy vấn tối ưu, cache có kiểm soát, invalidate rõ ràng và giữ đúng nguyên tắc phân lớp của dự án Culinary Blog.

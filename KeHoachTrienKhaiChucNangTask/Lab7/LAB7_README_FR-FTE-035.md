@@ -15,18 +15,16 @@
 | Author | Truy cập công khai + nội dung cá nhân | Xem Sidebar, lọc theo danh mục, kết hợp tìm công thức | Hỗ trợ khám phá nội dung |
 | Admin | Truy cập công khai + quản trị | Xem Sidebar như Author, có thể mở rộng sang khu vực quản trị | Không giới hạn ở module Category |
 
-**Kết luận:** `CategorySidebar` không cấp quyền mới, mà chỉ hỗ trợ điều hướng và lọc nội dung theo quyền đã có.
-
 ### 3) Hiện trạng đã kiểm tra
 - Dự án đã có module Category với cấu trúc App Router riêng.
 - Đã có các component nền liên quan:
-  - `src/components/categories/CategorySidebar.tsx`
-  - `src/components/categories/CategoryGrid.tsx`
-  - `src/components/categories/CategoryCard.tsx`
+  + `src/components/categories/CategorySidebar.tsx`
+  + `src/components/categories/CategoryGrid.tsx`
+  + `src/components/categories/CategoryCard.tsx`
 - Đã có dữ liệu category mẫu và logic hiển thị dạng lưới.
 - Nhu cầu thực tế là hiển thị Sidebar ở hai ngữ cảnh:
-  - Trang chủ
-  - Trang Khám phá
+  + Trang chủ
+  + Trang Khám phá
 - Cần đảm bảo Sidebar tương thích với query params, route hiện tại và dữ liệu API sau này.
 
 ### 4) Kế hoạch triển khai
@@ -75,3 +73,6 @@
 6. Vì sao Sidebar không nên chứa business logic phức tạp?
 7. Khi thay đổi route, Sidebar có cần reset trạng thái không?
 8. Làm sao để Sidebar dễ mở rộng khi thêm bộ lọc mới?
+
+### Kết luận
+FR-FTE-035 sẽ tập trung thiết kế sidebar cho category, phân tích `CategorySidebar` không cấp quyền mới, mà chỉ hỗ trợ điều hướng và lọc nội dung theo quyền đã có.

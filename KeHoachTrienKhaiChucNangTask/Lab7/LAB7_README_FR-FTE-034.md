@@ -15,17 +15,16 @@
 | Author | Truy cập công khai + nội dung cá nhân | Xem Category, dùng Sidebar, tìm công thức theo chủ đề | Phù hợp luồng khám phá nội dung |
 | Admin | Truy cập công khai + quản trị | Xem Category và mở rộng sang các chức năng quản trị | Không giới hạn ở trang `/categories` |
 
-**Kết luận:** `/categories` là trang công khai, không phụ thuộc xác thực, nhưng vẫn phải đồng bộ bố cục với hệ thống chung để giữ trải nghiệm nhất quán.
 
 ### 3) Hiện trạng đã kiểm tra
 - Dự án đã có cấu trúc App Router cho module Category:
-  - `src/app/(categories)/layout.tsx`
-  - `src/app/(categories)/categories/page.tsx`
-  - `src/app/(categories)/categories/loading.tsx`
+  + `src/app/(categories)/layout.tsx`
+  + `src/app/(categories)/categories/page.tsx`
+  + `src/app/(categories)/categories/loading.tsx`
 - Đã có các component nền để dựng UI:
-  - `src/components/categories/CategorySidebar.tsx`
-  - `src/components/categories/CategoryGrid.tsx`
-  - `src/components/categories/CategoryCard.tsx`
+  + `src/components/categories/CategorySidebar.tsx`
+  + `src/components/categories/CategoryGrid.tsx`
+  + `src/components/categories/CategoryCard.tsx`
 - Đã có dữ liệu mẫu để dựng giao diện tĩnh và kiểm tra bố cục.
 - Trang `/categories` cần hiển thị đúng lưới, không vỡ layout khi dữ liệu rỗng hoặc khi thay đổi kích thước màn hình.
 
@@ -79,3 +78,6 @@
 6. Vì sao nên có loading state riêng cho route?
 7. Sidebar có vai trò gì trong trải nghiệm điều hướng?
 8. Nếu thêm tìm kiếm và bộ lọc, bạn sẽ đặt logic ở đâu để không làm rối UI?
+
+### Kết luận
+FR-FTE-034 tập trung xây dựng trang `/categories` là trang công khai, không phụ thuộc xác thực, nhưng vẫn phải đồng bộ bố cục với hệ thống chung để giữ trải nghiệm nhất quán.

@@ -15,20 +15,18 @@
 | Author | Tìm kiếm nội dung công khai và nội dung cá nhân được phép xem | Hỗ trợ quản lý nội dung |
 | Admin | Tìm kiếm toàn bộ dữ liệu theo phạm vi quản trị | Phục vụ kiểm duyệt và quản trị |
 
-**Kết luận:** chức năng tìm kiếm không cấp thêm quyền mới, mà chỉ thay đổi cách truy vấn và hiển thị dữ liệu theo quyền đã có.
-
 ### 3) Hiện trạng đã kiểm tra
 - Dự án đã có các thành phần liên quan:
-  - `src/components/search/SearchBar.tsx`
-  - `src/hooks/search/useRecipeSearch.ts`
-  - `src/components/categories/CategorySidebar.tsx`
-  - `src/app/(categories)/categories/page.tsx`
+  + `src/components/search/SearchBar.tsx`
+  + `src/hooks/search/useRecipeSearch.ts`
+  + `src/components/categories/CategorySidebar.tsx`
+  + `src/app/(categories)/categories/page.tsx`
 - Đã có dữ liệu Category mẫu để kiểm tra luồng tìm kiếm.
 - Đã xác định nhu cầu thực tế:
-  - tìm theo từ khóa,
-  - lọc theo Category,
-  - đồng bộ query params,
-  - tránh gọi lại xử lý quá nhiều khi người dùng nhập nhanh.
+  + tìm theo từ khóa,
+  + lọc theo Category,
+  + đồng bộ query params,
+  + tránh gọi lại xử lý quá nhiều khi người dùng nhập nhanh.
 
 ### 4) Kế hoạch triển khai
 1. Tạo `SearchBar` để nhập từ khóa và chọn Category.
@@ -75,3 +73,6 @@
 6. Khi nào nên dùng local state, khi nào nên dùng hook riêng?
 7. Search theo keyword và filter theo Category nên xử lý ở đâu?
 8. Cơ chế này có thể tái sử dụng cho trang nào khác?
+
+### Kết luận
+FR-FTE-036 tập trung thêm chức năng tìm kiếm không cấp thêm quyền mới, mà chỉ thay đổi cách truy vấn và hiển thị dữ liệu theo quyền đã có.
