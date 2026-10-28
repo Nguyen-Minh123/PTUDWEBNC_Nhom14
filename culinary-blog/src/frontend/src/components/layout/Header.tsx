@@ -115,7 +115,7 @@ export function Header({ variant = 'main' }: HeaderProps) {
                   </Link>
 
                   <Link
-                    href="/dashboard?tab=profile"
+                    href="/profile"
                     className="flex items-center gap-2 px-3.5 py-2 hover:bg-gray-50 text-gray-700 font-medium transition-colors"
                   >
                     <span>👤</span>

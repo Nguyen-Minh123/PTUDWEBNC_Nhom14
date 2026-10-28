@@ -122,8 +122,8 @@ Chuẩn bị thêm phần kế hoạch quản lý cho các chức năng bài LAB
 | | **FR-FTE-018** | Thiết kế giao diện tĩnh Trang chi tiết công thức (Lab 6) | ✅ Done |
 | | **FR-FTE-040** | Hoàn thiện Trang chủ (`/`): Tích hợp Header, Footer, Sidebar và Main Content công thức mới (Lab 7) | ✅ Done |
 | | **FR-FTE-041** | Xây dựng Component danh sách thẻ công thức (`RecipeCard`, `RecipeGrid`) với Phân trang (Lab 7) | ✅ Done |
-| | **FR-FTE-042** | Xây dựng Trang hồ sơ cá nhân (`/profile`) xem thông tin tài khoản và danh sách bài viết (Lab 7) | ⏳ To Do |
-| | **FR-FTE-043** | Hoàn thiện tính năng Cập nhật hồ sơ (Chỉnh sửa tên, avatar, thông tin giới thiệu) (Lab 7) | ⏳ To Do |
+| | **FR-FTE-042** | Xây dựng Trang hồ sơ cá nhân (`/profile`) xem thông tin tài khoản và danh sách bài viết (Lab 7) | ✅ Done |
+| | **FR-FTE-043** | Hoàn thiện tính năng Cập nhật hồ sơ (Chỉnh sửa tên, avatar, thông tin giới thiệu) (Lab 7) | ✅ Done |
 ---
 
 ## ⚙️ Hướng dẫn Khởi chạy Hệ thống
