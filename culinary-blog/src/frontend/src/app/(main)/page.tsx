@@ -5,41 +5,92 @@ import Link from 'next/link';
 import { HeroSection } from '@/components/home/HeroSection';
 import { CategoryChips } from '@/components/home/CategoryChips';
 import { FeaturedSection } from '@/components/home/FeaturedSection';
-import { RecipeCard } from '@/components/recipe/RecipeCard';
+import { HomeSidebar } from '@/components/home/HomeSidebar';
+import { RecipeGrid } from '@/components/recipe/RecipeGrid';
 import { RecipeDetailModal } from '@/components/recipe/RecipeDetailModal';
 import { MainContainer } from '@/components/layout/MainContainer';
 import { SectionContainer } from '@/components/layout/SectionContainer';
-import { searchRecipes } from '@/services/recipeService';
+import { searchRecipes, INITIAL_RECIPES } from '@/services/recipeService';
 import { RecipeSummaryDto } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, Sparkles, ChefHat, PlusCircle, Filter } from 'lucide-react';
+import {
+  ArrowRight,
+  Sparkles,
+  ChefHat,
+  PlusCircle,
+  Filter,
+  X,
+  SlidersHorizontal,
+} from 'lucide-react';
 
 export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = React.useState('all');
   const [selectedDifficulty, setSelectedDifficulty] = React.useState('all');
   const [selectedSort, setSelectedSort] = React.useState('-createdAt');
+  const [page, setPage] = React.useState(1);
+  const [pageSize] = React.useState(4);
   const [selectedRecipe, setSelectedRecipe] = React.useState<RecipeSummaryDto | null>(null);
 
-  // Lấy dữ liệu công thức
+  // Thống kê số lượng bài viết theo categoryId thực tế
+  const categoryCounts = React.useMemo(() => {
+    const counts: Record<string, number> = { all: INITIAL_RECIPES.length };
+    INITIAL_RECIPES.forEach((r) => {
+      if (r.categoryId) {
+        counts[r.categoryId] = (counts[r.categoryId] || 0) + 1;
+      }
+    });
+    return counts;
+  }, []);
+
+  // Lấy dữ liệu công thức kèm phân trang
   const pagedResult = React.useMemo(() => {
     return searchRecipes({
       keyword: '',
       categoryId: selectedCategory,
       difficulty: selectedDifficulty,
       sort: selectedSort,
-      page: 1,
-      pageSize: 6,
+      page,
+      pageSize,
     });
-  }, [selectedCategory, selectedDifficulty, selectedSort]);
+  }, [selectedCategory, selectedDifficulty, selectedSort, page, pageSize]);
+
+  // Đổi bộ lọc thì reset về trang 1
+  const handleSelectCategory = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    setPage(1);
+  };
+
+  const handleSelectDifficulty = (difficulty: string) => {
+    setSelectedDifficulty(difficulty);
+    setPage(1);
+  };
+
+  const handleSelectSort = (sort: string) => {
+    setSelectedSort(sort);
+    setPage(1);
+  };
+
+  const handleResetFilters = () => {
+    setSelectedCategory('all');
+    setSelectedDifficulty('all');
+    setSelectedSort('-createdAt');
+    setPage(1);
+  };
+
+  const hasActiveFilters = selectedCategory !== 'all' || selectedDifficulty !== 'all';
 
   return (
     <div className="flex flex-col w-full">
       {/* 1. Hero Section Banner */}
       <HeroSection />
 
-      {/* 2. Top Category Pills */}
-      <SectionContainer spacing="sm" background="muted" className="border-b border-stone-200/60 dark:border-stone-800">
+      {/* 2. Top Category Pills Carousel */}
+      <SectionContainer
+        spacing="sm"
+        background="muted"
+        className="border-b border-stone-200/60 dark:border-stone-800"
+      >
         <MainContainer size="default">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
             <span className="text-xs font-bold uppercase tracking-wider text-stone-500">
@@ -55,7 +106,7 @@ export default function HomePage() {
           </div>
           <CategoryChips
             activeCategory={selectedCategory}
-            onSelectCategory={(id) => setSelectedCategory(id)}
+            onSelectCategory={handleSelectCategory}
           />
         </MainContainer>
       </SectionContainer>
@@ -64,15 +115,21 @@ export default function HomePage() {
       <SectionContainer spacing="default" background="transparent">
         <MainContainer size="default">
           <FeaturedSection
-            recipes={pagedResult.items}
+            recipes={INITIAL_RECIPES}
             onOpenRecipe={(recipe) => setSelectedRecipe(recipe)}
           />
         </MainContainer>
       </SectionContainer>
 
-      {/* 4. Latest Recipes Grid with Quick Controls */}
-      <SectionContainer spacing="default" background="muted" className="border-t border-stone-200/60 dark:border-stone-800">
+      {/* 4. Main Content: Latest Recipes with Sidebar (FR-FTE-040 & FR-FTE-041) */}
+      <SectionContainer
+        id="recipes-section"
+        spacing="default"
+        background="muted"
+        className="border-t border-stone-200/60 dark:border-stone-800"
+      >
         <MainContainer size="default">
+          {/* Section Header */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold mb-2">
@@ -92,8 +149,8 @@ export default function HomePage() {
               <div className="inline-flex p-1 bg-stone-200/70 rounded-xl text-xs font-medium dark:bg-stone-800">
                 <button
                   type="button"
-                  onClick={() => setSelectedSort('-createdAt')}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${
+                  onClick={() => handleSelectSort('-createdAt')}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                     selectedSort === '-createdAt'
                       ? 'bg-white text-stone-900 font-semibold shadow-xs'
                       : 'text-stone-600 hover:text-stone-900'
@@ -103,8 +160,8 @@ export default function HomePage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setSelectedSort('-averageRating')}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${
+                  onClick={() => handleSelectSort('-averageRating')}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                     selectedSort === '-averageRating'
                       ? 'bg-white text-stone-900 font-semibold shadow-xs'
                       : 'text-stone-600 hover:text-stone-900'
@@ -114,8 +171,8 @@ export default function HomePage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setSelectedSort('prepTime')}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${
+                  onClick={() => handleSelectSort('prepTime')}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                     selectedSort === 'prepTime'
                       ? 'bg-white text-stone-900 font-semibold shadow-xs'
                       : 'text-stone-600 hover:text-stone-900'
@@ -134,25 +191,87 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Recipe Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {pagedResult.items.map((recipe) => (
-              <RecipeCard
-                key={recipe.id}
-                recipe={recipe}
-                onQuickView={(r) => setSelectedRecipe(r)}
-              />
-            ))}
-          </div>
+          {/* Active Filter Chips */}
+          {hasActiveFilters && (
+            <div className="flex flex-wrap items-center gap-2 mb-6 p-3 rounded-2xl bg-amber-50/70 border border-amber-200/60 dark:bg-amber-950/20 dark:border-amber-900/40 text-xs">
+              <span className="font-semibold text-amber-900 dark:text-amber-300">Đang lọc theo:</span>
 
-          {/* View More Link */}
-          <div className="mt-12 text-center">
-            <Link href="/recipes">
-              <Button size="lg" className="bg-amber-600 hover:bg-amber-700 text-white font-bold px-8 rounded-xl shadow-md">
-                <span>Xem Thêm Tất Cả Công Thức</span>
-                <ArrowRight className="h-4 w-4 ml-2" />
+              {selectedCategory !== 'all' && (
+                <Badge
+                  variant="secondary"
+                  className="bg-white text-amber-900 gap-1.5 pr-1.5 border border-amber-200 shadow-2xs font-medium"
+                >
+                  <span>Chuyên mục: {selectedCategory}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectCategory('all')}
+                    className="hover:bg-amber-100 rounded-full p-0.5"
+                    aria-label="Xóa lọc chuyên mục"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              )}
+
+              {selectedDifficulty !== 'all' && (
+                <Badge
+                  variant="secondary"
+                  className="bg-white text-amber-900 gap-1.5 pr-1.5 border border-amber-200 shadow-2xs font-medium"
+                >
+                  <span>Độ khó: {selectedDifficulty}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectDifficulty('all')}
+                    className="hover:bg-amber-100 rounded-full p-0.5"
+                    aria-label="Xóa lọc độ khó"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              )}
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleResetFilters}
+                className="h-6 px-2 text-[11px] text-amber-800 hover:text-amber-950 hover:bg-amber-100 font-semibold ml-auto"
+              >
+                Xóa tất cả
               </Button>
-            </Link>
+            </div>
+          )}
+
+          {/* 2-Column Layout: Sidebar (1 column) + Main Recipe Grid (3 columns on lg) */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+            {/* CỘT TRÁI: SIDEBAR TRANG CHỦ */}
+            <div className="lg:col-span-1">
+              <HomeSidebar
+                selectedCategory={selectedCategory}
+                onSelectCategory={handleSelectCategory}
+                selectedDifficulty={selectedDifficulty}
+                onSelectDifficulty={handleSelectDifficulty}
+                categoryCounts={categoryCounts}
+              />
+            </div>
+
+            {/* CỘT PHẢI: MAIN CONTENT RECIPE GRID */}
+            <div className="lg:col-span-3">
+              <RecipeGrid
+                recipes={pagedResult.items}
+                pageNumber={pagedResult.pageNumber}
+                pageSize={pagedResult.pageSize}
+                totalCount={pagedResult.totalCount}
+                totalPages={pagedResult.totalPages}
+                hasPreviousPage={pagedResult.hasPreviousPage}
+                hasNextPage={pagedResult.hasNextPage}
+                onPageChange={(nextPage) => setPage(nextPage)}
+                onQuickView={(recipe) => setSelectedRecipe(recipe)}
+                columns={3}
+                onResetFilter={handleResetFilters}
+                scrollTargetId="recipes-section"
+              />
+            </div>
           </div>
         </MainContainer>
       </SectionContainer>

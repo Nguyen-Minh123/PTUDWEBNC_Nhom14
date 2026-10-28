@@ -168,14 +168,14 @@ export function Header({ variant = 'main' }: HeaderProps) {
                     <span>Dashboard & Quản lý</span>
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => handleNavigate('/dashboard?tab=profile')} // Mở thẳng tab hồ sơ
-                    className="w-full text-left flex items-center gap-2 px-3.5 py-2 hover:bg-gray-50 text-gray-700 font-medium transition-colors"
+                  <Link
+                    href="/profile"
+                    onClick={() => setDropdownOpen(false)}
+                    className="flex items-center gap-2 px-3.5 py-2 hover:bg-gray-50 text-gray-700 font-medium transition-colors"
                   >
                     <span>👤</span>
                     <span>Hồ sơ cá nhân</span>
-                  </button>
+                  </Link>
 
                   <Link
                     href="/dashboard?tab=security"

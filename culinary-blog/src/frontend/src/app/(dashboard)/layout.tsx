@@ -44,7 +44,7 @@ const navItems = [
   },
   {
     title: 'Hồ Sơ Cá Nhân',
-    href: '/dashboard?tab=profile',
+    href: '/profile',
     icon: User,
   },
   {

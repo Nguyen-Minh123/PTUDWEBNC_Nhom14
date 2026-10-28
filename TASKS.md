@@ -1,4 +1,4 @@
-## 👥 Phân công Nhiệm vụ (Lab 01-05: ✅ Done)
+## 👥 Phân công Nhiệm vụ (Lab 01-06: ✅ Done, Lab 07: ⏳ Đang triển khai)
 
 | Thành viên / Vai trò | Mã Issue | Tên Nhiệm vụ chi tiết | Trạng thái |
 | :--- | :--- | :--- | :--- |
@@ -19,6 +19,14 @@
 | | **FR-BKE-011** | Hiện thực phân quyền RBAC, Policy-based & Fallback Policy (Lab 5) | ✅ Done |
 | | **FR-BKE-012** | Hoàn thiện Resource-Based Authorization chống BOLA (OWASP API1) (Lab 5) | ✅ Done |
 | | **FR-SEC-004** | Xử lý Token Theft Detection trong Refresh Token Rotation (Lab 5) | ✅ Done |
+| | **FR-FTE-027** | Xây dựng lớp tiện ích gọi API (Axios Client Instance & Interceptors) (Lab 6) | ✅ Done |
+| | **FR-FTE-028** | Xây dựng lớp tiện ích Xử lý lỗi tập trung & Chuẩn hóa RFC 7807 (Lab 6) | ✅ Done |
+| | **FR-FTE-029** | Hiện thực hóa cơ chế Silent Token Refresh Interceptor (Lab 6) | ✅ Done |
+| | **FR-FTE-030** | Thiết kế giao diện tĩnh Trang Đăng nhập & Đăng ký (Lab 6) | ✅ Done |
+| | **FR-BKE-014** | Hiện thực hóa API Quên mật khẩu & Đổi mật khẩu (Identity Reset/Change Password) (Lab 7) | ⏳ To Do |
+| | **FR-FTE-031** | Hoàn thiện tích hợp API Đăng nhập, Đăng ký & Đăng xuất trên Frontend (Lab 7) | ⏳ To Do |
+| | **FR-FTE-032** | Xây dựng giao diện và tích hợp API Quên mật khẩu (Forgot/Reset Password) (Lab 7) | ⏳ To Do |
+| | **FR-FTE-033** | Xây dựng giao diện và tích hợp API Đổi mật khẩu (Change Password) (Lab 7) | ⏳ To Do |
 | **Nguyễn Thế Khải**<br>*(Database & Infra)* | **FR-DB-001** | Khởi tạo EF Core Migrations | ✅ Done |
 | | **FR-DB-002** | Định nghĩa BaseEntity, ApplicationUser | ✅ Done |
 | | **FR-DB-003** | Cấu hình PostgreSQL 16 trên Docker | ✅ Done |
@@ -36,6 +44,14 @@
 | | **FR-INF-005** | Cấu hình Rate Limiting nâng cao (Fixed Window & Token Bucket) (Lab 5) | ✅ Done |
 | | **FR-INF-006** | Cấu hình Security Headers & Pipeline Middleware bảo mật (Lab 5) | ✅ Done |
 | | **FR-BKE-013** | Cài đặt và cấu hình API Versioning (`Asp.Versioning.Http`) (Lab 5) | ✅ Done |
+| | **FR-FTE-023** | Cài đặt store quản lý trạng thái xác thực (`auth-store.ts`) (Lab 6) | ✅ Done |
+| | **FR-FTE-024** | Cài đặt store quản lý giao diện người dùng (`ui-store.ts`) (Lab 6) | ✅ Done |
+| | **FR-FTE-025** | Cài đặt store quản lý bộ lọc và tìm kiếm (`filter-store.ts`) (Lab 6) | ✅ Done |
+| | **FR-FTE-026** | Thiết kế giao diện tĩnh Trang Dashboard quản trị cá nhân (Lab 6) | ✅ Done |
+| | **FR-BKE-015** | Tối ưu API Danh mục (Get All Categories kèm thống kê số bài viết) & Caching (Lab 7) | ⏳ To Do |
+| | **FR-FTE-034** | Xây dựng trang xem danh sách tất cả Category (`/categories`) hiển thị dạng lưới (Lab 7) | ⏳ To Do |
+| | **FR-FTE-035** | Xây dựng Sidebar danh mục cho Trang chủ và Trang Khám phá (`CategorySidebar`) (Lab 7) | ⏳ To Do |
+| | **FR-FTE-036** | Cài đặt chức năng Tìm kiếm (Search Bar, Debounce, Filter by Category, Query Params) (Lab 7) | ⏳ To Do |
 | **Phan Thành Huy**<br>*(DevOps & Testing)* | **FR-DVO-001** | Cấu hình docker-compose.yml tổng hợp (Nginx, Postgres, Redis, MinIO) | ✅ Done |
 | | **FR-DVO-002** | Cấu hình 6 chỉ số dinh dưỡng | ✅ Done |
 | | **FR-TST-001** | Kiểm thử API nâng cao | ✅ Done |
@@ -54,6 +70,14 @@
 | | **FR-DVO-006** | Bật XML Documentation Comments & Metadata chuẩn cho Endpoints (Lab 5) | ✅ Done |
 | | **FR-TST-007** | Xây dựng bộ 15 kịch bản kiểm thử API tự động (`culinary-blog.http`) (Lab 5) | ✅ Done |
 | | **FR-TST-008** | Viết Integration Tests kiểm thử ma trận phân quyền (`TestAuthHandler`) (Lab 5) | ✅ Done |
+| | **FR-FTE-019** | Xây dựng bộ component điều hướng dùng chung (Header & Footer) (Lab 6) | ✅ Done |
+| | **FR-FTE-020** | Xây dựng component Pagination (Phân trang) tái sử dụng (Lab 6) | ✅ Done |
+| | **FR-FTE-021** | Xây dựng hệ thống Loading & Skeleton States (Lab 6) | ✅ Done |
+| | **FR-FTE-022** | Xây dựng hệ thống Error & User Feedback Components (Toast, EmptyState) (Lab 6) | ✅ Done |
+| | **FR-FTE-037** | Xây dựng và tích hợp dữ liệu Trang chi tiết công thức (`/recipes/[slug]` hoặc `[id]`) (Lab 7) | ⏳ To Do |
+| | **FR-FTE-038** | Tích hợp hiển thị Nguyên liệu (`Ingredients`), Các bước thực hiện (`Steps`) & Dinh dưỡng (Lab 7) | ⏳ To Do |
+| | **FR-FTE-039** | Xây dựng tương tác xem ảnh phóng to & Giao diện Đánh giá/Bình luận cơ bản (Lab 7) | ⏳ To Do |
+| | **FR-TST-009** | Viết kịch bản kiểm thử E2E / Integration cho luồng Auth, Search và Xem chi tiết (Lab 7) | ⏳ To Do |
 | **Bùi Trung Hiếu**<br>*(Frontend Next.js)* | **FR-FTE-001** | Dựng Frontend Skeleton (Next.js 15 App Router + Tailwind CSS) | ✅ Done |
 | | **FR-FTE-002** | Đồng bộ TypeScript Interfaces | ✅ Done |
 | | **FR-FTE-003** | Chuẩn hóa cú pháp sắp xếp (?sort=-field) | ✅ Done |
@@ -73,3 +97,7 @@
 | | **FR-FTE-016** | Xây dựng hệ thống bố cục chung (Layout System) cho Blog App (Lab 6) | ✅ Done |
 | | **FR-FTE-017** | Thiết kế giao diện tĩnh Trang chủ & Trang khám phá công thức (Lab 6) | ✅ Done |
 | | **FR-FTE-018** | Thiết kế giao diện tĩnh Trang chi tiết công thức (Lab 6) | ✅ Done |
+| | **FR-FTE-040** | Hoàn thiện Trang chủ (`/`): Tích hợp Header, Footer, Sidebar và Main Content công thức mới (Lab 7) | ✅ Done |
+| | **FR-FTE-041** | Xây dựng Component danh sách thẻ công thức (`RecipeCard`, `RecipeGrid`) với Phân trang (Lab 7) | ✅ Done |
+| | **FR-FTE-042** | Xây dựng Trang hồ sơ cá nhân (`/profile`) xem thông tin tài khoản và danh sách bài viết (Lab 7) | ✅ Done |
+| | **FR-FTE-043** | Hoàn thiện tính năng Cập nhật hồ sơ (Chỉnh sửa tên, avatar, thông tin giới thiệu) (Lab 7) | ✅ Done |
