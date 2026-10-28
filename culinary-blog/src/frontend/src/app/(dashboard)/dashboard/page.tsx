@@ -1,4 +1,9 @@
-'use client';
+/**
+ * Chức năng:
+ * - Entry point của route /dashboard.
+ * - Bọc DashboardPage bằng Suspense.
+ * - Hiển thị fallback trong lúc component con khởi tạo.
+ */
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
@@ -247,6 +252,8 @@ function DashboardContent() {
   const draftCount = recipes.filter((r) => r.status === 'Draft').length;
   const archivedCount = recipes.filter((r) => r.status === 'Archived').length;
 
+
+export default function Page() {
   return (
     <div className="flex-1 bg-stone-50 flex flex-col font-sans">
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
@@ -728,6 +735,7 @@ export default function DashboardPage() {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-sm text-gray-500">Đang tải Dashboard...</div>}>
       <DashboardContent />
+
     </Suspense>
   );
 }

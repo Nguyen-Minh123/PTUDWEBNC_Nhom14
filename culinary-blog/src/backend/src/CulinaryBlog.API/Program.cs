@@ -1,4 +1,4 @@
-﻿using Amazon.S3;
+using Amazon.S3;
 using Asp.Versioning;
 using CulinaryBlog.API.Authorization;
 using CulinaryBlog.API.Endpoints;
