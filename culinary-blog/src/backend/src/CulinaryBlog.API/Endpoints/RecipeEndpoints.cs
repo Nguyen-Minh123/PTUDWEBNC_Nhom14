@@ -372,5 +372,14 @@ public static class RecipeEndpoints
         recipe.Category is null ? null : new CategoryDto(recipe.Category.Id, recipe.Category.Name, recipe.Category.Slug, recipe.Category.Description ?? string.Empty),
         recipe.Steps.Select(step => new RecipeStepDto(step.Id, step.StepNumber, step.Title, step.Description, step.TimerMinutes, step.ImageUrl)).ToList(),
         recipe.Ingredients.Select(ingredient => new RecipeIngredientDto(ingredient.Id, ingredient.Name, ingredient.Quantity, ingredient.Unit, ingredient.Notes, ingredient.OrderIndex)).ToList(),
-        recipe.Images.Select(image => new RecipeImageDto(image.Id, image.OriginalUrl, image.MediumUrl, image.ThumbnailUrl, image.AltText, image.IsPrimary, image.OrderIndex)).ToList());
+        recipe.Images.Select(image => new RecipeImageDto(image.Id, image.OriginalUrl, image.MediumUrl, image.ThumbnailUrl, image.AltText, image.IsPrimary, image.OrderIndex)).ToList(),
+        recipe.Nutrition is null
+            ? null
+            : new RecipeNutritionDto(
+                recipe.Nutrition.Calories,
+                recipe.Nutrition.Protein,
+                recipe.Nutrition.Carbohydrates,
+                recipe.Nutrition.Fat,
+                recipe.Nutrition.Fiber,
+                recipe.Nutrition.Sodium));
 }

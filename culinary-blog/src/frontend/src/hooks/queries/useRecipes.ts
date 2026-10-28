@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { RecipeSearchParams, RecipeSummaryDto, RecipeDetailDto } from '@/types/recipe.dto';
 import { PagedResult } from '@/types/paged-result.dto';
@@ -47,8 +48,11 @@ export function useRecipeDetail(idOrSlug: string) {
         const response = await apiClient.get<RecipeDetailDto>(`/api/v1/recipes/${idOrSlug}`);
         return response.data;
       } catch (err) {
-        console.warn('[useRecipeDetail] Failed to fetch recipe detail:', extractErrorMessage(err));
-        return null;
+        if (axios.isAxiosError(err) && err.response?.status === 404) {
+          return null;
+        }
+
+        throw err;
       }
     },
     enabled: Boolean(idOrSlug),

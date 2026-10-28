@@ -20,9 +20,10 @@ public sealed class RecipeDataSeederTests
         var steps = await dbContext.RecipeSteps.ToListAsync();
 
         Assert.Equal(4, categories.Count);
-        Assert.NotEmpty(recipes);
+        Assert.Equal(25, recipes.Count);
         Assert.NotEmpty(ingredients);
         Assert.NotEmpty(steps);
+        Assert.Contains(await dbContext.Users.ToListAsync(), user => user.Id == "seeder-user-id");
 
         Assert.All(recipes, recipe =>
         {
@@ -32,7 +33,12 @@ public sealed class RecipeDataSeederTests
             Assert.True(recipe.PrepTime > 0);
             Assert.True(recipe.CookTime >= 0);
             Assert.True(recipe.Servings > 0);
-            Assert.Contains(recipe.Status, new[] { RecipeStatus.Draft, RecipeStatus.Published, RecipeStatus.Archived });
+            Assert.NotEqual(Guid.Empty, recipe.CategoryId);
+            Assert.Equal("seeder-user-id", recipe.AuthorId);
+            Assert.NotEmpty(recipe.Ingredients);
+            Assert.NotEmpty(recipe.Steps);
+            Assert.NotNull(recipe.Nutrition);
+            Assert.Equal(RecipeStatus.Published, recipe.Status);
         });
     }
 
@@ -43,10 +49,16 @@ public sealed class RecipeDataSeederTests
         var seeder = new RecipeDataSeeder(dbContext);
 
         await seeder.SeedAsync();
+        var recipeCount = await dbContext.Recipes.CountAsync();
+        var ingredientCount = await dbContext.RecipeIngredients.CountAsync();
+        var stepCount = await dbContext.RecipeSteps.CountAsync();
         await seeder.SeedAsync();
 
+        // Lần seed thứ hai không được tạo thêm category hoặc recipe trùng.
         Assert.Equal(4, await dbContext.Categories.CountAsync());
-        Assert.True(await dbContext.Recipes.CountAsync() > 0);
+        Assert.Equal(recipeCount, await dbContext.Recipes.CountAsync());
+        Assert.Equal(ingredientCount, await dbContext.RecipeIngredients.CountAsync());
+        Assert.Equal(stepCount, await dbContext.RecipeSteps.CountAsync());
     }
 
     private static CulinaryBlogDbContext CreateDbContext()

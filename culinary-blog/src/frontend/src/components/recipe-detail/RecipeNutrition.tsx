@@ -4,23 +4,16 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Activity } from 'lucide-react';
 
 export function RecipeNutrition({ nutrition }: { nutrition?: RecipeNutritionDto | null }) {
-  // Dữ liệu mẫu dinh dưỡng nếu backend chưa cung cấp
-  const data = nutrition || {
-    calories: 450,
-    proteinGrams: 28,
-    carbsGrams: 52,
-    fatGrams: 14,
-    fiberGrams: 4,
-    sodiumMg: 850,
-  };
+  const formatValue = (value: number | null | undefined, unit: string) =>
+    value == null ? 'Chưa có dữ liệu' : `${value} ${unit}`;
 
   const items = [
-    { label: 'Năng lượng', value: `${data.calories} kcal`, percent: 23, color: 'bg-amber-500' },
-    { label: 'Chất đạm (Protein)', value: `${data.proteinGrams || data.protein || 28} g`, percent: 45, color: 'bg-rose-500' },
-    { label: 'Carbohydrate', value: `${data.carbsGrams || data.carbohydrates || 52} g`, percent: 18, color: 'bg-emerald-500' },
-    { label: 'Chất béo (Fat)', value: `${data.fatGrams || data.fat || 14} g`, percent: 20, color: 'bg-orange-500' },
-    { label: 'Chất xơ (Fiber)', value: `${data.fiberGrams || data.fiber || 4} g`, percent: 15, color: 'bg-teal-500' },
-    { label: 'Natri (Sodium)', value: `${data.sodiumMg || data.sodium || 850} mg`, percent: 35, color: 'bg-blue-500' },
+    { label: 'Năng lượng', value: formatValue(nutrition?.calories, 'kcal') },
+    { label: 'Chất đạm (Protein)', value: formatValue(nutrition?.protein, 'g') },
+    { label: 'Carbohydrate', value: formatValue(nutrition?.carbohydrates, 'g') },
+    { label: 'Chất béo (Fat)', value: formatValue(nutrition?.fat, 'g') },
+    { label: 'Chất xơ (Fiber)', value: formatValue(nutrition?.fiber, 'g') },
+    { label: 'Natri (Sodium)', value: formatValue(nutrition?.sodium, 'mg') },
   ];
 
   return (
@@ -33,22 +26,17 @@ export function RecipeNutrition({ nutrition }: { nutrition?: RecipeNutritionDto 
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {items.map((item, idx) => (
-            <div key={idx} className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800/60 border border-stone-100 dark:border-stone-800 flex flex-col justify-between">
+          {items.map((item) => (
+            <div key={item.label} className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800/60 border border-stone-100 dark:border-stone-800 flex flex-col justify-between">
               <span className="text-[11px] text-stone-500 font-medium">{item.label}</span>
-              <div className="mt-1">
-                <span className="text-sm sm:text-base font-black text-stone-900 dark:text-stone-50">
-                  {item.value}
-                </span>
-                <div className="w-full bg-stone-200 rounded-full h-1.5 mt-2 overflow-hidden dark:bg-stone-700">
-                  <div className={`h-1.5 rounded-full ${item.color}`} style={{ width: `${Math.min(100, item.percent * 2)}%` }} />
-                </div>
-              </div>
+              <span className="mt-1 text-sm sm:text-base font-black text-stone-900 dark:text-stone-50">
+                {item.value}
+              </span>
             </div>
           ))}
         </div>
         <p className="text-[11px] text-stone-400 mt-3 italic">
-          * Giá trị dinh dưỡng hàng ngày dựa trên chế độ ăn 2.000 calo. Giá trị thực tế có thể thay đổi tùy thuộc vào lượng nguyên liệu sử dụng.
+          * Số liệu là giá trị do công thức cung cấp; giá trị thực tế có thể thay đổi theo nguyên liệu và khẩu phần.
         </p>
       </CardContent>
     </Card>
