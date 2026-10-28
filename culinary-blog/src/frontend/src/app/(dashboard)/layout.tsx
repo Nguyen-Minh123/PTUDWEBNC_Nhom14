@@ -6,18 +6,21 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   PlusCircle,
-  BookOpen,
   User,
   ArrowLeft,
   Menu,
   X,
   ChefHat,
   Bookmark,
+  Lock,
+  LogOut,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { Avatar } from '@/components/ui/avatar';
+import { useAuthStore } from '@/stores/auth-store';
+import { authService } from '@/services/authService';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -44,12 +47,36 @@ const navItems = [
     href: '/dashboard?tab=profile',
     icon: User,
   },
+  {
+    title: 'Đổi Mật Khẩu & Bảo Mật',
+    href: '/dashboard?tab=security',
+    icon: Lock,
+  },
 ];
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const authStoreUser = useAuthStore((state) => state.user);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const currentUser = session?.user || (authStoreUser ? {
+    name: authStoreUser.displayName,
+    email: authStoreUser.email,
+    image: authStoreUser.avatarUrl,
+  } : null);
+
+  const handleLogout = async () => {
+    try {
+      const state = useAuthStore.getState();
+      await authService.logout(state.refreshToken || undefined, state.accessToken || undefined);
+    } catch {
+      // Ignore network errors on logout
+    } finally {
+      useAuthStore.getState().clearSession();
+      await signOut({ callbackUrl: '/login' });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-stone-100/60 dark:bg-stone-950 flex flex-col md:flex-row">
@@ -107,17 +134,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* User Card */}
         <div className="p-4 mx-3 my-3 rounded-xl bg-amber-50/60 border border-amber-100/80 flex items-center gap-3">
           <Avatar
-            src={session?.user?.image}
-            alt={session?.user?.name || 'Chef'}
-            fallback={(session?.user?.name || 'C')[0].toUpperCase()}
+            src={currentUser?.image || undefined}
+            alt={currentUser?.name || 'Chef'}
+            fallback={(currentUser?.name || 'C')[0].toUpperCase()}
             size="default"
           />
           <div className="min-w-0 flex-1">
             <p className="text-xs font-bold text-stone-900 truncate">
-              {session?.user?.name || 'Đầu bếp Culinary'}
+              {currentUser?.name || 'Đầu bếp Culinary'}
             </p>
             <p className="text-[11px] text-stone-500 truncate">
-              {session?.user?.email || 'author@culinary.vn'}
+              {currentUser?.email || 'author@culinary.vn'}
             </p>
           </div>
         </div>
@@ -146,8 +173,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           })}
         </nav>
 
-        {/* Return to Blog button */}
-        <div className="p-4 border-t border-stone-100 dark:border-stone-800">
+        {/* Return to Blog button & Logout */}
+        <div className="p-4 border-t border-stone-100 dark:border-stone-800 space-y-2">
           <Link href="/">
             <Button
               variant="outline"
@@ -158,6 +185,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               Quay lại Trang chủ
             </Button>
           </Link>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleLogout}
+            className="w-full justify-start text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+          >
+            <LogOut className="h-3.5 w-3.5 mr-2" />
+            Đăng xuất (Logout)
+          </Button>
         </div>
       </aside>
 

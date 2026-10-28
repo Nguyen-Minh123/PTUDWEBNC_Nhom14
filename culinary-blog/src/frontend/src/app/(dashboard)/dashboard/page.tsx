@@ -1,22 +1,40 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
+import {
+  Lock,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  AlertCircle,
+  CheckCircle2,
+  ChefHat,
+  KeyRound,
+} from 'lucide-react';
 import { EmptyState } from '@/components/feedback/EmptyState';
 import { useUIStore, type ToastType } from '@/stores/useUIStore';
+import { useAuthStore } from '@/stores/auth-store';
 import { RecipeSummaryDto, RecipeStatus } from '@/types';
 import { authService } from '@/services/authService';
 import { recipeManagementService } from '@/services/recipeManagementService';
+import { extractErrorMessage } from '@/lib/api/error-handler';
 
 function DashboardContent() {
+  const router = useRouter();
   const { data: session, update: updateSession } = useSession();
+  const authStoreUser = useAuthStore((state) => state.user);
+  const clearSession = useAuthStore((state) => state.clearSession);
   const addToast = useUIStore((state) => state.addToast);
   const searchParams = useSearchParams();
-  const initialTab = searchParams.get('tab') === 'profile' ? 'profile' : 'recipes';
 
-  const [activeTab, setActiveTab] = useState<'recipes' | 'profile'>(initialTab);
+  const tabParam = searchParams.get('tab');
+  const initialTab: 'recipes' | 'profile' | 'security' =
+    tabParam === 'profile' ? 'profile' : tabParam === 'security' ? 'security' : 'recipes';
+
+  const [activeTab, setActiveTab] = useState<'recipes' | 'profile' | 'security'>(initialTab);
   const [recipes, setRecipes] = useState<RecipeSummaryDto[]>([]);
   const [recipeStatusFilter, setRecipeStatusFilter] = useState<'all' | RecipeStatus>('all');
   const [loading, setLoading] = useState(true);
@@ -27,19 +45,38 @@ function DashboardContent() {
   const [avatarUrl, setAvatarUrl] = useState('');
   const [profileSaving, setProfileSaving] = useState(false);
 
+  // Change Password Form States (FR-BKE-014 / FR-FTE-033)
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+
+  // Đồng bộ tab từ URL search params
+  useEffect(() => {
+    if (tabParam === 'profile') setActiveTab('profile');
+    else if (tabParam === 'security') setActiveTab('security');
+    else if (!tabParam || tabParam === 'recipes') setActiveTab('recipes');
+  }, [tabParam]);
+
   // Tải danh sách công thức & hồ sơ
   useEffect(() => {
     async function loadData() {
       setLoading(true);
       try {
-        const userRecipes = await recipeManagementService.getUserRecipes(session?.user?.id);
+        const userRecipes = await recipeManagementService.getUserRecipes(session?.user?.id || authStoreUser?.id);
         setRecipes(userRecipes);
 
-        const profile = await authService.getProfile((session?.user as any)?.accessToken);
+        const accessToken = (session?.user as any)?.accessToken || useAuthStore.getState().accessToken;
+        const profile = await authService.getProfile(accessToken || undefined);
         if (profile) {
-          setDisplayName(profile.displayName || session?.user?.name || '');
-          setBio(profile.bio || (session?.user as any)?.bio || '');
-          setAvatarUrl(profile.avatarUrl || session?.user?.image || '');
+          setDisplayName(profile.displayName || session?.user?.name || authStoreUser?.displayName || '');
+          setBio(profile.bio || (session?.user as any)?.bio || authStoreUser?.bio || '');
+          setAvatarUrl(profile.avatarUrl || session?.user?.image || authStoreUser?.avatarUrl || '');
         }
       } catch (err) {
         console.error('Lỗi nạp dữ liệu dashboard:', err);
@@ -49,31 +86,52 @@ function DashboardContent() {
       }
     }
     loadData();
-  }, [session, addToast]);
+  }, [session, authStoreUser, addToast]);
 
   const showToast = (message: string, type: ToastType = 'success') => {
     addToast(type, message);
   };
+
+  // Tính độ mạnh mật khẩu mới
+  const passwordStrength = useMemo(() => {
+    if (!newPassword) return { score: 0, label: '', color: 'bg-stone-200', width: 'w-0' };
+    let score = 0;
+    if (newPassword.length >= 6) score += 1;
+    if (newPassword.length >= 8) score += 1;
+    if (/[A-Z]/.test(newPassword) && /[a-z]/.test(newPassword)) score += 1;
+    if (/[0-9]/.test(newPassword)) score += 1;
+    if (/[^A-Za-z0-9]/.test(newPassword)) score += 1;
+
+    if (score <= 2) return { score, label: 'Mật khẩu yếu', color: 'bg-rose-500', width: 'w-1/3' };
+    if (score <= 4) return { score, label: 'Mật khẩu vừa phải', color: 'bg-amber-500', width: 'w-2/3' };
+    return { score, label: 'Mật khẩu mạnh & an toàn', color: 'bg-emerald-500', width: 'w-full' };
+  }, [newPassword]);
+
+  const passwordsMatch = !confirmPassword || newPassword === confirmPassword;
 
   // Cập nhật hồ sơ cá nhân (FR-BKE-006 / FR-FTE-008)
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setProfileSaving(true);
     try {
+      const accessToken = (session?.user as any)?.accessToken || useAuthStore.getState().accessToken;
       const updated = await authService.updateProfile(
         { displayName, bio, avatarUrl },
-        (session?.user as any)?.accessToken
+        accessToken || undefined
       );
       if (updated) {
-        await updateSession({
-          ...session,
-          user: {
-            ...session?.user,
-            name: displayName,
-            image: avatarUrl,
-            bio,
-          },
-        });
+        if (updateSession && session) {
+          await updateSession({
+            ...session,
+            user: {
+              ...session?.user,
+              name: displayName,
+              image: avatarUrl,
+              bio,
+            },
+          });
+        }
+        useAuthStore.getState().updateUser({ displayName, avatarUrl, bio });
         showToast('Đã lưu thông tin hồ sơ thành công!');
       }
     } catch {
@@ -83,12 +141,70 @@ function DashboardContent() {
     }
   };
 
+  // Đổi mật khẩu tài khoản (FR-BKE-014 / FR-FTE-033)
+  const handleSavePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError(null);
+    setPasswordSuccess(null);
+
+    if (!currentPassword.trim() || !newPassword.trim() || !confirmPassword.trim()) {
+      setPasswordError('Vui lòng điền đầy đủ các thông tin mật khẩu.');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setPasswordError('Mật khẩu mới phải có tối thiểu 6 ký tự.');
+      return;
+    }
+
+    if (newPassword === currentPassword) {
+      setPasswordError('Mật khẩu mới không được trùng với mật khẩu hiện tại.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Mật khẩu xác nhận không khớp với mật khẩu mới.');
+      return;
+    }
+
+    setPasswordSaving(true);
+
+    try {
+      const accessToken = (session?.user as any)?.accessToken || useAuthStore.getState().accessToken;
+      await authService.changePassword(
+        {
+          currentPassword,
+          newPassword,
+          confirmPassword,
+        },
+        accessToken || undefined
+      );
+
+      setPasswordSuccess('Đổi mật khẩu thành công! Vui lòng đăng nhập lại với mật khẩu mới.');
+      showToast('Đổi mật khẩu thành công! Hệ thống sẽ chuyển về trang Đăng nhập.', 'success');
+
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+
+      // Thu hồi phiên hiện tại trên client và chuyển hướng về /login
+      setTimeout(async () => {
+        clearSession();
+        await signOut({ callbackUrl: '/login' });
+      }, 1500);
+    } catch (err) {
+      const msg = extractErrorMessage(err) || 'Không thể đổi mật khẩu. Vui lòng kiểm tra lại mật khẩu hiện tại.';
+      setPasswordError(msg);
+      showToast(msg, 'error');
+    } finally {
+      setPasswordSaving(false);
+    }
+  };
+
   // Xuất bản công thức (Publish)
   const handlePublish = async (recipeId: string) => {
-    const success = await recipeManagementService.publishRecipe(
-      recipeId,
-      (session?.user as any)?.accessToken
-    );
+    const accessToken = (session?.user as any)?.accessToken || useAuthStore.getState().accessToken;
+    const success = await recipeManagementService.publishRecipe(recipeId, accessToken || undefined);
     if (success) {
       setRecipes((prev) =>
         prev.map((r) => (r.id === recipeId ? { ...r, status: 'Published' } : r))
@@ -99,10 +215,8 @@ function DashboardContent() {
 
   // Lưu trữ công thức (Archive)
   const handleArchive = async (recipeId: string) => {
-    const success = await recipeManagementService.archiveRecipe(
-      recipeId,
-      (session?.user as any)?.accessToken
-    );
+    const accessToken = (session?.user as any)?.accessToken || useAuthStore.getState().accessToken;
+    const success = await recipeManagementService.archiveRecipe(recipeId, accessToken || undefined);
     if (success) {
       setRecipes((prev) =>
         prev.map((r) => (r.id === recipeId ? { ...r, status: 'Archived' } : r))
@@ -114,10 +228,8 @@ function DashboardContent() {
   // Xóa mềm công thức (Delete)
   const handleDelete = async (recipeId: string) => {
     if (confirm('Bạn có chắc chắn muốn xóa công thức này không?')) {
-      const success = await recipeManagementService.deleteRecipe(
-        recipeId,
-        (session?.user as any)?.accessToken
-      );
+      const accessToken = (session?.user as any)?.accessToken || useAuthStore.getState().accessToken;
+      const success = await recipeManagementService.deleteRecipe(recipeId, accessToken || undefined);
       if (success) {
         setRecipes((prev) => prev.filter((r) => r.id !== recipeId));
         showToast('Đã xóa công thức thành công.');
@@ -151,7 +263,7 @@ function DashboardContent() {
             </div>
             <div>
               <span className="inline-block px-2 py-0.5 rounded-full bg-amber-500/40 text-[10px] font-bold tracking-wider uppercase">
-                Bảng điều khiển tác giả • Lab 4 (FR-FTE-008)
+                Bảng điều khiển tác giả • Culinary Studio
               </span>
               <h1 className="text-xl sm:text-2xl font-black tracking-tight mt-0.5">
                 Xin chào, {displayName || 'Đầu bếp Culinary'} 👋
@@ -166,7 +278,7 @@ function DashboardContent() {
             href="/recipes/new"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-amber-900 text-xs font-bold hover:bg-amber-50 transition-all shadow-md shrink-0"
           >
-            <span>✍️</span> Tạo Công Thức Mới
+            <span>✨</span> Tạo Công Thức Mới
           </Link>
         </div>
 
@@ -191,11 +303,11 @@ function DashboardContent() {
         </div>
 
         {/* Tab Selector */}
-        <div className="flex border-b border-gray-200 mb-6">
+        <div className="flex border-b border-gray-200 mb-6 gap-2 sm:gap-4 overflow-x-auto">
           <button
             type="button"
             onClick={() => setActiveTab('recipes')}
-            className={`pb-3 px-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
+            className={`pb-3 px-3 sm:px-4 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 shrink-0 ${
               activeTab === 'recipes'
                 ? 'border-amber-600 text-amber-700'
                 : 'border-transparent text-gray-400 hover:text-gray-600'
@@ -206,13 +318,24 @@ function DashboardContent() {
           <button
             type="button"
             onClick={() => setActiveTab('profile')}
-            className={`pb-3 px-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
+            className={`pb-3 px-3 sm:px-4 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 shrink-0 ${
               activeTab === 'profile'
                 ? 'border-amber-600 text-amber-700'
                 : 'border-transparent text-gray-400 hover:text-gray-600'
             }`}
           >
             <span>👤</span> Hồ Sơ Đầu Bếp
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('security')}
+            className={`pb-3 px-3 sm:px-4 text-xs sm:text-sm font-bold border-b-2 transition-all flex items-center gap-2 shrink-0 ${
+              activeTab === 'security'
+                ? 'border-amber-600 text-amber-700'
+                : 'border-transparent text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            <span>🔒</span> Đổi Mật Khẩu
           </button>
         </div>
 
@@ -247,7 +370,7 @@ function DashboardContent() {
               <div className="text-center py-12 text-sm text-gray-400">Đang tải danh sách công thức...</div>
             ) : filteredRecipes.length === 0 ? (
               <EmptyState
-                icon="🍳"
+                icon="🍲"
                 title="Chưa có công thức nào"
                 description="Bạn chưa tạo công thức nào ở trạng thái này. Hãy bắt đầu chia sẻ công thức đầu tiên!"
                 className="py-16 bg-white rounded-2xl border border-gray-200 p-8"
@@ -256,7 +379,7 @@ function DashboardContent() {
                   href="/recipes/new"
                   className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition-all shadow-xs"
                 >
-                  <span>✍️</span> Tạo Công Thức Ngay
+                  <span>✨</span> Tạo Công Thức Ngay
                 </Link>
               </EmptyState>
             ) : (
@@ -335,7 +458,7 @@ function DashboardContent() {
                             className="px-2.5 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-all"
                             title="Chuyển vào lưu trữ"
                           >
-                            📦 Lưu trữ
+                            📁 Lưu trữ
                           </button>
                         )}
                       </div>
@@ -361,7 +484,7 @@ function DashboardContent() {
           <div className="max-w-2xl bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs">
             <h2 className="text-lg font-bold text-gray-900 mb-1">Cập nhật hồ sơ cá nhân</h2>
             <p className="text-xs text-gray-500 mb-6">
-              Thông tin sẽ hiển thị công khai trên các công thức nấu ăn của bạn (API: PUT /api/v1/users/me).
+              Thông tin sẽ hiển thị công khai trên các bài viết nấu ăn của bạn (API: PUT /api/v1/users/me).
             </p>
 
             <form onSubmit={handleSaveProfile} className="space-y-5">
@@ -385,7 +508,7 @@ function DashboardContent() {
                 <input
                   type="email"
                   disabled
-                  value={session?.user?.email || 'chef.hieu@culinary.com'}
+                  value={session?.user?.email || authStoreUser?.email || 'chef@culinary.vn'}
                   className="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-500 cursor-not-allowed"
                 />
               </div>
@@ -434,6 +557,163 @@ function DashboardContent() {
                   className="px-6 py-2.5 rounded-lg bg-amber-600 text-white text-xs font-bold hover:bg-amber-700 transition-all shadow-md shadow-amber-600/20 disabled:opacity-60"
                 >
                   {profileSaving ? 'Đang lưu...' : 'Lưu Thay Đổi'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* TAB 3: ĐỔI MẬT KHẨU & BẢO MẬT (SECURITY) - FR-BKE-014 / FR-FTE-033 */}
+        {activeTab === 'security' && (
+          <div className="max-w-xl bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-600">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Đổi mật khẩu tài khoản</h2>
+                <p className="text-xs text-gray-500">
+                  Cập nhật mật khẩu định kỳ để bảo vệ quyền truy cập tài khoản (API: POST /api/v1/auth/change-password).
+                </p>
+              </div>
+            </div>
+
+            {/* Thông báo thành công */}
+            {passwordSuccess && (
+              <div className="my-5 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs leading-relaxed flex items-start gap-3">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-emerald-900 mb-0.5">Thành công!</p>
+                  <p>{passwordSuccess}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Thông báo lỗi */}
+            {passwordError && (
+              <div className="my-5 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs leading-relaxed flex items-start gap-3 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{passwordError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSavePassword} className="space-y-4 mt-6">
+              {/* Mật khẩu hiện tại */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  Mật khẩu hiện tại <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
+                    <KeyRound className="w-4 h-4" />
+                  </div>
+                  <input
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    required
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Nhập mật khẩu bạn đang dùng"
+                    className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-stone-400 hover:text-stone-600"
+                    aria-label={showCurrentPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                  >
+                    {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Mật khẩu mới */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  Mật khẩu mới <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Tối thiểu 6 ký tự, có hoa, thường, số, ký tự đặc biệt"
+                    className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-stone-400 hover:text-stone-600"
+                    aria-label={showNewPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                  >
+                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                {/* Thước đo độ mạnh mật khẩu */}
+                {newPassword && (
+                  <div className="mt-2 space-y-1">
+                    <div className="h-1.5 w-full bg-stone-100 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all duration-300 ${passwordStrength.color} ${passwordStrength.width}`}
+                      />
+                    </div>
+                    <div className="flex justify-between items-center text-[10px] text-stone-500">
+                      <span>{passwordStrength.label}</span>
+                      <span>Chữ hoa, thường, số, ký tự đặc biệt</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Xác nhận mật khẩu mới */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  Xác nhận mật khẩu mới <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Nhập lại mật khẩu mới"
+                    className={`w-full pl-10 pr-10 py-2.5 rounded-xl border text-sm focus:outline-none ${
+                      passwordsMatch
+                        ? 'border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-100'
+                        : 'border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-100'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-stone-400 hover:text-stone-600"
+                    aria-label={showConfirmPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {!passwordsMatch && (
+                  <p className="mt-1 text-[11px] text-rose-500">Mật khẩu xác nhận chưa khớp.</p>
+                )}
+              </div>
+
+              <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
+                <span className="text-[11px] text-gray-400">
+                  Lưu ý: Mọi phiên đăng nhập khác sẽ bị đăng xuất tự động.
+                </span>
+                <button
+                  type="submit"
+                  disabled={passwordSaving || !passwordsMatch}
+                  className="px-6 py-2.5 rounded-xl bg-amber-600 text-white text-xs font-bold hover:bg-amber-700 transition-all shadow-md shadow-amber-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {passwordSaving ? 'Đang cập nhật...' : 'Cập nhật Mật khẩu'}
                 </button>
               </div>
             </form>

@@ -1,4 +1,4 @@
-# 🍲 Culinary Blog - Nhóm 14
+﻿# 🍲 Culinary Blog - Nhóm 14
 
 Dự án phát triển hệ thống Full-Stack cho nền tảng Blog ẩm thực (**Culinary Blog**) theo tiêu chuẩn kiến trúc **Clean Architecture** và tài liệu đặc tả **SRS v1.0.0**. Hệ thống sử dụng **.NET 10 (Minimal APIs)**, **Next.js (App Router)**, **PostgreSQL 16**, **Redis 7**, và **MinIO**.
 

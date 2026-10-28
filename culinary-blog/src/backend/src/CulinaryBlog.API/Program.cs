@@ -1,4 +1,4 @@
-using Amazon.S3;
+﻿using Amazon.S3;
 using Asp.Versioning;
 using CulinaryBlog.API.Authorization;
 using CulinaryBlog.API.Endpoints;
@@ -6,6 +6,7 @@ using CulinaryBlog.API.Extensions;
 using CulinaryBlog.API.HealthChecks;
 using CulinaryBlog.API.Middlewares;
 using CulinaryBlog.API.OpenApi;
+using CulinaryBlog.Application;
 using CulinaryBlog.Application.Common.Caching;
 using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Infrastructure.Authorization;
@@ -158,7 +159,8 @@ builder.Services.AddOpenApi(options =>
     options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
 });
 
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<CulinaryBlog.Application.Features.Recipes.Commands.CreateRecipeCommand>());
+builder.Services.AddApplication();
+builder.Services.AddScoped<IPasswordResetTokenService, PasswordResetTokenService>();
 
 // HttpContext / Current user
 builder.Services.AddHttpContextAccessor();
