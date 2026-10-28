@@ -18,6 +18,9 @@ public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, Identity
     public DbSet<RecipeStep> RecipeSteps => Set<RecipeStep>();
     public DbSet<RecipeIngredient> RecipeIngredients => Set<RecipeIngredient>();
     public DbSet<RecipeImage> RecipeImages => Set<RecipeImage>();
+    public DbSet<RecipeFavorite> RecipeFavorites => Set<RecipeFavorite>();
+    public DbSet<RecipeCollection> RecipeCollections => Set<RecipeCollection>();
+    public DbSet<RecipeCollectionItem> RecipeCollectionItems => Set<RecipeCollectionItem>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -36,6 +39,9 @@ public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, Identity
         ConfigureRecipeStep(modelBuilder);
         ConfigureRecipeIngredient(modelBuilder);
         ConfigureRecipeImage(modelBuilder);
+        ConfigureRecipeFavorite(modelBuilder);
+        ConfigureRecipeCollection(modelBuilder);
+        ConfigureRecipeCollectionItem(modelBuilder);
     }
 
     private static void ConfigureIdentityTables(ModelBuilder modelBuilder)
@@ -412,8 +418,107 @@ public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, Identity
 
         entity.HasQueryFilter(x => !x.IsDeleted);
     }
+
+    private static void ConfigureRecipeFavorite(ModelBuilder modelBuilder)
+    {
+        var entity = modelBuilder.Entity<RecipeFavorite>();
+
+        entity.ToTable("RecipeFavorites");
+        entity.HasKey(x => x.Id);
+
+        entity.Property(x => x.Id)
+            .ValueGeneratedNever();
+
+        entity.Property(x => x.UserId)
+            .HasMaxLength(450)
+            .IsRequired();
+
+        entity.Property(x => x.RecipeId)
+            .IsRequired();
+
+        entity.Property(x => x.CreatedAt)
+            .IsRequired();
+
+        entity.HasIndex(x => new { x.UserId, x.RecipeId })
+            .IsUnique();
+
+        entity.HasOne(x => x.Owner)
+            .WithMany()
+            .HasForeignKey(x => x.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        entity.HasOne(x => x.Recipe)
+            .WithMany()
+            .HasForeignKey(x => x.RecipeId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        entity.HasQueryFilter(x => !x.Recipe.IsDeleted);
+    }
+
+    private static void ConfigureRecipeCollection(ModelBuilder modelBuilder)
+    {
+        var entity = modelBuilder.Entity<RecipeCollection>();
+
+        entity.ToTable("RecipeCollections");
+        entity.HasKey(x => x.Id);
+
+        entity.Property(x => x.Id)
+            .ValueGeneratedNever();
+
+        entity.Property(x => x.OwnerId)
+            .HasMaxLength(450)
+            .IsRequired();
+
+        entity.Property(x => x.Name)
+            .HasMaxLength(100)
+            .IsRequired();
+
+        entity.Property(x => x.CreatedAt)
+            .IsRequired();
+
+        entity.HasIndex(x => new { x.OwnerId, x.Name })
+            .IsUnique();
+
+        entity.HasOne(x => x.Owner)
+            .WithMany()
+            .HasForeignKey(x => x.OwnerId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        entity.HasMany(x => x.Items)
+            .WithOne(x => x.Collection)
+            .HasForeignKey(x => x.CollectionId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+
+    private static void ConfigureRecipeCollectionItem(ModelBuilder modelBuilder)
+    {
+        var entity = modelBuilder.Entity<RecipeCollectionItem>();
+
+        entity.ToTable("RecipeCollectionItems");
+        entity.HasKey(x => x.Id);
+
+        entity.Property(x => x.Id)
+            .ValueGeneratedNever();
+
+        entity.Property(x => x.CollectionId)
+            .IsRequired();
+
+        entity.Property(x => x.RecipeId)
+            .IsRequired();
+
+        entity.Property(x => x.AddedAt)
+            .IsRequired();
+
+        entity.HasIndex(x => new { x.CollectionId, x.RecipeId })
+            .IsUnique();
+
+        entity.HasOne(x => x.Recipe)
+            .WithMany()
+            .HasForeignKey(x => x.RecipeId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        entity.HasQueryFilter(x => !x.Recipe.IsDeleted);
+    }
 }
-
-
 
 

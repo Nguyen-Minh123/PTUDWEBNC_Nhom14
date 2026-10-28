@@ -37,6 +37,9 @@ public interface IApplicationDbContext
     /// Tập hợp RecipeImage để truy vấn và thao tác dữ liệu.
     /// </summary>
     DbSet<RecipeImage> RecipeImages { get; }
+    DbSet<RecipeFavorite> RecipeFavorites { get; }
+    DbSet<RecipeCollection> RecipeCollections { get; }
+    DbSet<RecipeCollectionItem> RecipeCollectionItems { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
     DbSet<ApplicationUser> Users { get; }
 
