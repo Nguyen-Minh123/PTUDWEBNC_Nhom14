@@ -11,7 +11,7 @@ namespace CulinaryBlog.Application.Features.Recipes.Commands.UpdateRecipe;
 /// Xử lý cập nhật Recipe có kiểm tra concurrency token.
 /// </summary>
 public sealed class UpdateRecipeCommandHandler
-    : IRequestHandler<UpdateRecipeCommand, RecipeDto>
+    : IRequestHandler<UpdateRecipeCommand, Recipe>
 {
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
@@ -30,7 +30,7 @@ public sealed class UpdateRecipeCommandHandler
     /// <summary>
     /// Cập nhật Recipe theo Id và RowVersion.
     /// </summary>
-    public async Task<RecipeDto> Handle(UpdateRecipeCommand request, CancellationToken cancellationToken)
+    public async Task<Recipe> Handle(UpdateRecipeCommand request, CancellationToken cancellationToken)
     {
         // Lấy đúng bản ghi còn khớp concurrency token mà client gửi lên.
         // Nếu không có bản ghi nào khớp, ta sẽ phân biệt giữa "không tồn tại" và "xung đột concurrency".
@@ -97,20 +97,14 @@ public sealed class UpdateRecipeCommandHandler
         // Cách này an toàn hơn nếu database sinh lại RowVersion sau khi update.
         var updatedRecipe = await _db.Recipes
             .AsNoTracking()
+            .Include(x => x.Category)
+            .Include(x => x.Author)
+            .Include(x => x.Steps)
+            .Include(x => x.Ingredients)
+            .Include(x => x.Images)
             .FirstAsync(x => x.Id == recipe.Id, cancellationToken);
 
-        return new RecipeDto(
-            updatedRecipe.Id,
-            updatedRecipe.Title,
-            updatedRecipe.Slug,
-            updatedRecipe.Description,
-            updatedRecipe.Instructions,
-            updatedRecipe.PrepTime,
-            updatedRecipe.CookTime,
-            updatedRecipe.Servings,
-            updatedRecipe.Difficulty,
-            updatedRecipe.CategoryId,
-            updatedRecipe.RowVersion);
+        return updatedRecipe;
     }
 
     // Nếu sau này mở rộng quyền cho admin/super-admin,

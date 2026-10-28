@@ -1,3 +1,4 @@
+'use client';
 /**
  * Chức năng:
  * - Entry point của route /dashboard.
@@ -253,7 +254,6 @@ function DashboardContent() {
   const archivedCount = recipes.filter((r) => r.status === 'Archived').length;
 
 
-export default function Page() {
   return (
     <div className="flex-1 bg-stone-50 flex flex-col font-sans">
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
