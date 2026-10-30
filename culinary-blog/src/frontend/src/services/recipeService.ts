@@ -199,7 +199,7 @@ export function searchRecipes(params: RecipeSearchParams): PagedResult<RecipeSum
 
   // 3. Lọc theo độ khó
   if (difficulty && difficulty !== 'all') {
-    filtered = filtered.filter((r) => r.difficulty.toLowerCase() === difficulty.toLowerCase());
+    filtered = filtered.filter((r) => String(r.difficulty ?? '').toLowerCase() === String(difficulty).toLowerCase());
   }
 
   // 4. Áp dụng sắp xếp chuẩn (?sort=-field)

@@ -25,17 +25,33 @@ export function RecipeCard({
 }: RecipeCardProps) {
   const [isBookmarked, setIsBookmarked] = React.useState(false);
 
-  const getDifficultyBadge = (difficulty: string) => {
-    switch (difficulty.toLowerCase()) {
+  const getDifficultyBadge = (difficulty?: any) => {
+    let diffStr = '';
+    if (typeof difficulty === 'number') {
+      switch (difficulty) {
+        case 1: diffStr = 'easy'; break;
+        case 2: diffStr = 'medium'; break;
+        case 3: diffStr = 'hard'; break;
+        case 4: diffStr = 'expert'; break;
+        default: diffStr = 'easy'; break;
+      }
+    } else if (typeof difficulty === 'string') {
+      diffStr = difficulty.toLowerCase();
+    } else {
+      diffStr = 'easy';
+    }
+
+    switch (diffStr) {
       case 'easy':
         return <Badge variant="success">Dễ</Badge>;
       case 'medium':
         return <Badge variant="secondary">Trung bình</Badge>;
       case 'hard':
+        return <Badge variant="destructive">Khó</Badge>;
       case 'expert':
         return <Badge variant="destructive">Nâng cao</Badge>;
       default:
-        return <Badge variant="outline">{difficulty}</Badge>;
+        return <Badge variant="outline">{String(difficulty ?? 'Dễ')}</Badge>;
     }
   };
 

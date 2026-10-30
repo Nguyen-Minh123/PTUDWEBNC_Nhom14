@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Amazon.S3;
 using Asp.Versioning;
 using CulinaryBlog.API.Authorization;
@@ -42,6 +43,15 @@ builder.Host.UseSerilog((context, services, loggerConfiguration) =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddProblemDetails();
+
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.JsonOptions>(options =>
+{
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 
 // 1. Phân quyền tập trung (RBAC, Policy-based, Resource-based)
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "CulinaryBlog";
