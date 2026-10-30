@@ -22,6 +22,7 @@ public class UnitTest1
         await using var connection = new NpgsqlConnection(GetConnectionString());
         await connection.OpenAsync();
 
+        // PostgreSQL phải có extension này để chuẩn hóa chữ có dấu trong phép tìm kiếm.
         await using (var extensionCommand = new NpgsqlCommand("CREATE EXTENSION IF NOT EXISTS unaccent;", connection))
         {
             await extensionCommand.ExecuteNonQueryAsync();
@@ -60,6 +61,7 @@ public class UnitTest1
         await LoadRecipesAsync(asNoTracking: true);
         dbContext.ChangeTracker.Clear();
 
+        // Dùng cùng query và số lượt cho hai chế độ; đây là số liệu tham khảo, không phải benchmark tuyệt đối.
         const int iterations = 10;
         var trackedTimer = Stopwatch.StartNew();
         var trackedRecipeCount = 0;
@@ -103,6 +105,7 @@ public class UnitTest1
                 .Include(recipe => recipe.Steps)
                 .AsSplitQuery();
 
+            // Query chỉ đọc không cần giữ entity trong ChangeTracker.
             if (asNoTracking)
             {
                 query = query.AsNoTracking();
@@ -116,6 +119,8 @@ public class UnitTest1
     public async Task Register_saves_user_and_refresh_token()
     {
         await using var dbContext = CreateDbContext();
+        await dbContext.Database.MigrateAsync();
+
         var email = $"test_{Guid.NewGuid()}@example.com";
         var user = new ApplicationUser(email, "Test User");
         dbContext.Users.Add(user);
@@ -141,7 +146,8 @@ public class UnitTest1
 
     private static string GetConnectionString() =>
         Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
-        ?? "Host=localhost;Port=5432;Database=CulinaryBlogDb;Username=postgres;Password=postgres";
+        ?? throw new InvalidOperationException(
+            "Set ConnectionStrings__DefaultConnection to an isolated PostgreSQL test database before running database integration tests.");
 
     private static CulinaryBlogDbContext CreateDbContext()
     {

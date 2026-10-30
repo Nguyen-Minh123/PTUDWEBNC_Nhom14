@@ -188,3 +188,42 @@ client.test("15. Rejects an empty search term", function () {
     client.assert(response.status === 400, "Expected HTTP 400");
 });
 %}
+
+### 16. Forgot Password Request (FR-BKE-014)
+POST {{baseUrl}}/api/v1/auth/forgot-password
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "user@example.com"
+}
+
+> {%
+client.test("16. Forgot password accepts email and returns response", function () {
+    client.assert(response.status === 200, "Expected HTTP 200");
+});
+%}
+
+### 17. Reset Password Request (FR-BKE-014)
+POST {{baseUrl}}/api/v1/auth/reset-password
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "user@example.com",
+  "token": "sample-reset-token",
+  "newPassword": "NewStrongPassword@2026",
+  "confirmPassword": "NewStrongPassword@2026"
+}
+
+### 18. Change Password (Authorized) (FR-BKE-014)
+POST {{baseUrl}}/api/v1/auth/change-password
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "currentPassword": "CurrentPassword123!",
+  "newPassword": "NewStrongPassword@2026",
+  "confirmPassword": "NewStrongPassword@2026"
+}

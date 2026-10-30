@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Clock, Users, Star, Flame, Heart, Bookmark } from 'lucide-react';
+import { Clock, Users, Star, Flame, Heart, Bookmark, Eye } from 'lucide-react';
 import { RecipeSummaryDto } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -25,17 +25,33 @@ export function RecipeCard({
 }: RecipeCardProps) {
   const [isBookmarked, setIsBookmarked] = React.useState(false);
 
-  const getDifficultyBadge = (difficulty: string) => {
-    switch (difficulty.toLowerCase()) {
+  const getDifficultyBadge = (difficulty?: any) => {
+    let diffStr = '';
+    if (typeof difficulty === 'number') {
+      switch (difficulty) {
+        case 1: diffStr = 'easy'; break;
+        case 2: diffStr = 'medium'; break;
+        case 3: diffStr = 'hard'; break;
+        case 4: diffStr = 'expert'; break;
+        default: diffStr = 'easy'; break;
+      }
+    } else if (typeof difficulty === 'string') {
+      diffStr = difficulty.toLowerCase();
+    } else {
+      diffStr = 'easy';
+    }
+
+    switch (diffStr) {
       case 'easy':
         return <Badge variant="success">Dễ</Badge>;
       case 'medium':
         return <Badge variant="secondary">Trung bình</Badge>;
       case 'hard':
+        return <Badge variant="destructive">Khó</Badge>;
       case 'expert':
         return <Badge variant="destructive">Nâng cao</Badge>;
       default:
-        return <Badge variant="outline">{difficulty}</Badge>;
+        return <Badge variant="outline">{String(difficulty ?? 'Dễ')}</Badge>;
     }
   };
 
@@ -97,6 +113,22 @@ export function RecipeCard({
             </div>
           )}
 
+          {/* Quick View Button (Center Overlay on Hover) */}
+          {onQuickView && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onQuickView(recipe);
+              }}
+              aria-label={`Xem nhanh công thức ${recipe.title}`}
+              className="absolute inset-0 m-auto h-8 px-3.5 w-fit rounded-full bg-white/95 text-stone-900 font-semibold text-xs backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-1.5 shadow-lg hover:bg-white hover:scale-105 z-20 cursor-pointer pointer-events-auto"
+            >
+              <Eye className="h-3.5 w-3.5 text-amber-600" />
+              <span>Xem nhanh</span>
+            </button>
+          )}
           {/* Total Time Pill (Bottom Right) */}
           <div className="absolute bottom-3 right-3 z-10">
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-black/50 text-white backdrop-blur-md">

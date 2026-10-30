@@ -51,6 +51,7 @@ public class GlobalExceptionHandler : IExceptionHandler
             UserAlreadyExistsException => (StatusCodes.Status409Conflict, "User Conflict"),
             RecipeSlugConflictException => (StatusCodes.Status409Conflict, "Recipe Conflict"),
             CulinaryBlog.Application.Common.Exceptions.ConcurrencyConflictException => (StatusCodes.Status409Conflict, "Concurrency Conflict"),
+            FluentValidation.ValidationException => (StatusCodes.Status400BadRequest, "Validation Failure"),
             DomainException => (StatusCodes.Status400BadRequest, "Domain Rule Violation"),
             ArgumentException => (StatusCodes.Status400BadRequest, "Invalid Request"),
             _ => (StatusCodes.Status500InternalServerError, "Server Error")
@@ -64,6 +65,14 @@ public class GlobalExceptionHandler : IExceptionHandler
             Type = $"https://httpstatuses.com/{statusCode}",
             Instance = httpContext.Request.Path
         };
+
+        if (exception is FluentValidation.ValidationException validationEx)
+        {
+            var errors = validationEx.Errors
+                .GroupBy(e => e.PropertyName)
+                .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
+            problemDetails.Extensions.Add("errors", errors);
+        }
 
         problemDetails.Extensions.Add("traceId", Activity.Current?.Id ?? httpContext.TraceIdentifier);
 

@@ -1,16 +1,55 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
+import { useAuthStore } from '@/stores/auth-store';
+import { authService } from '@/services/authService';
 
 type HeaderProps = {
   variant?: 'main' | 'auth';
 };
 
 export function Header({ variant = 'main' }: HeaderProps) {
+  const router = useRouter();
   const { data: session } = useSession();
+  const authStoreUser = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const clearSession = useAuthStore((state) => state.clearSession);
+
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // Tự đóng dropdown khi click ra ngoài hoặc nhấn Esc
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  // Người dùng hiện tại từ NextAuth hoặc Zustand auth-store
+  const currentUser = session?.user || (isAuthenticated && authStoreUser ? {
+    name: authStoreUser.displayName,
+    email: authStoreUser.email,
+    image: authStoreUser.avatarUrl || null,
+  } : null);
 
   if (variant === 'auth') {
     return (
@@ -33,7 +72,21 @@ export function Header({ variant = 'main' }: HeaderProps) {
 
   const handleLogout = async () => {
     setDropdownOpen(false);
-    await signOut({ callbackUrl: '/' });
+    try {
+      const state = useAuthStore.getState();
+      await authService.logout(state.refreshToken || undefined, state.accessToken || undefined);
+    } catch {
+      // Bỏ qua lỗi mạng
+    } finally {
+      clearSession();
+      await signOut({ callbackUrl: '/login' });
+    }
+  };
+
+  // Đóng menu trước rồi điều hướng để tránh lỗi click trong dropdown
+  const handleNavigate = (path: string) => {
+    setDropdownOpen(false);
+    router.push(path);
   };
 
   return (
@@ -47,7 +100,7 @@ export function Header({ variant = 'main' }: HeaderProps) {
               Culinary Blog
             </span>
             <span className="hidden sm:inline-block ml-2 px-2 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-800 rounded-full">
-              Nhóm 14 • Lab 4
+              Nhóm 14
             </span>
           </div>
         </Link>
@@ -65,61 +118,71 @@ export function Header({ variant = 'main' }: HeaderProps) {
             href="/recipes/new"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-semibold transition-all shadow-xs shadow-amber-500/20"
           >
-            <span>✍️</span>
+            <span>✨</span>
             <span>Tạo Công Thức</span>
           </Link>
 
           {/* User Session Area */}
-          {session?.user ? (
+          {currentUser ? (
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="flex items-center gap-2 py-1 px-2 rounded-lg hover:bg-gray-100 transition-all border border-gray-200"
               >
-                {session.user.image ? (
+                {currentUser.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={session.user.image}
-                    alt={session.user.name || 'User'}
+                    src={currentUser.image}
+                    alt={currentUser.name || 'User'}
                     className="w-7 h-7 rounded-full object-cover border border-amber-300"
                   />
                 ) : (
                   <div className="w-7 h-7 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold text-xs">
-                    {(session.user.name || 'U')[0].toUpperCase()}
+                    {(currentUser.name || 'U')[0].toUpperCase()}
                   </div>
                 )}
                 <span className="font-semibold text-xs text-gray-800 max-w-[100px] truncate hidden sm:inline">
-                  {session.user.name || session.user.email}
+                  {currentUser.name || currentUser.email}
                 </span>
-                <span className="text-[10px] text-gray-400">▼</span>
+                <span className="text-[10px] text-gray-400">▾</span>
               </button>
 
               {/* User Dropdown */}
               {dropdownOpen && (
                 <div
                   className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50 text-xs"
-                  onClick={() => setDropdownOpen(false)}
+                  onClick={(e) => e.stopPropagation()} // Tránh lan truyền click không cần thiết
                 >
                   <div className="px-3.5 py-2.5 border-b border-gray-100 bg-amber-50/50">
-                    <p className="font-bold text-gray-800 truncate">{session.user.name}</p>
-                    <p className="text-[11px] text-gray-500 truncate">{session.user.email}</p>
+                    <p className="font-bold text-gray-800 truncate">{currentUser.name}</p>
+                    <p className="text-[11px] text-gray-500 truncate">{currentUser.email}</p>
                   </div>
 
-                  <Link
-                    href="/dashboard"
-                    className="flex items-center gap-2 px-3.5 py-2 hover:bg-gray-50 text-gray-700 font-medium transition-colors"
+                  <button
+                    type="button"
+                    onClick={() => handleNavigate('/dashboard')} // Điều hướng rõ ràng
+                    className="w-full text-left flex items-center gap-2 px-3.5 py-2 hover:bg-gray-50 text-gray-700 font-medium transition-colors"
                   >
                     <span>📊</span>
                     <span>Dashboard & Quản lý</span>
-                  </Link>
+                  </button>
 
                   <Link
-                    href="/dashboard?tab=profile"
+                    href="/profile"
+                    onClick={() => setDropdownOpen(false)}
                     className="flex items-center gap-2 px-3.5 py-2 hover:bg-gray-50 text-gray-700 font-medium transition-colors"
                   >
                     <span>👤</span>
                     <span>Hồ sơ cá nhân</span>
+                  </Link>
+
+                  <Link
+                    href="/dashboard?tab=security"
+                    className="flex items-center gap-2 px-3.5 py-2 hover:bg-gray-50 text-gray-700 font-medium transition-colors"
+                  >
+                    <span>🔒</span>
+                    <span>Đổi mật khẩu</span>
                   </Link>
 
                   <div className="border-t border-gray-100 my-1" />
@@ -148,3 +211,5 @@ export function Header({ variant = 'main' }: HeaderProps) {
     </header>
   );
 }
+
+export const Navbar = Header;

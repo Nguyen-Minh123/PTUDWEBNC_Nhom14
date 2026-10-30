@@ -6,7 +6,9 @@ export interface RecipeStepDto {
   id: string;
   recipeId?: string;
   stepNumber: number;
-  instruction: string;
+  title: string;
+  description: string;
+  timerMinutes?: number | null;
   imageUrl?: string | null;
 }
 

@@ -36,7 +36,17 @@ public record RecipeDetailDto(
     CategoryDto? Category,
     List<RecipeStepDto> Steps,
     List<RecipeIngredientDto> Ingredients,
-    List<RecipeImageDto> Images
+    List<RecipeImageDto> Images,
+    RecipeNutritionDto? Nutrition
+);
+
+public record RecipeNutritionDto(
+    decimal? Calories,
+    decimal? Protein,
+    decimal? Carbohydrates,
+    decimal? Fat,
+    decimal? Fiber,
+    decimal? Sodium
 );
 
 public record CategoryDto(Guid Id, string Name, string Slug, string Description);

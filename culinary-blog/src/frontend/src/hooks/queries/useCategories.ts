@@ -5,29 +5,54 @@ import apiClient from '@/lib/axios';
 export const CATEGORIES_QUERY_KEY = 'categories';
 
 const FALLBACK_CATEGORIES: CategoryDto[] = [
-  { id: 'cat-1', name: 'Món Nước & Bún Phở', slug: 'mon-nuoc-bun-pho', orderIndex: 1, recipeCount: 12 },
-  { id: 'cat-2', name: 'Món Chiên & Xào', slug: 'mon-chien-xao', orderIndex: 2, recipeCount: 8 },
-  { id: 'cat-3', name: 'Món Kho & Hầm', slug: 'mon-kho-ham', orderIndex: 3, recipeCount: 15 },
-  { id: 'cat-4', name: 'Món Nướng & BBQ', slug: 'mon-nuong-bbq', orderIndex: 4, recipeCount: 6 },
-  { id: 'cat-5', name: 'Món Canh & Súp', slug: 'mon-canh-sup', orderIndex: 5, recipeCount: 9 },
-  { id: 'cat-6', name: 'Món Cuốn & Gỏi', slug: 'mon-cuon-goi', orderIndex: 6, recipeCount: 7 },
-  { id: 'cat-7', name: 'Tráng Miệng & Chè', slug: 'trang-mieng-che', orderIndex: 7, recipeCount: 10 },
+  {
+    id: 'mon-viet',
+    name: 'Món Việt',
+    slug: 'mon-viet',
+    description: 'Nhóm món ăn truyền thống, gần gũi và phù hợp khẩu vị hàng ngày.',
+    orderIndex: 1,
+    recipeCount: 42,
+  },
+  {
+    id: 'mon-a',
+    name: 'Món Á',
+    slug: 'mon-a',
+    description: 'Các công thức châu Á với hương vị đậm đà, đa dạng nguyên liệu.',
+    orderIndex: 2,
+    recipeCount: 31,
+  },
+  {
+    id: 'mon-au',
+    name: 'Món Âu',
+    slug: 'mon-au',
+    description: 'Những món Âu tinh giản, đẹp mắt và phù hợp bữa tối hiện đại.',
+    orderIndex: 3,
+    recipeCount: 24,
+  },
 ];
+
+async function fetchCategories(): Promise<CategoryDto[]> {
+  const response = await apiClient.get<CategoryDto[]>('/categories');
+  return response.data;
+}
 
 /**
  * Hook truy vấn danh mục ẩm thực có cache dài hạn
  */
 export function useCategories() {
-  return useQuery<CategoryDto[], Error>({
-    queryKey: [CATEGORIES_QUERY_KEY],
+  return useQuery({
+    queryKey: ['categories'],
     queryFn: async () => {
       try {
-        const response = await apiClient.get<CategoryDto[]>('/api/v1/categories');
-        return response.data;
-      } catch {
+        return await fetchCategories();
+      } catch (error) {
+        console.warn('[useCategories] API unreachable, using fallback categories.');
         return FALLBACK_CATEGORIES;
       }
     },
-    staleTime: 10 * 60 * 1000, // Danh mục ít thay đổi, cache 10 phút
+    staleTime: 5 * 60 * 1000, // Danh mục ít thay đổi, cache 10 phút
+    refetchOnWindowFocus: false,
+    retry: false,
   });
 }
+
