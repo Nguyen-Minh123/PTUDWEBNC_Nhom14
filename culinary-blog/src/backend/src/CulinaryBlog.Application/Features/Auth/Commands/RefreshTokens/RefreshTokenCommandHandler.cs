@@ -1,6 +1,5 @@
-using System.Security.Cryptography;
-using System.Text;
 using CulinaryBlog.Application.Common.Interfaces;
+using CulinaryBlog.Application.Common.Security;
 using CulinaryBlog.Application.DTOs;
 using CulinaryBlog.Domain.Entities;
 using CulinaryBlog.Domain.Exceptions;
@@ -79,16 +78,17 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, A
             }
         }
 
+        if (user.IsLockedOut)
+        {
+            token.IsRevoked = true;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            throw new ForbiddenAccessException("Tài khoản của bạn đã bị khóa hoặc vô hiệu hóa bởi Quản trị viên.");
+        }
+
         // FR-SEC-002: Token Rotation - Đánh dấu token cũ đã được sử dụng
         token.IsUsed = true;
 
-        // Sinh cặp token mới
-        var roles = new List<string> { "Author", "User" };
-        if (user.Email is not null && user.Email.Contains("admin", StringComparison.OrdinalIgnoreCase))
-        {
-            roles.Add("Admin");
-        }
-
+        var roles = await UserRoleHelper.GetUserRolesAsync(_dbContext, user, cancellationToken);
         var newAccessToken = _jwtService.GenerateAccessToken(user, roles);
         var newRefreshToken = _jwtService.GenerateRefreshToken();
 
@@ -104,11 +104,15 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, A
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
+        var profileDto = user.Adapt<UserProfileDto>();
+        profileDto.Roles = roles;
+        profileDto.IsActive = user.IsActive;
+
         return new AuthResponseDto
         {
             AccessToken = newAccessToken,
             RefreshToken = newRefreshToken,
-            User = user.Adapt<UserProfileDto>()
+            User = profileDto
         };
     }
 }

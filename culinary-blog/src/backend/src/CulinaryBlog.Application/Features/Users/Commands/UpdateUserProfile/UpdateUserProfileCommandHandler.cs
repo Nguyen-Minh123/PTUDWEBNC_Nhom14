@@ -1,4 +1,5 @@
 using CulinaryBlog.Application.Common.Interfaces;
+using CulinaryBlog.Application.Common.Security;
 using CulinaryBlog.Application.DTOs;
 using Mapster;
 using MediatR;
@@ -37,6 +38,16 @@ public class UpdateUserProfileCommandHandler : IRequestHandler<UpdateUserProfile
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return user.Adapt<UserProfileDto>();
+        var roles = await UserRoleHelper.GetUserRolesAsync(_dbContext, user, cancellationToken);
+        var recipeCount = await _dbContext.Recipes
+            .AsNoTracking()
+            .CountAsync(r => r.AuthorId == user.Id, cancellationToken);
+
+        var dto = user.Adapt<UserProfileDto>();
+        dto.Roles = roles;
+        dto.IsActive = user.IsActive;
+        dto.RecipeCount = recipeCount;
+
+        return dto;
     }
 }

@@ -20,29 +20,30 @@ public class JwtService : IJwtService
 
     public string GenerateAccessToken(ApplicationUser user, IList<string> roles)
     {
-        var secret = _configuration["Jwt:Secret"];
-        var issuer = _configuration["Jwt:Issuer"];
-        var audience = _configuration["Jwt:Audience"];
-        
-        // Fallback for development if not configured
-        if (string.IsNullOrEmpty(secret)) secret = "super-secret-key-that-is-very-long-for-hmac-sha256-1234567890";
-        if (string.IsNullOrEmpty(issuer)) issuer = "CulinaryBlogApi";
-        if (string.IsNullOrEmpty(audience)) audience = "CulinaryBlogApp";
+        var secretKey = _configuration["Jwt:Secret"]
+            ?? _configuration["Jwt:SigningKey"]
+            ?? "DayLaMotChuoiBiMatRatDaiDeDamBaoDoAnToanChoThuatToanHmacSha256TrongMoiTruongDev123456!";
+        var issuer = _configuration["Jwt:Issuer"] ?? "CulinaryBlog";
+        var audience = _configuration["Jwt:Audience"] ?? "CulinaryBlogClient";
+        var expiryInMinutes = int.TryParse(_configuration["Jwt:ExpiryInMinutes"], out var exp) ? exp : 60;
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
         var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email ?? ""),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(ClaimTypes.NameIdentifier, user.Id),
-            new Claim(ClaimTypes.Name, user.DisplayName ?? "")
+            new(JwtRegisteredClaimNames.Sub, user.Id),
+            new(ClaimTypes.NameIdentifier, user.Id),
+            new(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new("name", user.DisplayName),
+            new("displayName", user.DisplayName),
+            new("avatar", user.AvatarUrl ?? string.Empty)
         };
 
-        foreach (var role in roles)
+        foreach (var role in roles.Where(r => !string.IsNullOrWhiteSpace(r)).Distinct(StringComparer.OrdinalIgnoreCase))
         {
+            claims.Add(new Claim("role", role));
             claims.Add(new Claim(ClaimTypes.Role, role));
         }
 
@@ -50,9 +51,8 @@ public class JwtService : IJwtService
             issuer: issuer,
             audience: audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(int.Parse(_configuration["Jwt:ExpiryMinutes"] ?? "60")),
-            signingCredentials: creds
-        );
+            expires: DateTime.UtcNow.AddMinutes(expiryInMinutes),
+            signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
@@ -67,21 +67,23 @@ public class JwtService : IJwtService
 
     public ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
     {
-        var secret = _configuration["Jwt:Secret"] ?? "super-secret-key-that-is-very-long-for-hmac-sha256-1234567890";
-        
+        var secretKey = _configuration["Jwt:Secret"]
+            ?? _configuration["Jwt:SigningKey"]
+            ?? "DayLaMotChuoiBiMatRatDaiDeDamBaoDoAnToanChoThuatToanHmacSha256TrongMoiTruongDev123456!";
+
         var tokenValidationParameters = new TokenValidationParameters
         {
-            ValidateAudience = false, // You might want to validate this in production
+            ValidateAudience = false,
             ValidateIssuer = false,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
-            ValidateLifetime = false // Here we are saying that we don't care about the token's expiration date
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+            ValidateLifetime = false
         };
 
         var tokenHandler = new JwtSecurityTokenHandler();
-        var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
+        var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out var securityToken);
 
-        if (securityToken is not JwtSecurityToken jwtSecurityToken || 
+        if (securityToken is not JwtSecurityToken jwtSecurityToken ||
             !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
         {
             throw new SecurityTokenException("Invalid token");

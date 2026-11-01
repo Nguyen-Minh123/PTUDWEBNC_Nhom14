@@ -42,6 +42,9 @@ public sealed class CurrentUserService : ICurrentUserService
             return false;
         }
 
-        return User.IsInRole(role);
+        return User.IsInRole(role)
+            || User.HasClaim(c =>
+                (c.Type == "role" || c.Type == ClaimTypes.Role)
+                && string.Equals(c.Value, role, StringComparison.OrdinalIgnoreCase));
     }
 }
