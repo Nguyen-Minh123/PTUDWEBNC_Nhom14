@@ -276,6 +276,7 @@ app.MapRecipeImagesEndpoints();
 app.MapControllers();
 app.MapRecipeEndpoints();
 app.MapCategoryEndpoints();
+app.MapAuditLogEndpoints();
 app.MapAuthEndpoints();
 app.MapUserEndpoints();
 
