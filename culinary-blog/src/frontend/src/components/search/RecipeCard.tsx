@@ -11,29 +11,46 @@ interface RecipeCardProps {
 
 export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onOpenDetails }) => {
   // Màu sắc badge theo độ khó
-  const getDifficultyBadge = (difficulty: string) => {
-    switch (difficulty.toLowerCase()) {
+  const normalizeDifficulty = (difficulty?: any): string => {
+    if (typeof difficulty === 'number') {
+      switch (difficulty) {
+        case 1: return 'easy';
+        case 2: return 'medium';
+        case 3: return 'hard';
+        case 4: return 'expert';
+        default: return 'easy';
+      }
+    }
+    if (typeof difficulty === 'string') return difficulty.toLowerCase();
+    return 'easy';
+  };
+
+  const getDifficultyBadge = (difficulty?: any) => {
+    switch (normalizeDifficulty(difficulty)) {
       case 'easy':
         return 'bg-emerald-100 text-emerald-800 border-emerald-200';
       case 'medium':
         return 'bg-amber-100 text-amber-800 border-amber-200';
       case 'hard':
+      case 'expert':
         return 'bg-rose-100 text-rose-800 border-rose-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
-  const getDifficultyLabel = (difficulty: string) => {
-    switch (difficulty.toLowerCase()) {
+  const getDifficultyLabel = (difficulty?: any) => {
+    switch (normalizeDifficulty(difficulty)) {
       case 'easy':
         return 'Dễ';
       case 'medium':
         return 'Vừa';
       case 'hard':
         return 'Khó';
+      case 'expert':
+        return 'Nâng cao';
       default:
-        return difficulty;
+        return String(difficulty ?? 'Dễ');
     }
   };
 

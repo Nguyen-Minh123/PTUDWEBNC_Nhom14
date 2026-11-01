@@ -1,8 +1,11 @@
+using CulinaryBlog.Application.Features.Auth.Commands.ChangePassword;
+using CulinaryBlog.Application.Features.Auth.Commands.ForgotPassword;
 using CulinaryBlog.Application.Features.Auth.Commands.GoogleLogin;
 using CulinaryBlog.Application.Features.Auth.Commands.Login;
 using CulinaryBlog.Application.Features.Auth.Commands.Logout;
 using CulinaryBlog.Application.Features.Auth.Commands.RefreshTokens;
 using CulinaryBlog.Application.Features.Auth.Commands.Register;
+using CulinaryBlog.Application.Features.Auth.Commands.ResetPassword;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -121,6 +124,63 @@ public static class AuthEndpoints
         .WithSummary("Đăng xuất (Revoke Refresh Token)")
         .RequireAuthorization();
 
+        // 6. Quên mật khẩu - Sinh mã/liên kết đặt lại mật khẩu (FR-BKE-014)
+        group.MapPost("/forgot-password", async (
+            [FromServices] ISender sender,
+            [FromBody] ForgotPasswordRequest request,
+            CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Email))
+            {
+                return Results.BadRequest("Email không được để trống.");
+            }
+
+            var result = await sender.Send(new ForgotPasswordCommand(request.Email), ct);
+            return Results.Ok(result);
+        })
+        .WithName("ForgotPassword")
+        .WithSummary("Yêu cầu mã đặt lại mật khẩu khi quên (Forgot Password)")
+        .RequireRateLimiting("login-policy")
+        .AllowAnonymous();
+
+        // 7. Đặt lại mật khẩu mới thông qua Token khôi phục (FR-BKE-014)
+        group.MapPost("/reset-password", async (
+            [FromServices] ISender sender,
+            [FromBody] ResetPasswordRequest request,
+            CancellationToken ct) =>
+        {
+            var command = new ResetPasswordCommand(
+                request.Email,
+                request.Token,
+                request.NewPassword,
+                request.ConfirmPassword);
+
+            var result = await sender.Send(command, ct);
+            return Results.Ok(result);
+        })
+        .WithName("ResetPassword")
+        .WithSummary("Đặt lại mật khẩu mới với mã token khôi phục (Reset Password)")
+        .RequireRateLimiting("login-policy")
+        .AllowAnonymous();
+
+        // 8. Đổi mật khẩu cho người dùng đã đăng nhập (FR-BKE-014)
+        group.MapPost("/change-password", async (
+            [FromServices] ISender sender,
+            [FromBody] ChangePasswordRequest request,
+            CancellationToken ct) =>
+        {
+            var command = new ChangePasswordCommand(
+                request.CurrentPassword,
+                request.NewPassword,
+                request.ConfirmPassword);
+
+            var result = await sender.Send(command, ct);
+            return Results.Ok(result);
+        })
+        .WithName("ChangePassword")
+        .WithSummary("Đổi mật khẩu người dùng đã xác thực (Change Password)")
+        .RequireAuthorization();
+
         return app;
     }
 }
@@ -155,3 +215,22 @@ public class RefreshTokenRequest
     public string RefreshToken { get; set; } = string.Empty;
 }
 
+public class ForgotPasswordRequest
+{
+    public string Email { get; set; } = string.Empty;
+}
+
+public class ResetPasswordRequest
+{
+    public string Email { get; set; } = string.Empty;
+    public string Token { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
+    public string ConfirmPassword { get; set; } = string.Empty;
+}
+
+public class ChangePasswordRequest
+{
+    public string CurrentPassword { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
+    public string ConfirmPassword { get; set; } = string.Empty;
+}

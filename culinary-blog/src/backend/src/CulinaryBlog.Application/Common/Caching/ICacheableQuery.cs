@@ -20,11 +20,13 @@ public interface ICacheableQuery
     /// Thời gian sống của cache cho query này.
     /// Ví dụ: 30 phút cho category list, 15 phút cho recipe list, 1 phút cho search.
     /// </summary>
-    TimeSpan CacheDuration { get; }
+    // Cho phép query không cần tự set TTL cứng.
+    TimeSpan? CacheDuration { get; }
 
     /// <summary>
     /// Cho phép bỏ qua cache trong trường hợp đặc biệt.
     /// Ví dụ: debug, admin refresh, hoặc cần ép đọc từ database.
     /// </summary>
+    // Hỗ trợ bypass cache khi cần cưỡng bức đọc DB.
     bool BypassCache { get; }
 }

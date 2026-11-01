@@ -26,8 +26,10 @@ public static class CacheKeys
 
     /// <summary>
     /// Key cache cho danh sách danh mục.
-    /// Thường dùng cho trang public categories list.
+    /// Dùng cho API Get All Categories, thường đi kèm thống kê số bài viết.
     /// </summary>
+
+    // Key chuẩn cho chức năng tối ưu API danh mục.
     public static string CategoriesAll() => $"{CategoriesPrefix}all";
 
     /// <summary>

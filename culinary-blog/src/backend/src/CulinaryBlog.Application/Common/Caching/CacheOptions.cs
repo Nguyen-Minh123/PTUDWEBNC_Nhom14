@@ -17,6 +17,13 @@ public sealed class CacheOptions
     public TimeSpan DefaultTtl { get; set; } = TimeSpan.FromMinutes(15);
 
     /// <summary>
+    /// TTL cho cache danh sách danh mục.
+    /// Dùng cho API hiển thị navigation hoặc danh sách category.
+    /// </summary>
+    // TTL riêng cho nhóm category summary/list.
+    public TimeSpan CategoriesCache { get; set; } = TimeSpan.FromMinutes(10);
+
+    /// <summary>
     /// TTL cho danh sách category.
     /// SRS có nhiều ví dụ TTL cho category list, vì vậy giá trị này nên để cấu hình.
     /// </summary>
