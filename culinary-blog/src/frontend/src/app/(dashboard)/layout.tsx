@@ -12,8 +12,10 @@ import {
   X,
   ChefHat,
   Bookmark,
+  History,
   Lock,
   LogOut,
+  type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -26,7 +28,14 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-const navItems = [
+type DashboardNavItem = {
+  title: string;
+  href: string;
+  icon: LucideIcon;
+  adminOnly?: boolean;
+};
+
+const navItems: DashboardNavItem[] = [
   {
     title: 'Tổng Quan & Bài Viết',
     href: '/dashboard',
@@ -52,12 +61,19 @@ const navItems = [
     href: '/dashboard?tab=security',
     icon: Lock,
   },
+  {
+    title: 'Nhật ký hệ thống',
+    href: '/dashboard/logs',
+    icon: History,
+    adminOnly: true,
+  },
 ];
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const authStoreUser = useAuthStore((state) => state.user);
+  const isAdmin = authStoreUser?.roles.includes('Admin') === true;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const currentUser = session?.user || (authStoreUser ? {
@@ -151,7 +167,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
         {/* Nav Links */}
         <nav className="flex-1 px-3 py-2 space-y-1">
-          {navItems.map((item) => {
+          {navItems.filter((item) => !item.adminOnly || isAdmin).map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
             return (
