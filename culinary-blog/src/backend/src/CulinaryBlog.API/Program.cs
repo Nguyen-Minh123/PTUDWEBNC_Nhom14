@@ -143,12 +143,15 @@ builder.Services.AddHealthChecks()
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Missing connection string: DefaultConnection");
 
-builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
+builder.Services.AddDbContext<CulinaryBlogDbContext>((serviceProvider, options) =>
 {
     options.UseNpgsql(connectionString, npgsql =>
     {
         npgsql.MigrationsAssembly(typeof(CulinaryBlogDbContext).Assembly.FullName);
     });
+    options.AddInterceptors(
+        serviceProvider.GetRequiredService<SoftDeleteInterceptor>(),
+        serviceProvider.GetRequiredService<AuditLogInterceptor>());
 
     if (builder.Environment.IsDevelopment())
     {
@@ -161,6 +164,7 @@ builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
 
 builder.Services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<CulinaryBlogDbContext>());
 builder.Services.AddScoped<SoftDeleteInterceptor>();
+builder.Services.AddScoped<AuditLogInterceptor>();
 
 // 5. OpenAPI 3.1 & Scalar UI
 builder.Services.AddOpenApi(options =>

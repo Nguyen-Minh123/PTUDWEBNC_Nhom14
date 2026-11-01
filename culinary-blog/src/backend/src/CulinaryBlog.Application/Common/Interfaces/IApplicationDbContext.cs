@@ -40,6 +40,7 @@ public interface IApplicationDbContext
     DbSet<RecipeFavorite> RecipeFavorites { get; }
     DbSet<RecipeCollection> RecipeCollections { get; }
     DbSet<RecipeCollectionItem> RecipeCollectionItems { get; }
+    DbSet<AuditLog> AuditLogs { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
     DbSet<ApplicationUser> Users { get; }
 

@@ -21,6 +21,7 @@ public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, Identity
     public DbSet<RecipeFavorite> RecipeFavorites => Set<RecipeFavorite>();
     public DbSet<RecipeCollection> RecipeCollections => Set<RecipeCollection>();
     public DbSet<RecipeCollectionItem> RecipeCollectionItems => Set<RecipeCollectionItem>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -42,6 +43,42 @@ public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, Identity
         ConfigureRecipeFavorite(modelBuilder);
         ConfigureRecipeCollection(modelBuilder);
         ConfigureRecipeCollectionItem(modelBuilder);
+        ConfigureAuditLog(modelBuilder);
+    }
+
+    private static void ConfigureAuditLog(ModelBuilder modelBuilder)
+    {
+        var entity = modelBuilder.Entity<AuditLog>();
+
+        entity.ToTable("AuditLogs");
+        entity.HasKey(x => x.Id);
+
+        entity.Property(x => x.Id)
+            .ValueGeneratedNever();
+
+        entity.Property(x => x.ActorId)
+            .HasMaxLength(450);
+
+        entity.Property(x => x.Action)
+            .HasMaxLength(32)
+            .IsRequired();
+
+        entity.Property(x => x.EntityName)
+            .HasMaxLength(200)
+            .IsRequired();
+
+        entity.Property(x => x.EntityId)
+            .HasMaxLength(450);
+
+        entity.Property(x => x.OldValues)
+            .HasColumnType("jsonb");
+
+        entity.Property(x => x.NewValues)
+            .HasColumnType("jsonb");
+
+        entity.HasIndex(x => x.OccurredAtUtc);
+        entity.HasIndex(x => x.ActorId);
+        entity.HasIndex(x => new { x.EntityName, x.EntityId });
     }
 
     private static void ConfigureIdentityTables(ModelBuilder modelBuilder)
@@ -520,5 +557,4 @@ public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, Identity
         entity.HasQueryFilter(x => !x.Recipe.IsDeleted);
     }
 }
-
 

@@ -3,6 +3,7 @@ using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Infrastructure.BackgroundJobs;
 using CulinaryBlog.Infrastructure.Caching;
 using CulinaryBlog.Infrastructure.Persistence;
+using CulinaryBlog.Infrastructure.Persistence.Interceptors;
 using CulinaryBlog.Infrastructure.Services;
 using CulinaryBlog.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
@@ -33,9 +34,11 @@ public static class DependencyInjection
                 "Connection string 'DefaultConnection' was not found.");
         }
 
-        services.AddDbContext<CulinaryBlogDbContext>(options =>
+        services.AddDbContext<CulinaryBlogDbContext>((serviceProvider, options) =>
         {
             options.UseNpgsql(connectionString);
+            options.AddInterceptors(
+                serviceProvider.GetRequiredService<AuditLogInterceptor>());
         });
 
         // -------------------------------------------------
@@ -49,6 +52,7 @@ public static class DependencyInjection
         // -------------------------------------------------
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<AuditLogInterceptor>();
 
         // -------------------------------------------------
         // 4. Đăng ký File Storage
