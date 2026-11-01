@@ -6,4 +6,5 @@ export * from './step.dto';
 export * from './image.dto';
 export * from './paged-result.dto';
 export * from './auth.dto';
+export * from './user.dto';
 export * from './api.types';
