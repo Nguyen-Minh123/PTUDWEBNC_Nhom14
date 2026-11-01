@@ -133,9 +133,13 @@ public static class UserRoleHelper
         };
 
         var existingRoles = await dbContext.Roles.ToListAsync(cancellationToken);
-        var roleByName = existingRoles
-            .Where(r => r.Name != null)
-            .ToDictionary(r => r.Name!, r => r, StringComparer.OrdinalIgnoreCase);
+        var allKnownRoles = existingRoles
+            .Concat(dbContext.Roles.Local)
+            .Where(r => !string.IsNullOrWhiteSpace(r.Name));
+
+        var roleByName = allKnownRoles
+            .GroupBy(r => r.Name!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
         foreach (var roleName in SupportedRoles)
         {
@@ -157,9 +161,14 @@ public static class UserRoleHelper
             .Where(ur => ur.UserId == userId)
             .ToListAsync(cancellationToken);
 
-        if (currentUserRoles.Count > 0)
+        var localUserRoles = dbContext.UserRoles.Local
+            .Where(ur => ur.UserId == userId)
+            .ToList();
+
+        var rolesToRemove = currentUserRoles.Concat(localUserRoles).Distinct().ToList();
+        if (rolesToRemove.Count > 0)
         {
-            dbContext.UserRoles.RemoveRange(currentUserRoles);
+            dbContext.UserRoles.RemoveRange(rolesToRemove);
         }
 
         foreach (var roleName in targetRoleNames)

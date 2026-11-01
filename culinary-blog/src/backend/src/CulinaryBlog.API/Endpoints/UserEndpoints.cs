@@ -1,6 +1,8 @@
 using CulinaryBlog.Application.Common.Models;
 using CulinaryBlog.Application.DTOs;
 using CulinaryBlog.Application.Features.Users.Commands.UpdateUserProfile;
+using CulinaryBlog.Application.Features.Users.Commands.UpdateUserRole;
+using CulinaryBlog.Application.Features.Users.Commands.UpdateUserStatus;
 using CulinaryBlog.Application.Features.Users.Queries.GetAuthors;
 using CulinaryBlog.Application.Features.Users.Queries.GetCurrentUserProfile;
 using CulinaryBlog.Application.Features.Users.Queries.GetUserById;
@@ -134,6 +136,50 @@ public static class UserEndpoints
         .ProducesProblem(StatusCodes.Status404NotFound)
         .AllowAnonymous();
 
+        // 6. Thay đổi vai trò (RBAC: Admin, Author, User) của người dùng (FR-BKE-017)
+        group.MapPut("/{id}/role", async (
+            string id,
+            [FromBody] UpdateUserRoleRequest request,
+            [FromServices] ISender sender,
+            CancellationToken ct = default) =>
+        {
+            var result = await sender.Send(new UpdateUserRoleCommand(id, request.Role), ct);
+            return Results.Ok(result);
+        })
+        .WithName("UpdateUserRole")
+        .WithSummary("Thay đổi quyền hạn (Admin, Author, User) của một người dùng (Admin Only - FR-BKE-017)")
+        .Produces<UserListItemDto>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .RequireAuthorization("AdminOnly");
+
+        // 7. Kích hoạt hoặc khóa tài khoản người dùng & thu hồi phiên đăng nhập (FR-BKE-017)
+        group.MapPut("/{id}/status", async (
+            string id,
+            [FromBody] UpdateUserStatusRequest request,
+            [FromServices] ISender sender,
+            CancellationToken ct = default) =>
+        {
+            var result = await sender.Send(
+                new UpdateUserStatusCommand(
+                    id,
+                    request.IsActive,
+                    request.LockoutDays,
+                    request.Reason),
+                ct);
+            return Results.Ok(result);
+        })
+        .WithName("UpdateUserStatus")
+        .WithSummary("Kích hoạt hoặc khóa tài khoản người dùng và thu hồi toàn bộ phiên đăng nhập khi khóa (Admin Only - FR-BKE-017)")
+        .Produces<UserListItemDto>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .RequireAuthorization("AdminOnly");
+
         return app;
     }
 }
@@ -143,4 +189,16 @@ public class UpdateUserProfileRequest
     public string DisplayName { get; set; } = string.Empty;
     public string? Bio { get; set; }
     public string? AvatarUrl { get; set; }
+}
+
+public class UpdateUserRoleRequest
+{
+    public string Role { get; set; } = string.Empty;
+}
+
+public class UpdateUserStatusRequest
+{
+    public bool IsActive { get; set; }
+    public int? LockoutDays { get; set; }
+    public string? Reason { get; set; }
 }
