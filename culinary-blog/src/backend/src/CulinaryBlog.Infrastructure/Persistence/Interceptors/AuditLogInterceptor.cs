@@ -64,7 +64,7 @@ public sealed class AuditLogInterceptor(ICurrentUserService currentUserService) 
             var newValues = entry.State == EntityState.Deleted
                 ? new Dictionary<string, object?>()
                 : GetValues(entry, useOriginalValues: false);
-            var action = GetAction(entry, oldValues, newValues);
+            var action = GetAction(entry);
 
             context.Set<AuditLog>().Add(new AuditLog
             {
@@ -118,10 +118,7 @@ public sealed class AuditLogInterceptor(ICurrentUserService currentUserService) 
         || propertyName.Contains("Token", StringComparison.OrdinalIgnoreCase)
         || propertyName.Contains("Secret", StringComparison.OrdinalIgnoreCase);
 
-    private static string GetAction(
-        EntityEntry entry,
-        IReadOnlyDictionary<string, object?> oldValues,
-        IReadOnlyDictionary<string, object?> newValues)
+    private static string GetAction(EntityEntry entry)
     {
         if (entry.State == EntityState.Added)
         {
@@ -133,10 +130,10 @@ public sealed class AuditLogInterceptor(ICurrentUserService currentUserService) 
             return "Deleted";
         }
 
-        if (oldValues.TryGetValue(nameof(BaseEntity.IsDeleted), out var wasDeleted)
-            && newValues.TryGetValue(nameof(BaseEntity.IsDeleted), out var isDeleted)
-            && wasDeleted is false
-            && isDeleted is true)
+        var isDeletedProperty = entry.Metadata.FindProperty(nameof(BaseEntity.IsDeleted));
+        if (isDeletedProperty is not null
+            && entry.Property(isDeletedProperty.Name).OriginalValue is false
+            && entry.Property(isDeletedProperty.Name).CurrentValue is true)
         {
             return "SoftDeleted";
         }

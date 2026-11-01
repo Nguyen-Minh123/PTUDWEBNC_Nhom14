@@ -105,10 +105,18 @@ public sealed class AuditLogDatabaseIntegrationTests
             dbContext.Categories.Remove(category);
             await dbContext.SaveChangesAsync();
 
-            var softDeletedLog = await FindCategoryLogAsync(
-                dbContext,
-                category.Id,
-                "SoftDeleted");
+            var categoryLogs = await dbContext.AuditLogs
+                .Where(log => log.EntityName == nameof(Category) && log.EntityId == category.Id.ToString())
+                .OrderBy(log => log.OccurredAtUtc)
+                .ToListAsync();
+            Assert.True(
+                await dbContext.Categories.IgnoreQueryFilters()
+                    .AnyAsync(entity => entity.Id == category.Id && entity.IsDeleted),
+                "The soft-delete interceptor must preserve the category and mark it deleted.");
+            Assert.Contains(
+                categoryLogs,
+                log => log.Action == "SoftDeleted");
+            var softDeletedLog = categoryLogs.Single(log => log.Action == "SoftDeleted");
 
             using (var oldValues = JsonDocument.Parse(softDeletedLog.OldValues!))
             using (var newValues = JsonDocument.Parse(softDeletedLog.NewValues!))
