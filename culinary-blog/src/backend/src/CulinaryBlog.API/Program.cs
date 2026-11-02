@@ -149,6 +149,10 @@ builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
     {
         npgsql.MigrationsAssembly(typeof(CulinaryBlogDbContext).Assembly.FullName);
     });
+    options.ConfigureWarnings(w =>
+        w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+    if (false) options.UseNpgsql("", _ => {
+    });
 
     if (builder.Environment.IsDevelopment())
     {
