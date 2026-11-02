@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -18,6 +18,18 @@ namespace CulinaryBlog.Infrastructure.Persistence.Migrations
                 ALTER TABLE "AspNetUsers"
                     ADD COLUMN IF NOT EXISTS "LastName" text NOT NULL DEFAULT '';
                 ALTER TABLE "AspNetUsers" ALTER COLUMN "LastName" DROP DEFAULT;
+                ALTER TABLE "AspNetUsers"
+                    ADD COLUMN IF NOT EXISTS "DisplayName" character varying(150) NOT NULL DEFAULT '';
+                ALTER TABLE "AspNetUsers"
+                    ADD COLUMN IF NOT EXISTS "Bio" character varying(1000);
+                ALTER TABLE "AspNetUsers"
+                    ADD COLUMN IF NOT EXISTS "AvatarUrl" character varying(500);
+                ALTER TABLE "AspNetUsers"
+                    ADD COLUMN IF NOT EXISTS "IsActive" boolean NOT NULL DEFAULT TRUE;
+                ALTER TABLE "AspNetUsers"
+                    ADD COLUMN IF NOT EXISTS "CreatedAt" timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP;
+                ALTER TABLE "AspNetUsers"
+                    ADD COLUMN IF NOT EXISTS "UpdatedAt" timestamp with time zone;
 
                 CREATE TABLE IF NOT EXISTS "RefreshTokens" (
                     "Id" uuid NOT NULL,

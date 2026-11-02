@@ -11,6 +11,7 @@ namespace CulinaryBlog.Infrastructure.Services;
 
 public class JwtService : IJwtService
 {
+    private const string DefaultSigningKey = "super-secret-key-that-is-very-long-for-hmac-sha256-1234567890";
     private readonly IConfiguration _configuration;
 
     public JwtService(IConfiguration configuration)
@@ -20,9 +21,9 @@ public class JwtService : IJwtService
 
     public string GenerateAccessToken(ApplicationUser user, IList<string> roles)
     {
-        var secretKey = _configuration["Jwt:Secret"]
-            ?? _configuration["Jwt:SigningKey"]
-            ?? "DayLaMotChuoiBiMatRatDaiDeDamBaoDoAnToanChoThuatToanHmacSha256TrongMoiTruongDev123456!";
+        var secretKey = _configuration["Jwt:SigningKey"]
+            ?? _configuration["Jwt:Secret"]
+            ?? DefaultSigningKey;
         var issuer = _configuration["Jwt:Issuer"] ?? "CulinaryBlog";
         var audience = _configuration["Jwt:Audience"] ?? "CulinaryBlogClient";
         var expiryInMinutes = int.TryParse(_configuration["Jwt:ExpiryInMinutes"], out var exp) ? exp : 60;
@@ -67,9 +68,9 @@ public class JwtService : IJwtService
 
     public ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
     {
-        var secretKey = _configuration["Jwt:Secret"]
-            ?? _configuration["Jwt:SigningKey"]
-            ?? "DayLaMotChuoiBiMatRatDaiDeDamBaoDoAnToanChoThuatToanHmacSha256TrongMoiTruongDev123456!";
+        var secretKey = _configuration["Jwt:SigningKey"]
+            ?? _configuration["Jwt:Secret"]
+            ?? DefaultSigningKey;
 
         var tokenValidationParameters = new TokenValidationParameters
         {

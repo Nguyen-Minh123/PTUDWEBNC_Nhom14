@@ -151,8 +151,6 @@ builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
     });
     options.ConfigureWarnings(w =>
         w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
-    if (false) options.UseNpgsql("", _ => {
-    });
 
     if (builder.Environment.IsDevelopment())
     {
@@ -221,6 +219,20 @@ if (app.Environment.IsDevelopment())
     await using var scope = app.Services.CreateAsyncScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<CulinaryBlogDbContext>();
     await dbContext.Database.MigrateAsync();
+    if (dbContext.Database.IsRelational())
+    {
+        await dbContext.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "FirstName" text NOT NULL DEFAULT '';
+            ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "LastName" text NOT NULL DEFAULT '';
+            ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "DisplayName" character varying(150) NOT NULL DEFAULT '';
+            ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "Bio" character varying(1000);
+            ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "AvatarUrl" character varying(500);
+            ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "IsActive" boolean NOT NULL DEFAULT TRUE;
+            ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "CreatedAt" timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP;
+            ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "UpdatedAt" timestamp with time zone;
+            """);
+    }
     await new CulinaryBlog.Infrastructure.Persistence.RecipeDataSeeder(dbContext).SeedAsync();
 }
 
