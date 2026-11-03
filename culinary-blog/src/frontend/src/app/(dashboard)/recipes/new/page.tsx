@@ -14,13 +14,13 @@ export default function CreateRecipePage() {
           </Link>
           <div className="mt-4">
             <span className="px-2.5 py-1 text-[11px] font-bold bg-amber-100 text-amber-800 rounded-full">
-              Lab 4 • FR-FTE-009 & FR-FTE-010
+              Lab 8 • FR-FTE-049
             </span>
             <h1 className="text-2xl sm:text-3xl font-black text-gray-900 mt-2 tracking-tight">
               Tạo Công Thức Nấu Ăn Mới
             </h1>
             <p className="mt-1 text-xs sm:text-sm text-gray-600">
-              Điền đầy đủ các bước bên dưới để tạo bản nháp hoặc xuất bản món ăn của bạn lên nền tảng Culinary Blog.
+              Điền đầy đủ thông tin, nguyên liệu, các bước và tải lên hình ảnh thực tế để tạo bản nháp hoặc xuất bản món ăn lên Culinary Blog.
             </p>
           </div>
         </div>

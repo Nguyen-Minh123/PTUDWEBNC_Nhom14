@@ -5,17 +5,13 @@
  * Chức năng:
  * - Hiển thị một thẻ công thức trong Dashboard.
  * - Hiển thị ảnh, trạng thái, tiêu đề, mô tả và thông tin tóm tắt.
- * - Cung cấp các nút thao tác Publish / Archive / Delete.
- *
- * Ghi chú:
- * - Component chỉ hiển thị giao diện.
- * - Không gọi API trực tiếp.
- * - Không quản lý state nghiệp vụ.
- * - Hành động được truyền từ ngoài vào qua props.
+ * - Cung cấp các nút thao tác chuyển đổi trạng thái: Publish / Archive / Delete / Edit.
+ * - Hỗ trợ liên kết trực tiếp tới trang chỉnh sửa (/recipes/[id]/edit) (FR-FTE-050 & FR-FTE-051).
  * ============================================================================
  */
 
-import React from 'react';
+import React, { useState } from 'react';
+import Link from 'next/link';
 import type { RecipeStatus, RecipeSummaryDto } from '@/types';
 
 /**
@@ -55,13 +51,11 @@ export interface RecipeCardProps {
 
 /**
  * Chuẩn hóa status về đúng kiểu RecipeStatus.
- * Dùng để tránh lỗi dữ liệu API trả về dạng string rộng hơn kiểu DTO.
  */
 function normalizeRecipeStatus(status: string): RecipeStatus {
     if (status === 'Published' || status === 'Draft' || status === 'Archived') {
         return status;
     }
-
     return 'Draft';
 }
 
@@ -78,15 +72,11 @@ function getStatusLabel(status: RecipeStatus): string {
  * Tạo class màu cho badge trạng thái.
  */
 function getStatusBadgeClass(status: RecipeStatus): string {
-    if (status === 'Published') return 'bg-emerald-500 text-white';
+    if (status === 'Published') return 'bg-emerald-600 text-white';
     if (status === 'Draft') return 'bg-amber-500 text-white';
-    return 'bg-gray-600 text-white';
+    return 'bg-stone-600 text-white';
 }
 
-/**
- * RecipeCard
- * Hiển thị một công thức trong dashboard dưới dạng card.
- */
 export default function RecipeCard({
     recipe,
     onPublish,
@@ -95,46 +85,27 @@ export default function RecipeCard({
     showActions = true,
     className = '',
 }: RecipeCardProps) {
-    /**
-     * Trạng thái đã chuẩn hóa để dùng an toàn trong UI.
-     */
     const status = normalizeRecipeStatus(recipe.status);
-
-    /**
-     * Tổng thời gian hiển thị.
-     * Ưu tiên totalTime, nếu không có thì cộng prepTime + cookTime.
-     */
     const totalTime = recipe.totalTime || recipe.prepTime + recipe.cookTime;
-
-    /**
-     * Ảnh đại diện công thức.
-     * Dùng ảnh mặc định nếu recipe chưa có coverImageUrl.
-     */
     const coverImage =
         recipe.coverImageUrl ||
         'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800';
 
-    /**
-     * Xử lý bấm nút Publish.
-     */
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
     const handlePublish = () => {
         if (!onPublish) return;
         void onPublish(recipe.id);
     };
 
-    /**
-     * Xử lý bấm nút Archive.
-     */
     const handleArchive = () => {
         if (!onArchive) return;
         void onArchive(recipe.id);
     };
 
-    /**
-     * Xử lý bấm nút Delete.
-     */
     const handleDelete = () => {
         if (!onDelete) return;
+        setShowDeleteConfirm(false);
         void onDelete(recipe.id);
     };
 
@@ -144,7 +115,7 @@ export default function RecipeCard({
                 'bg-white',
                 'rounded-2xl',
                 'border',
-                'border-gray-200',
+                'border-gray-200/80',
                 'overflow-hidden',
                 'shadow-xs',
                 'hover:shadow-md',
@@ -158,15 +129,15 @@ export default function RecipeCard({
             {/* Phần nội dung chính của card */}
             <div>
                 {/* Ảnh công thức */}
-                <div className="relative h-44 w-full bg-gray-100 overflow-hidden">
+                <Link href={`/recipes/${recipe.id}`} className="block relative h-44 w-full bg-gray-100 overflow-hidden group">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                         src={coverImage}
                         alt={recipe.title}
-                        className="w-full h-full object-cover transition-transform hover:scale-105 duration-300"
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300"
                     />
 
-                    {/* Badge trạng thái */}
+                    {/* Badge trạng thái (FR-FTE-051) */}
                     <div className="absolute top-3 right-3">
                         <span
                             className={`px-2.5 py-1 rounded-full text-[10px] font-bold shadow-xs ${getStatusBadgeClass(
@@ -176,7 +147,7 @@ export default function RecipeCard({
                             {getStatusLabel(status)}
                         </span>
                     </div>
-                </div>
+                </Link>
 
                 {/* Nội dung tóm tắt */}
                 <div className="p-4 sm:p-5">
@@ -190,9 +161,11 @@ export default function RecipeCard({
                     </div>
 
                     {/* Tiêu đề */}
-                    <h3 className="text-base font-bold text-gray-900 line-clamp-1 hover:text-amber-600 transition-colors">
-                        {recipe.title}
-                    </h3>
+                    <Link href={`/recipes/${recipe.id}`}>
+                        <h3 className="text-base font-bold text-gray-900 line-clamp-1 hover:text-amber-600 transition-colors">
+                            {recipe.title}
+                        </h3>
+                    </Link>
 
                     {/* Mô tả */}
                     <p className="mt-1 text-xs text-gray-500 line-clamp-2 leading-relaxed">
@@ -201,28 +174,37 @@ export default function RecipeCard({
                 </div>
             </div>
 
-            {/* Thanh hành động */}
+            {/* Thanh hành động và chuyển đổi trạng thái (FR-FTE-050 & FR-FTE-051) */}
             {showActions && (
-                <div className="p-4 bg-gray-50/70 border-t border-gray-100 flex items-center justify-between gap-2 text-xs">
+                <div className="p-4 bg-gray-50/70 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2 text-xs">
                     <div className="flex items-center gap-1.5">
-                        {/* Nút xuất bản chỉ hiện khi recipe còn ở Draft */}
-                        {status === 'Draft' && onPublish && (
+                        {/* Nút chỉnh sửa công thức (FR-FTE-050) */}
+                        <Link
+                            href={`/recipes/${recipe.id}/edit`}
+                            className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg font-semibold transition-all flex items-center gap-1"
+                            title="Chỉnh sửa chi tiết công thức kèm RowVersion"
+                        >
+                            ✏️ Sửa
+                        </Link>
+
+                        {/* Nút xuất bản khi còn ở Draft hoặc tái xuất bản khi ở Archived */}
+                        {(status === 'Draft' || status === 'Archived') && onPublish && (
                             <button
                                 type="button"
                                 onClick={handlePublish}
                                 className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition-all shadow-2xs"
-                                title="Xuất bản công thức này lên trang chủ"
+                                title="Xuất bản công thức này lên nền tảng"
                             >
-                                🚀 Xuất bản
+                                🚀 {status === 'Archived' ? 'Tái xuất bản' : 'Xuất bản'}
                             </button>
                         )}
 
-                        {/* Nút lưu trữ chỉ hiện khi recipe đã Published */}
+                        {/* Nút lưu trữ khi đã Published */}
                         {status === 'Published' && onArchive && (
                             <button
                                 type="button"
                                 onClick={handleArchive}
-                                className="px-2.5 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-all"
+                                className="px-2.5 py-1.5 bg-stone-200 hover:bg-stone-300 text-stone-700 rounded-lg font-medium transition-all"
                                 title="Chuyển công thức vào lưu trữ"
                             >
                                 📦 Lưu trữ
@@ -230,16 +212,37 @@ export default function RecipeCard({
                         )}
                     </div>
 
-                    {/* Nút xóa luôn hiển thị nếu có callback */}
+                    {/* Nút xóa có xác nhận */}
                     {onDelete && (
-                        <button
-                            type="button"
-                            onClick={handleDelete}
-                            className="px-2 py-1.5 text-rose-600 hover:bg-rose-50 rounded-lg font-semibold transition-all"
-                            title="Xóa công thức"
-                        >
-                            🗑️ Xóa
-                        </button>
+                        <div>
+                            {showDeleteConfirm ? (
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        type="button"
+                                        onClick={handleDelete}
+                                        className="px-2 py-1 bg-red-600 text-white rounded text-[11px] font-bold hover:bg-red-700"
+                                    >
+                                        Xóa ngay
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowDeleteConfirm(false)}
+                                        className="px-1.5 py-1 text-gray-500 text-[11px] hover:underline"
+                                    >
+                                        Hủy
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowDeleteConfirm(true)}
+                                    className="px-2 py-1.5 text-rose-600 hover:bg-rose-50 rounded-lg font-semibold transition-all"
+                                    title="Xóa mềm công thức"
+                                >
+                                    🗑️ Xóa
+                                </button>
+                            )}
+                        </div>
                     )}
                 </div>
             )}
