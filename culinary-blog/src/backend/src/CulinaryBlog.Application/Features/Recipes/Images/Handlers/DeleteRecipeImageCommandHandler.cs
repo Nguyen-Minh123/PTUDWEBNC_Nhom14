@@ -8,7 +8,13 @@ namespace CulinaryBlog.Application.Features.Recipes.Images.Handlers;
 
 /// <summary>
 /// Xử lý xóa ảnh khỏi recipe.
-/// Sau khi xóa, nếu ảnh bị xóa là ảnh chính thì ảnh đầu tiên còn lại sẽ được đặt làm primary.
+/// Trình tự:
+/// 1) Kiểm tra recipe tồn tại.
+/// 2) Kiểm tra quyền sở hữu.
+/// 3) Tìm ảnh cần xóa.
+/// 4) Xóa metadata ảnh khỏi database.
+/// 5) Nếu ảnh bị xóa là ảnh chính, gán ảnh còn lại đầu tiên làm primary.
+/// 6) Xóa file vật lý trên MinIO.
 /// </summary>
 public sealed class DeleteRecipeImageCommandHandler
     : IRequestHandler<DeleteRecipeImageCommand, Unit>
@@ -31,47 +37,53 @@ public sealed class DeleteRecipeImageCommandHandler
         DeleteRecipeImageCommand request,
         CancellationToken cancellationToken)
     {
+        // Load recipe kèm ảnh để kiểm tra quyền và xử lý ảnh chính sau khi xóa.
         var recipe = await _db.Recipes
             .Include(x => x.Images)
             .FirstOrDefaultAsync(x => x.Id == request.RecipeId, cancellationToken);
 
         if (recipe is null)
+        {
             throw new KeyNotFoundException("Recipe not found.");
+        }
 
         if (!CurrentUserAuthorization.CanManageRecipe(_currentUser, recipe.AuthorId))
+        {
             throw new UnauthorizedAccessException("You do not have permission to manage this recipe.");
+        }
 
-        var image = await _db.RecipeImages
-            .FirstOrDefaultAsync(
-                x => x.Id == request.ImageId && x.RecipeId == request.RecipeId,
-                cancellationToken);
+        // Chỉ tìm trong collection của recipe để đảm bảo ảnh thuộc đúng aggregate.
+        var image = recipe.Images.FirstOrDefault(x => x.Id == request.ImageId);
 
         if (image is null)
+        {
             throw new KeyNotFoundException("Image not found.");
+        }
 
         var wasPrimary = image.IsPrimary;
 
+        // Chụp lại danh sách ảnh còn lại trước khi xóa để có thể reassign primary nếu cần.
+        var remainingImages = recipe.Images
+            .Where(x => x.Id != image.Id)
+            .OrderBy(x => x.OrderIndex)
+            .ToList();
+
+        // Xóa entity khỏi DbContext.
         _db.RecipeImages.Remove(image);
         await _db.SaveChangesAsync(cancellationToken);
 
-        // Sau khi xóa, nếu ảnh bị xóa là ảnh chính thì chọn ảnh đầu tiên còn lại làm ảnh chính.
-        if (wasPrimary)
+        // Nếu ảnh bị xóa là ảnh chính, chọn ảnh đầu tiên còn lại làm ảnh chính mới.
+        if (wasPrimary && remainingImages.Count > 0)
         {
-            var remainingImages = await _db.RecipeImages
-                .Where(x => x.RecipeId == request.RecipeId)
-                .OrderBy(x => x.OrderIndex)
-                .ToListAsync(cancellationToken);
+            var newPrimary = remainingImages[0];
 
-            if (remainingImages.Count > 0)
-            {
-                remainingImages[0].MarkAsPrimary();
-                await _db.SaveChangesAsync(cancellationToken);
-            }
+            // Dùng aggregate rule để đảm bảo chỉ một ảnh chính.
+            recipe.SetPrimaryImage(newPrimary);
+            await _db.SaveChangesAsync(cancellationToken);
         }
 
         // Xóa file vật lý trên MinIO.
-        // Nếu project của bạn đã có Hangfire wrapper/job queue,
-        // hãy thay khối gọi trực tiếp này bằng enqueue background job.
+        // Nếu hệ thống đã có Hangfire/background jobs, có thể chuyển đoạn này sang job để tăng độ ổn định.
         await DeleteFileIfNotEmptyAsync(image.OriginalUrl, cancellationToken);
         await DeleteFileIfNotEmptyAsync(image.MediumUrl, cancellationToken);
         await DeleteFileIfNotEmptyAsync(image.ThumbnailUrl, cancellationToken);
@@ -79,17 +91,18 @@ public sealed class DeleteRecipeImageCommandHandler
         return Unit.Value;
     }
 
-    // private bool CanManageRecipe(string authorId)
-    // {
-    //     return string.Equals(_currentUser.UserId, authorId, StringComparison.Ordinal);
-    // }
-
+    /// <summary>
+    /// Xóa file nếu URL hợp lệ.
+    /// Hàm này được tách riêng để xử lý từng phiên bản ảnh (original / medium / thumbnail).
+    /// </summary>
     private async Task DeleteFileIfNotEmptyAsync(string? fileUrl, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(fileUrl))
+        {
             return;
+        }
 
-        // DeleteAsync trong SRS là idempotent: file không tồn tại thì không ném lỗi.
+        // DeleteAsync nên idempotent: file không còn tồn tại thì không làm hỏng luồng chính.
         await _fileStorageService.DeleteAsync(fileUrl, cancellationToken);
     }
 }

@@ -71,7 +71,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddProblemDetails();
 
 // Đăng ký OpenAPI generator cho Minimal APIs. 
-// builder.Services.AddOpenApi();
+builder.Services.AddOpenApi();
 
 // Cho phép gọi API từ frontend Next.js hoặc các client khác.
 builder.Services.AddCors(options =>
@@ -154,8 +154,6 @@ builder.Services.AddDbContext<CulinaryBlogDbContext>((sp, options) =>
 
 builder.Services.AddScoped<SoftDeleteInterceptor>();
 
-builder.Services.AddOpenApi();
-
 // HttpContext / Current user
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
@@ -205,16 +203,22 @@ app.UseCors("DefaultCors");
 
 // OpenAPI / Scalar
 app.MapOpenApi();
+
 // Mở Scalar UI tại /scalar/v1.
 app.MapScalarApiReference();
+
 // Thực hiện API Quản lý Nguyên liệu
 app.MapRecipeIngredientsEndpoints();
+
 // Thực hiện API Quản lý Bước thực hiện
 app.MapRecipeStepsEndpoints();
+
 // Thực hiện API Upload và Quản lý Hình ảnh
 app.MapRecipeImagesEndpoints();
+
 // Thực hiện API Category (Danh mục kèm thống kê số bài viết)
 app.MapCategoriesEndpoints();
+
 
 // ======================================================
 // ÁP DỤNG CORS THEO MÔI TRƯỜNG
