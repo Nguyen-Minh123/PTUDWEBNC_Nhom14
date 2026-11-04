@@ -130,7 +130,24 @@ export function parseApiError(error: unknown): ParsedApiError {
     };
   }
 
-  // 2. Trường hợp Error chuẩn của JavaScript
+  // 2. Trường hợp object RFC 7807 ProblemDetails được throw trực tiếp từ fetch()
+  if (isProblemDetails(error)) {
+    const pd = error as ProblemDetails & { message?: string };
+    const status = pd.status || 400;
+    const msg = pd.detail || pd.message || pd.title || 'Yêu cầu không hợp lệ.';
+    return {
+      statusCode: status,
+      title: pd.title || 'HTTP Error ' + status,
+      detail: pd.detail || msg,
+      message: msg,
+      errors: pd.errors as Record<string, string[]> | undefined,
+      isNetworkError: false,
+      isRateLimited: status === 429,
+      raw: error,
+    };
+  }
+
+  // 3. Trường hợp Error chuẩn của JavaScript
   if (error instanceof Error) {
     return {
       statusCode: 500,
