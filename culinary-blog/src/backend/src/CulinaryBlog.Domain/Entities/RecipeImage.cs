@@ -5,19 +5,16 @@ namespace CulinaryBlog.Domain.Entities;
 
 /// <summary>
 /// Ảnh minh họa của một Recipe.
-/// Mỗi ảnh thuộc về một Recipe và có thể được đánh dấu là ảnh chính.
+/// Lớp này chỉ lưu metadata, còn file vật lý nằm trên MinIO / Local Storage.
 /// </summary>
 public class RecipeImage : BaseEntity
 {
-    /// <summary>
-    /// Constructor rỗng cho EF Core.
-    /// </summary>
     private RecipeImage()
     {
     }
 
     /// <summary>
-    /// Tạo một ảnh mới cho recipe.
+    /// Constructor rút gọn tương thích ngược khi tạo ảnh từ URL có sẵn.
     /// </summary>
     public RecipeImage(
         Guid recipeId,
@@ -27,6 +24,42 @@ public class RecipeImage : BaseEntity
         bool isPrimary = false,
         string? mediumUrl = null,
         string? thumbnailUrl = null)
+        : this(
+            recipeId: recipeId,
+            objectKey: originalUrl,
+            originalUrl: originalUrl,
+            contentType: "image/jpeg",
+            fileSize: 1,
+            checksumSha256: null,
+            altText: altText,
+            orderIndex: orderIndex,
+            isPrimary: isPrimary,
+            mediumUrl: mediumUrl,
+            thumbnailUrl: thumbnailUrl,
+            width: null,
+            height: null,
+            storageProvider: "MinIO")
+    {
+    }
+
+    /// <summary>
+    /// Tạo mới metadata cho một ảnh recipe.
+    /// </summary>
+    public RecipeImage(
+        Guid recipeId,
+        string objectKey,
+        string originalUrl,
+        string contentType,
+        long fileSize,
+        string? checksumSha256 = null,
+        string? altText = null,
+        int orderIndex = 0,
+        bool isPrimary = false,
+        string? mediumUrl = null,
+        string? thumbnailUrl = null,
+        int? width = null,
+        int? height = null,
+        string storageProvider = "MinIO")
     {
         if (recipeId == Guid.Empty)
         {
@@ -34,64 +67,80 @@ public class RecipeImage : BaseEntity
         }
 
         RecipeId = recipeId;
+        ObjectKey = NormalizeRequiredText(objectKey, 500, nameof(objectKey));
         OriginalUrl = NormalizeRequiredText(originalUrl, 500, nameof(originalUrl));
+        ContentType = NormalizeRequiredText(contentType, 100, nameof(contentType));
+        StorageProvider = NormalizeRequiredText(storageProvider, 50, nameof(storageProvider));
+
+        if (fileSize <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(fileSize), "FileSize must be greater than 0.");
+        }
+
+        if (orderIndex < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(orderIndex), "OrderIndex cannot be negative.");
+        }
+
+        if (width is < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(width), "Width cannot be negative.");
+        }
+
+        if (height is < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(height), "Height cannot be negative.");
+        }
+
+        FileSize = fileSize;
+        ChecksumSha256 = NormalizeOptionalText(checksumSha256, 64);
         AltText = NormalizeOptionalText(altText, 200);
         OrderIndex = orderIndex;
         IsPrimary = isPrimary;
         MediumUrl = NormalizeOptionalText(mediumUrl, 500);
         ThumbnailUrl = NormalizeOptionalText(thumbnailUrl, 500);
+        Width = width;
+        Height = height;
     }
 
-    /// <summary>
-    /// FK đến Recipe.
-    /// </summary>
     public Guid RecipeId { get; private set; }
 
-    /// <summary>
-    /// Navigation property đến Recipe.
-    /// </summary>
     public Recipe Recipe { get; private set; } = null!;
 
-    /// <summary>
-    /// URL ảnh gốc trên MinIO.
-    /// </summary>
+    [MaxLength(500)]
+    public string ObjectKey { get; private set; } = string.Empty;
+
     [MaxLength(500)]
     public string OriginalUrl { get; private set; } = string.Empty;
 
-    /// <summary>
-    /// URL ảnh medium (800x600).
-    /// Nullable nếu job sinh ảnh chưa chạy xong.
-    /// </summary>
+    [MaxLength(100)]
+    public string ContentType { get; private set; } = string.Empty;
+
+    public long FileSize { get; private set; }
+
+    [MaxLength(64)]
+    public string? ChecksumSha256 { get; private set; }
+
     [MaxLength(500)]
     public string? MediumUrl { get; private set; }
 
-    /// <summary>
-    /// URL ảnh thumbnail (300x300).
-    /// Nullable nếu job sinh ảnh chưa chạy xong.
-    /// </summary>
     [MaxLength(500)]
     public string? ThumbnailUrl { get; private set; }
 
-    /// <summary>
-    /// Alt text cho accessibility.
-    /// </summary>
     [MaxLength(200)]
     public string? AltText { get; private set; }
 
-    /// <summary>
-    /// Ảnh chính của recipe.
-    /// Chỉ nên có tối đa một ảnh chính cho mỗi recipe.
-    /// </summary>
     public bool IsPrimary { get; private set; }
 
-    /// <summary>
-    /// Thứ tự hiển thị trong gallery.
-    /// </summary>
     public int OrderIndex { get; private set; }
 
-    /// <summary>
-    /// Cập nhật thông tin ảnh.
-    /// </summary>
+    public int? Width { get; private set; }
+
+    public int? Height { get; private set; }
+
+    [MaxLength(50)]
+    public string StorageProvider { get; private set; } = "MinIO";
+
     public void UpdateDetails(
         string originalUrl,
         string? altText = null,
@@ -101,6 +150,10 @@ public class RecipeImage : BaseEntity
         string? thumbnailUrl = null)
     {
         OriginalUrl = NormalizeRequiredText(originalUrl, 500, nameof(originalUrl));
+        if (string.IsNullOrWhiteSpace(ObjectKey))
+        {
+            ObjectKey = OriginalUrl;
+        }
         AltText = NormalizeOptionalText(altText, 200);
         OrderIndex = orderIndex;
         IsPrimary = isPrimary;
@@ -108,51 +161,82 @@ public class RecipeImage : BaseEntity
         ThumbnailUrl = NormalizeOptionalText(thumbnailUrl, 500);
     }
 
-    /// <summary>
-    /// Đặt ảnh này làm ảnh chính.
-    /// </summary>
-    public void MarkAsPrimary()
+    public void UpdateDetails(
+        string objectKey,
+        string originalUrl,
+        string contentType,
+        long fileSize,
+        string? checksumSha256 = null,
+        string? altText = null,
+        int orderIndex = 0,
+        bool isPrimary = false,
+        string? mediumUrl = null,
+        string? thumbnailUrl = null,
+        int? width = null,
+        int? height = null,
+        string storageProvider = "MinIO")
     {
-        IsPrimary = true;
+        if (fileSize <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(fileSize), "FileSize must be greater than 0.");
+        }
+
+        if (orderIndex < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(orderIndex), "OrderIndex cannot be negative.");
+        }
+
+        if (width is < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(width), "Width cannot be negative.");
+        }
+
+        if (height is < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(height), "Height cannot be negative.");
+        }
+
+        ObjectKey = NormalizeRequiredText(objectKey, 500, nameof(objectKey));
+        OriginalUrl = NormalizeRequiredText(originalUrl, 500, nameof(originalUrl));
+        ContentType = NormalizeRequiredText(contentType, 100, nameof(contentType));
+        FileSize = fileSize;
+        ChecksumSha256 = NormalizeOptionalText(checksumSha256, 64);
+        AltText = NormalizeOptionalText(altText, 200);
+        OrderIndex = orderIndex;
+        IsPrimary = isPrimary;
+        MediumUrl = NormalizeOptionalText(mediumUrl, 500);
+        ThumbnailUrl = NormalizeOptionalText(thumbnailUrl, 500);
+        Width = width;
+        Height = height;
+        StorageProvider = NormalizeRequiredText(storageProvider, 50, nameof(storageProvider));
     }
 
-    /// <summary>
-    /// Bỏ trạng thái ảnh chính.
-    /// </summary>
-    public void UnmarkAsPrimary()
-    {
-        IsPrimary = false;
-    }
+    public void MarkAsPrimary() => IsPrimary = true;
 
-    /// <summary>
-    /// Cập nhật URL ảnh medium.
-    /// </summary>
+    public void UnmarkAsPrimary() => IsPrimary = false;
+
     public void SetMediumUrl(string? mediumUrl)
     {
         MediumUrl = NormalizeOptionalText(mediumUrl, 500);
     }
 
-    /// <summary>
-    /// Cập nhật URL thumbnail.
-    /// </summary>
     public void SetThumbnailUrl(string? thumbnailUrl)
     {
         ThumbnailUrl = NormalizeOptionalText(thumbnailUrl, 500);
     }
 
-    /// <summary>
-    /// Cập nhật alt text.
-    /// </summary>
     public void SetAltText(string? altText)
     {
         AltText = NormalizeOptionalText(altText, 200);
     }
 
-    /// <summary>
-    /// Cập nhật thứ tự hiển thị.
-    /// </summary>
     public void SetOrderIndex(int orderIndex)
     {
+        if (orderIndex < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(orderIndex), "OrderIndex cannot be negative.");
+        }
+
         OrderIndex = orderIndex;
     }
 

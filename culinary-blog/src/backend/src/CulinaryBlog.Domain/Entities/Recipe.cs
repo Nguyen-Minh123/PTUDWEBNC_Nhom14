@@ -7,7 +7,7 @@ namespace CulinaryBlog.Domain.Entities;
 /// <summary>
 /// Recipe là aggregate root của hệ thống.
 /// Một Recipe thuộc về một Category và một Author,
-/// đồng thời chứa Steps, Ingredients, Images và Nutrition.
+/// đồng thời quản lý Steps, Ingredients, Images và Nutrition.
 /// </summary>
 public class Recipe : BaseEntity
 {
@@ -72,14 +72,6 @@ public class Recipe : BaseEntity
         Nutrition = nutrition ?? new RecipeNutrition();
     }
 
-    /// <summary>
-    /// Concurrency token của Recipe.
-    /// Với PostgreSQL/Npgsql, property kiểu uint này sẽ map tới xmin.
-    /// Ép kiểu dữ liệu từ byte[] thành uint cho recipe.RowVersion
-    /// </summary>
-    // [Timestamp]
-    // public uint RowVersion { get; private set; }
-
     [MaxLength(200)]
     public string Title { get; private set; } = string.Empty;
 
@@ -107,6 +99,7 @@ public class Recipe : BaseEntity
     public string AuthorId { get; private set; } = string.Empty;
 
     public Category? Category { get; private set; }
+
     public ApplicationUser? Author { get; private set; }
 
     public DateTimeOffset? PublishedAt { get; private set; }
@@ -120,7 +113,6 @@ public class Recipe : BaseEntity
     public IReadOnlyCollection<RecipeIngredient> Ingredients => _ingredients.AsReadOnly();
 
     public IReadOnlyCollection<RecipeImage> Images => _images.AsReadOnly();
-
 
     public void UpdateDetails(
         string title,
@@ -270,6 +262,11 @@ public class Recipe : BaseEntity
             throw new InvalidOperationException("RecipeImage does not belong to this recipe.");
         }
 
+        if (_images.Any(x => x.Id == image.Id))
+        {
+            throw new InvalidOperationException("This image already exists in the recipe.");
+        }
+
         if (image.IsPrimary)
         {
             foreach (var other in _images)
@@ -288,7 +285,13 @@ public class Recipe : BaseEntity
             throw new ArgumentNullException(nameof(image));
         }
 
-        _images.Remove(image);
+        var existing = _images.FirstOrDefault(x => x.Id == image.Id);
+        if (existing is null)
+        {
+            return;
+        }
+
+        _images.Remove(existing);
     }
 
     public void SetPrimaryImage(RecipeImage image)
@@ -298,7 +301,8 @@ public class Recipe : BaseEntity
             throw new ArgumentNullException(nameof(image));
         }
 
-        if (image.RecipeId != Id)
+        var existing = _images.FirstOrDefault(x => x.Id == image.Id);
+        if (existing is null)
         {
             throw new InvalidOperationException("RecipeImage does not belong to this recipe.");
         }
@@ -308,7 +312,7 @@ public class Recipe : BaseEntity
             other.UnmarkAsPrimary();
         }
 
-        image.MarkAsPrimary();
+        existing.MarkAsPrimary();
     }
 
     private void EnsureSlugCanChange(string newSlug)
@@ -382,7 +386,6 @@ public class Recipe : BaseEntity
 
 public sealed class RecipeNutrition
 {
-    // Nutrition là nhóm giá trị tùy chọn; các đơn vị cần thống nhất ở API contract.
     public decimal? Calories { get; set; }
     public decimal? Protein { get; set; }
     public decimal? Carbohydrates { get; set; }

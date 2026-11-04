@@ -9,6 +9,8 @@ namespace CulinaryBlog.Application.Features.Recipes.Commands.CreateRecipe;
 
 /// <summary>
 /// Xử lý tạo mới Recipe.
+/// Thiết kế chuẩn: CreateRecipe chỉ tạo Recipe core + steps + ingredients + nutrition.
+/// Ảnh không được tạo ở đây vì RecipeImage là một aggregate/use case riêng.
 /// </summary>
 public sealed class CreateRecipeCommandHandler
     : IRequestHandler<CreateRecipeCommand, Guid>
@@ -32,7 +34,7 @@ public sealed class CreateRecipeCommandHandler
     /// </summary>
     public async Task<Guid> Handle(CreateRecipeCommand request, CancellationToken cancellationToken)
     {
-        // [MỚI] Bắt buộc người dùng phải đăng nhập để tạo recipe.
+        // 1) Bắt buộc người dùng phải đăng nhập để tạo recipe.
         if (!_currentUser.IsAuthenticated || string.IsNullOrWhiteSpace(_currentUser.UserId))
         {
             throw new UnauthorizedAccessException("You must be authenticated to create a recipe.");
@@ -40,7 +42,7 @@ public sealed class CreateRecipeCommandHandler
 
         var authorId = _currentUser.UserId.Trim();
 
-        // [MỚI] Kiểm tra Category tồn tại trước khi tạo Recipe.
+        // 2) Kiểm tra category tồn tại trước khi tạo recipe.
         var categoryExists = await _db.Categories
             .AnyAsync(x => x.Id == request.CategoryId, cancellationToken);
 
@@ -49,7 +51,17 @@ public sealed class CreateRecipeCommandHandler
             throw new KeyNotFoundException("Category not found.");
         }
 
-        // [MỚI] Tạo value object Nutrition từ request.
+        // 3) Chặn slug trùng sớm để trả lỗi rõ ràng hơn thay vì chờ DB constraint.
+        var slug = request.Slug ?? request.Title;
+        var slugExists = await _db.Recipes
+            .AnyAsync(x => x.Slug == slug, cancellationToken);
+
+        if (slugExists)
+        {
+            throw new InvalidOperationException($"Recipe slug '{slug}' already exists.");
+        }
+
+        // 4) Tạo value object Nutrition từ request.
         var nutrition = new RecipeNutrition
         {
             Calories = request.Calories,
@@ -60,10 +72,10 @@ public sealed class CreateRecipeCommandHandler
             Sodium = request.Sodium
         };
 
-        // [MỚI] Tạo aggregate root Recipe.
+        // 5) Tạo aggregate root Recipe.
         var recipe = new Recipe(
             request.Title,
-            request.Slug ?? request.Title,
+            slug,
             request.Description,
             request.Instructions,
             request.PrepTime,
@@ -74,14 +86,16 @@ public sealed class CreateRecipeCommandHandler
             authorId,
             nutrition);
 
-        // [MỚI] Gắn steps vào aggregate.
+        // 6) Gắn steps vào aggregate.
         AddSteps(recipe, request.Steps);
 
-        // [MỚI] Gắn ingredients vào aggregate.
+        // 7) Gắn ingredients vào aggregate.
         AddIngredients(recipe, request.Ingredients);
 
-        // [MỚI] Gắn images vào aggregate.
-        AddImages(recipe, request.Images);
+        // 8) Không tạo RecipeImage ở đây.
+        // Theo SRS, ảnh là luồng riêng: POST /api/v1/recipes/{id}/images.
+        // Lý do: metadata ảnh cần ObjectKey, ContentType, FileSize, Checksum...
+        // Chỉ có từ luồng upload MinIO, không nên nhét ảnh vào CreateRecipe.
 
         _db.Recipes.Add(recipe);
 
@@ -96,7 +110,7 @@ public sealed class CreateRecipeCommandHandler
                 ex);
         }
 
-        // [MỚI] Có thể invalidate cache tại đây nếu hệ thống đã bật cache cho recipe/category/search.
+        // 9) Có thể invalidate cache tại đây nếu hệ thống đã bật cache cho recipe/category/search.
         // Ví dụ:
         // await _cacheService.RemoveByPrefixAsync(CacheKeys.RecipesInvalidatePrefix, cancellationToken);
 
@@ -113,7 +127,7 @@ public sealed class CreateRecipeCommandHandler
             return;
         }
 
-        // [MỚI] Chặn trùng StepNumber sớm để báo lỗi dễ hiểu hơn.
+        // Chặn trùng StepNumber sớm để báo lỗi dễ hiểu hơn.
         var duplicateStepNumbers = steps
             .GroupBy(x => x.StepNumber)
             .Where(g => g.Count() > 1)
@@ -128,8 +142,8 @@ public sealed class CreateRecipeCommandHandler
 
         foreach (var stepModel in steps.OrderBy(x => x.StepNumber))
         {
-            // [MỚI] Domain RecipeStep yêu cầu: title + description.
-            // Hiện request chỉ có Instruction nên dùng:
+            // Domain RecipeStep yêu cầu: title + description.
+            // Request hiện tại chỉ có Instruction nên dùng:
             // - title: Step {n}
             // - description: Instruction
             var step = new RecipeStep(
@@ -156,7 +170,7 @@ public sealed class CreateRecipeCommandHandler
 
         foreach (var ingredientModel in ingredients)
         {
-            // [MỚI] Giả định RecipeIngredient có constructor:
+            // Giả định RecipeIngredient có constructor:
             // RecipeId, Name, Quantity, Unit.
             var ingredient = new RecipeIngredient(
                 recipe.Id,
@@ -165,42 +179,6 @@ public sealed class CreateRecipeCommandHandler
                 ingredientModel.Unit);
 
             recipe.AddIngredient(ingredient);
-        }
-    }
-
-    /// <summary>
-    /// Gắn danh sách ảnh vào Recipe.
-    /// </summary>
-    private static void AddImages(Recipe recipe, IList<CreateRecipeImageModel> images)
-    {
-        if (images is null || images.Count == 0)
-        {
-            return;
-        }
-
-        var hasPrimary = images.Any(x => x.IsPrimary);
-
-        for (var i = 0; i < images.Count; i++)
-        {
-            var imageModel = images[i];
-
-            // [MỚI] Nếu client không chỉ định ảnh chính,
-            // ảnh đầu tiên sẽ được dùng làm ảnh chính mặc định.
-            var isPrimary = imageModel.IsPrimary || (!hasPrimary && i == 0);
-
-            // [MỚI] Dùng named arguments để tránh nhầm vị trí tham số:
-            // constructor thật là:
-            // (recipeId, originalUrl, altText, orderIndex, isPrimary, mediumUrl, thumbnailUrl)
-            var image = new RecipeImage(
-                recipe.Id,
-                imageModel.Url,
-                altText: null,
-                orderIndex: i,
-                isPrimary: isPrimary,
-                mediumUrl: null,
-                thumbnailUrl: null);
-
-            recipe.AddImage(image);
         }
     }
 }

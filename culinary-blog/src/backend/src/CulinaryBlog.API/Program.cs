@@ -66,7 +66,6 @@ builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        // Tắt auto-mapping claim names, bảo toàn nguyên vẹn sub, role, email
         options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -187,17 +186,12 @@ builder.Services.AddScoped<IUnitOfWork, CulinaryBlog.Infrastructure.Persistence.
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddScoped<ICacheService, RedisCacheService>();
 
-// MinIO via AWS SDK
+// MinIO via AWS SDK (kèm fallback giá trị mặc định cho môi trường Dev)
 builder.Services.AddSingleton<IAmazonS3>(_ =>
 {
-    var endpoint = builder.Configuration["Minio:Endpoint"]
-        ?? throw new InvalidOperationException("Missing Minio:Endpoint.");
-
-    var accessKey = builder.Configuration["Minio:AccessKey"]
-        ?? throw new InvalidOperationException("Missing Minio:AccessKey.");
-
-    var secretKey = builder.Configuration["Minio:SecretKey"]
-        ?? throw new InvalidOperationException("Missing Minio:SecretKey.");
+    var endpoint = builder.Configuration["Minio:Endpoint"] ?? "http://localhost:9000";
+    var accessKey = builder.Configuration["Minio:AccessKey"] ?? "minioadmin";
+    var secretKey = builder.Configuration["Minio:SecretKey"] ?? "minioadmin";
 
     var normalizedEndpoint = NormalizeServiceUrl(endpoint);
 
@@ -231,6 +225,14 @@ if (app.Environment.IsDevelopment())
             ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "IsActive" boolean NOT NULL DEFAULT TRUE;
             ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "CreatedAt" timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP;
             ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "UpdatedAt" timestamp with time zone;
+
+            ALTER TABLE "RecipeImages" ADD COLUMN IF NOT EXISTS "ObjectKey" character varying(500) NOT NULL DEFAULT '';
+            ALTER TABLE "RecipeImages" ADD COLUMN IF NOT EXISTS "ContentType" character varying(100) NOT NULL DEFAULT 'image/jpeg';
+            ALTER TABLE "RecipeImages" ADD COLUMN IF NOT EXISTS "FileSize" bigint NOT NULL DEFAULT 0;
+            ALTER TABLE "RecipeImages" ADD COLUMN IF NOT EXISTS "ChecksumSha256" character varying(64);
+            ALTER TABLE "RecipeImages" ADD COLUMN IF NOT EXISTS "Width" integer;
+            ALTER TABLE "RecipeImages" ADD COLUMN IF NOT EXISTS "Height" integer;
+            ALTER TABLE "RecipeImages" ADD COLUMN IF NOT EXISTS "StorageProvider" character varying(50) NOT NULL DEFAULT 'MinIO';
             """);
     }
     await new CulinaryBlog.Infrastructure.Persistence.RecipeDataSeeder(dbContext).SeedAsync();
@@ -239,33 +241,22 @@ if (app.Environment.IsDevelopment())
 // =====================================================
 // Middleware Pipeline (FR-INF-006)
 // =====================================================
-// 1. Correlation ID: gắn mã theo dõi request và bổ sung vào logger scope
 app.UseMiddleware<CorrelationIdMiddleware>();
-
-// 2. Logging: ghi log request/response với elapsed time và correlation ID
 app.UseMiddleware<RequestLoggingMiddleware>();
-
-// 3. Global Exception Handler: bắt lỗi và chuyển đổi RFC7807 ProblemDetails
 app.UseExceptionHandler();
 
-// 4. HTTPS Redirection / HSTS
 if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
 }
 app.UseHttpsRedirection();
-
-// 5. Security Headers: gắn HTTP security headers chống XSS, Clickjacking, MIME-sniffing, CSP
+app.UseStaticFiles();
 app.UseMiddleware<SecurityHeadersMiddleware>();
 
-// 6. CORS Policy đa môi trường (FR-INF-004) - phải đứng trước RateLimiter và Authentication
 var corsPolicy = app.Environment.IsDevelopment() ? "DevelopmentPolicy" : "ProductionPolicy";
 app.UseCors(corsPolicy);
 
-// 7. Rate Limiter (FR-INF-005)
 app.UseRateLimiter();
-
-// 8. Authentication & Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
