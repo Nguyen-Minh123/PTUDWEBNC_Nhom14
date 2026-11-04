@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
@@ -378,33 +378,6 @@ public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, Identity
 
         entity.Property(x => x.OrderIndex)
             .HasDefaultValue(0)
-            .IsRequired();
-
-        entity.Property(x => x.ObjectKey)
-            .HasMaxLength(260)
-            .IsRequired(false);
-
-        entity.Property(x => x.ContentType)
-            .HasMaxLength(100)
-            .IsRequired(false);
-
-        entity.Property(x => x.FileSize)
-            .HasDefaultValue(0L)
-            .IsRequired();
-
-        entity.Property(x => x.ChecksumSha256)
-            .HasMaxLength(64)
-            .IsRequired(false);
-
-        entity.Property(x => x.Width)
-            .IsRequired(false);
-
-        entity.Property(x => x.Height)
-            .IsRequired(false);
-
-        entity.Property(x => x.StorageProvider)
-            .HasMaxLength(32)
-            .HasDefaultValue("MinIO")
             .IsRequired();
 
         entity.HasIndex(x => new { x.RecipeId, x.OrderIndex });
