@@ -19,7 +19,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/components/ui/toast';
+import { useUIStore } from '@/stores/useUIStore';
 import ImageUploader from '@/components/upload/ImageUploader';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5075';
@@ -50,7 +50,11 @@ export default function AdminCategoriesPage() {
   const { data: session } = useSession();
   const authStoreUser = useAuthStore((state) => state.user);
   const accessToken = useAuthStore((state) => state.accessToken);
-  const { toast } = useToast();
+  const addToast = useUIStore((state) => state.addToast);
+  const toast = useCallback((opts: { title: string; description?: string; variant?: 'default' | 'destructive' | 'success' }) => {
+    const msg = opts.description ? opts.title + ': ' + opts.description : opts.title;
+    addToast(opts.variant === 'destructive' ? 'error' : 'success', msg);
+  }, [addToast]);
 
   const token =
     accessToken ||
