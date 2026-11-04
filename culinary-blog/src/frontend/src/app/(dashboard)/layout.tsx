@@ -17,6 +17,7 @@ import {
   Users,
   FolderKanban,
   ScrollText,
+  type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -29,7 +30,14 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-const navItems = [
+type DashboardNavItem = {
+  title: string;
+  href: string;
+  icon: LucideIcon;
+  adminOnly?: boolean;
+};
+
+const navItems: DashboardNavItem[] = [
   {
     title: 'Tổng Quan & Bài Viết',
     href: '/dashboard',
@@ -57,7 +65,7 @@ const navItems = [
   },
 ];
 
-const adminNavItems = [
+const adminNavItems: DashboardNavItem[] = [
   {
     title: 'Quản Lý Người Dùng',
     href: '/dashboard/users',

@@ -15,6 +15,10 @@ public interface IApplicationDbContext
     DbSet<RecipeIngredient> RecipeIngredients { get; }
     DbSet<RecipeStep> RecipeSteps { get; }
     DbSet<RecipeImage> RecipeImages { get; }
+    DbSet<RecipeFavorite> RecipeFavorites { get; }
+    DbSet<RecipeCollection> RecipeCollections { get; }
+    DbSet<RecipeCollectionItem> RecipeCollectionItems { get; }
+    DbSet<AuditLog> AuditLogs { get; }
     DbSet<ApplicationUser> Users { get; }
     DbSet<IdentityRole<string>> Roles { get; }
     DbSet<IdentityUserRole<string>> UserRoles { get; }

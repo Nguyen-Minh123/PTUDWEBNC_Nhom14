@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
@@ -18,6 +18,10 @@ public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, Identity
     public DbSet<RecipeStep> RecipeSteps => Set<RecipeStep>();
     public DbSet<RecipeIngredient> RecipeIngredients => Set<RecipeIngredient>();
     public DbSet<RecipeImage> RecipeImages => Set<RecipeImage>();
+    public DbSet<RecipeFavorite> RecipeFavorites => Set<RecipeFavorite>();
+    public DbSet<RecipeCollection> RecipeCollections => Set<RecipeCollection>();
+    public DbSet<RecipeCollectionItem> RecipeCollectionItems => Set<RecipeCollectionItem>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -36,6 +40,45 @@ public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, Identity
         ConfigureRecipeStep(modelBuilder);
         ConfigureRecipeIngredient(modelBuilder);
         ConfigureRecipeImage(modelBuilder);
+        ConfigureRecipeFavorite(modelBuilder);
+        ConfigureRecipeCollection(modelBuilder);
+        ConfigureRecipeCollectionItem(modelBuilder);
+        ConfigureAuditLog(modelBuilder);
+    }
+
+    private static void ConfigureAuditLog(ModelBuilder modelBuilder)
+    {
+        var entity = modelBuilder.Entity<AuditLog>();
+
+        entity.ToTable("AuditLogs");
+        entity.HasKey(x => x.Id);
+
+        entity.Property(x => x.Id)
+            .ValueGeneratedNever();
+
+        entity.Property(x => x.ActorId)
+            .HasMaxLength(450);
+
+        entity.Property(x => x.Action)
+            .HasMaxLength(32)
+            .IsRequired();
+
+        entity.Property(x => x.EntityName)
+            .HasMaxLength(200)
+            .IsRequired();
+
+        entity.Property(x => x.EntityId)
+            .HasMaxLength(450);
+
+        entity.Property(x => x.OldValues)
+            .HasColumnType("jsonb");
+
+        entity.Property(x => x.NewValues)
+            .HasColumnType("jsonb");
+
+        entity.HasIndex(x => x.OccurredAtUtc);
+        entity.HasIndex(x => x.ActorId);
+        entity.HasIndex(x => new { x.EntityName, x.EntityId });
     }
 
     private static void ConfigureIdentityTables(ModelBuilder modelBuilder)
@@ -337,6 +380,33 @@ public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, Identity
             .HasDefaultValue(0)
             .IsRequired();
 
+        entity.Property(x => x.ObjectKey)
+            .HasMaxLength(260)
+            .IsRequired(false);
+
+        entity.Property(x => x.ContentType)
+            .HasMaxLength(100)
+            .IsRequired(false);
+
+        entity.Property(x => x.FileSize)
+            .HasDefaultValue(0L)
+            .IsRequired();
+
+        entity.Property(x => x.ChecksumSha256)
+            .HasMaxLength(64)
+            .IsRequired(false);
+
+        entity.Property(x => x.Width)
+            .IsRequired(false);
+
+        entity.Property(x => x.Height)
+            .IsRequired(false);
+
+        entity.Property(x => x.StorageProvider)
+            .HasMaxLength(32)
+            .HasDefaultValue("MinIO")
+            .IsRequired();
+
         entity.HasIndex(x => new { x.RecipeId, x.OrderIndex });
 
         entity.HasIndex(x => x.RecipeId);
@@ -394,6 +464,33 @@ public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, Identity
             .HasDefaultValue(0)
             .IsRequired();
 
+        entity.Property(x => x.ObjectKey)
+            .HasMaxLength(260)
+            .IsRequired(false);
+
+        entity.Property(x => x.ContentType)
+            .HasMaxLength(100)
+            .IsRequired(false);
+
+        entity.Property(x => x.FileSize)
+            .HasDefaultValue(0L)
+            .IsRequired();
+
+        entity.Property(x => x.ChecksumSha256)
+            .HasMaxLength(64)
+            .IsRequired(false);
+
+        entity.Property(x => x.Width)
+            .IsRequired(false);
+
+        entity.Property(x => x.Height)
+            .IsRequired(false);
+
+        entity.Property(x => x.StorageProvider)
+            .HasMaxLength(32)
+            .HasDefaultValue("MinIO")
+            .IsRequired();
+
         entity.HasIndex(x => new { x.RecipeId, x.OrderIndex });
         entity.HasIndex(x => x.RecipeId);
 
@@ -412,8 +509,106 @@ public class CulinaryBlogDbContext : IdentityDbContext<ApplicationUser, Identity
 
         entity.HasQueryFilter(x => !x.IsDeleted);
     }
+
+    private static void ConfigureRecipeFavorite(ModelBuilder modelBuilder)
+    {
+        var entity = modelBuilder.Entity<RecipeFavorite>();
+
+        entity.ToTable("RecipeFavorites");
+        entity.HasKey(x => x.Id);
+
+        entity.Property(x => x.Id)
+            .ValueGeneratedNever();
+
+        entity.Property(x => x.UserId)
+            .HasMaxLength(450)
+            .IsRequired();
+
+        entity.Property(x => x.RecipeId)
+            .IsRequired();
+
+        entity.Property(x => x.CreatedAt)
+            .IsRequired();
+
+        entity.HasIndex(x => new { x.UserId, x.RecipeId })
+            .IsUnique();
+
+        entity.HasOne(x => x.Owner)
+            .WithMany()
+            .HasForeignKey(x => x.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        entity.HasOne(x => x.Recipe)
+            .WithMany()
+            .HasForeignKey(x => x.RecipeId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        entity.HasQueryFilter(x => !x.Recipe.IsDeleted);
+    }
+
+    private static void ConfigureRecipeCollection(ModelBuilder modelBuilder)
+    {
+        var entity = modelBuilder.Entity<RecipeCollection>();
+
+        entity.ToTable("RecipeCollections");
+        entity.HasKey(x => x.Id);
+
+        entity.Property(x => x.Id)
+            .ValueGeneratedNever();
+
+        entity.Property(x => x.OwnerId)
+            .HasMaxLength(450)
+            .IsRequired();
+
+        entity.Property(x => x.Name)
+            .HasMaxLength(100)
+            .IsRequired();
+
+        entity.Property(x => x.CreatedAt)
+            .IsRequired();
+
+        entity.HasIndex(x => new { x.OwnerId, x.Name })
+            .IsUnique();
+
+        entity.HasOne(x => x.Owner)
+            .WithMany()
+            .HasForeignKey(x => x.OwnerId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        entity.HasMany(x => x.Items)
+            .WithOne(x => x.Collection)
+            .HasForeignKey(x => x.CollectionId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+
+    private static void ConfigureRecipeCollectionItem(ModelBuilder modelBuilder)
+    {
+        var entity = modelBuilder.Entity<RecipeCollectionItem>();
+
+        entity.ToTable("RecipeCollectionItems");
+        entity.HasKey(x => x.Id);
+
+        entity.Property(x => x.Id)
+            .ValueGeneratedNever();
+
+        entity.Property(x => x.CollectionId)
+            .IsRequired();
+
+        entity.Property(x => x.RecipeId)
+            .IsRequired();
+
+        entity.Property(x => x.AddedAt)
+            .IsRequired();
+
+        entity.HasIndex(x => new { x.CollectionId, x.RecipeId })
+            .IsUnique();
+
+        entity.HasOne(x => x.Recipe)
+            .WithMany()
+            .HasForeignKey(x => x.RecipeId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        entity.HasQueryFilter(x => !x.Recipe.IsDeleted);
+    }
 }
-
-
-
 
