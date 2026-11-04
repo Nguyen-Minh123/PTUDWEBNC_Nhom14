@@ -194,8 +194,8 @@ builder.Services.AddScoped<ICacheService, RedisCacheService>();
 builder.Services.AddSingleton<IAmazonS3>(_ =>
 {
     var endpoint = builder.Configuration["Minio:Endpoint"] ?? "http://localhost:9000";
-    var accessKey = builder.Configuration["Minio:AccessKey"] ?? "minioadmin";
-    var secretKey = builder.Configuration["Minio:SecretKey"] ?? "minioadmin";
+    var accessKey = builder.Configuration["Minio:AccessKey"] ?? "admin";
+    var secretKey = builder.Configuration["Minio:SecretKey"] ?? "password123";
 
     var normalizedEndpoint = NormalizeServiceUrl(endpoint);
 
