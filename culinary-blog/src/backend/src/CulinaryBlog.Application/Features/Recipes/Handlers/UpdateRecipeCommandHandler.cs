@@ -8,14 +8,10 @@ using Microsoft.EntityFrameworkCore;
 namespace CulinaryBlog.Application.Features.Recipes.Commands.UpdateRecipe;
 
 /// <summary>
-/// Xử lý cập nhật Recipe.
-/// Lưu ý:
-/// - Handler này chỉ cập nhật dữ liệu core của recipe.
-/// - RecipeImage không cập nhật ở đây vì đó là use case riêng.
-/// - Concurrency được xử lý bằng RowVersion.
+/// Xử lý cập nhật Recipe có kiểm tra concurrency token.
 /// </summary>
 public sealed class UpdateRecipeCommandHandler
-    : IRequestHandler<UpdateRecipeCommand, RecipeDto>
+    : IRequestHandler<UpdateRecipeCommand, Recipe>
 {
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
@@ -34,39 +30,37 @@ public sealed class UpdateRecipeCommandHandler
     /// <summary>
     /// Cập nhật Recipe theo Id và RowVersion.
     /// </summary>
-    public async Task<RecipeDto> Handle(UpdateRecipeCommand request, CancellationToken cancellationToken)
+    public async Task<Recipe> Handle(UpdateRecipeCommand request, CancellationToken cancellationToken)
     {
-        // 1) Lấy recipe theo Id.
+        // Lấy đúng bản ghi còn khớp concurrency token mà client gửi lên.
+        // Nếu không có bản ghi nào khớp, ta sẽ phân biệt giữa "không tồn tại" và "xung đột concurrency".
         var recipe = await _db.Recipes
-            .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
+            .FirstOrDefaultAsync(
+                x => x.Id == request.Id && x.RowVersion == request.RowVersion,
+                cancellationToken);
 
+        // Phân biệt lỗi "không tìm thấy" với lỗi "đã bị người khác cập nhật".
         if (recipe is null)
         {
-            throw new KeyNotFoundException("Recipe not found.");
-        }
+            var exists = await _db.Recipes
+                .AnyAsync(x => x.Id == request.Id, cancellationToken);
 
-        // 2) Kiểm tra request concurrency token.
-        if (recipe.RowVersion != request.RowVersion)
-        {
+            if (!exists)
+            {
+                throw new KeyNotFoundException("Recipe not found.");
+            }
+
             throw new ConcurrencyConflictException(
                 "Recipe was updated by another user. Please reload and try again.");
         }
 
-        // 3) Kiểm tra concurrency token do client gửi lên.
-        // Nếu entity hiện tại khác token của client => xung đột.
-        if (recipe.RowVersion != request.RowVersion)
-        {
-            throw new ConcurrencyConflictException(
-                "Recipe was updated by another user. Please reload and try again.");
-        }
-
-        // 4) Chỉ cho phép tác giả hoặc người có quyền hợp lệ thao tác.
+        // Chỉ cho phép tác giả hoặc người có quyền hợp lệ thao tác với recipe này.
         if (!CurrentUserAuthorization.CanManageRecipe(_currentUser, recipe.AuthorId))
         {
             throw new UnauthorizedAccessException("You do not have permission to update this recipe.");
         }
 
-        // 5) Kiểm tra category tồn tại trước khi cập nhật.
+        // Kiểm tra Category tồn tại trước khi cập nhật để tránh lỗi FK ở tầng database.
         var categoryExists = await _db.Categories
             .AnyAsync(x => x.Id == request.CategoryId, cancellationToken);
 
@@ -75,7 +69,7 @@ public sealed class UpdateRecipeCommandHandler
             throw new KeyNotFoundException("Category not found.");
         }
 
-        // 6) Cập nhật thông tin cốt lõi.
+        // Cập nhật thông tin cốt lõi của recipe.
         recipe.UpdateDetails(
             request.Title,
             request.Slug ?? request.Title,
@@ -89,31 +83,30 @@ public sealed class UpdateRecipeCommandHandler
 
         try
         {
-            // 7) Lưu thay đổi xuống database.
+            // Lưu thay đổi xuống database.
             await _db.SaveChangesAsync(cancellationToken);
         }
         catch (DbUpdateConcurrencyException)
         {
+            // Bắt trường hợp có request khác ghi đè đúng lúc SaveChanges.
             throw new ConcurrencyConflictException(
                 "Recipe was updated by another user. Please reload and try again.");
         }
 
-        // 8) Đọc lại dữ liệu mới nhất sau save.
+        // Đọc lại dữ liệu sau khi lưu để trả về trạng thái mới nhất.
+        // Cách này an toàn hơn nếu database sinh lại RowVersion sau khi update.
         var updatedRecipe = await _db.Recipes
             .AsNoTracking()
+            .Include(x => x.Category)
+            .Include(x => x.Author)
+            .Include(x => x.Steps)
+            .Include(x => x.Ingredients)
+            .Include(x => x.Images)
             .FirstAsync(x => x.Id == recipe.Id, cancellationToken);
 
-        return new RecipeDto(
-            updatedRecipe.Id,
-            updatedRecipe.Title,
-            updatedRecipe.Slug,
-            updatedRecipe.Description,
-            updatedRecipe.Instructions,
-            updatedRecipe.PrepTime,
-            updatedRecipe.CookTime,
-            updatedRecipe.Servings,
-            updatedRecipe.Difficulty,
-            updatedRecipe.CategoryId,
-            updatedRecipe.RowVersion);
+        return updatedRecipe;
     }
+
+    // Nếu sau này mở rộng quyền cho admin/super-admin,
+    // có thể chuyển logic authorization sang helper riêng để tái sử dụng.
 }

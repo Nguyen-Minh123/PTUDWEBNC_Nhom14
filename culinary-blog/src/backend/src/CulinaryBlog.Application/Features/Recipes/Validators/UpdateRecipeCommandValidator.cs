@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace CulinaryBlog.Application.Features.Recipes.Commands.UpdateRecipe;
+namespace CulinaryBlog.Application.Features.Recipes.Commands;
 
 /// <summary>
 /// Validate dữ liệu cập nhật Recipe.
@@ -38,9 +38,9 @@ public sealed class UpdateRecipeCommandValidator : AbstractValidator<UpdateRecip
         RuleFor(x => x.CategoryId)
             .NotEmpty();
 
-        // RowVersion phải khác 0 để đảm bảo client gửi token concurrency hợp lệ.
+        // RowVersion nếu được gửi lên thì phải lớn hơn 0
         RuleFor(x => x.RowVersion)
-            .Must(x => x > 0)
-            .WithMessage("RowVersion must be greater than 0.");
+            .Must(x => !x.HasValue || x.Value > 0)
+            .WithMessage("RowVersion must be greater than 0 if provided.");
     }
 }

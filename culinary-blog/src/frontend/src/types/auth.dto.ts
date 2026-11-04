@@ -25,6 +25,8 @@ export interface RegisterRequestDto {
   email: string;
   password?: string;
   displayName: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 export interface GoogleLoginRequestDto {
@@ -37,10 +39,40 @@ export interface UpdateUserProfileRequestDto {
   avatarUrl?: string | null;
 }
 
+export interface ForgotPasswordRequestDto {
+  email: string;
+}
+
+export interface ForgotPasswordResponseDto {
+  message: string;
+  resetToken?: string | null;
+}
+
+export interface ResetPasswordRequestDto {
+  email: string;
+  token: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface ChangePasswordRequestDto {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface AuthMessageResponseDto {
+  message: string;
+}
+
 // Aliases for flexibility across frontend services & components
 export type LoginRequest = LoginRequestDto;
 export type RegisterRequest = RegisterRequestDto;
 export type GoogleLoginRequest = GoogleLoginRequestDto;
 export type UpdateProfileRequest = UpdateUserProfileRequestDto;
+export type ForgotPasswordRequest = ForgotPasswordRequestDto;
+export type ForgotPasswordResponse = ForgotPasswordResponseDto;
+export type ResetPasswordRequest = ResetPasswordRequestDto;
+export type ChangePasswordRequest = ChangePasswordRequestDto;
 export type AuthResponse = AuthResponseDto;
 export type UserProfile = UserProfileDto;

@@ -4,15 +4,11 @@ using Microsoft.AspNetCore.Identity;
 namespace CulinaryBlog.Domain.Entities;
 
 /// <summary>
-/// Người dùng hệ thống.
-/// Theo SRS: ApplicationUser extends IdentityUser.
+/// Ngu?i d�ng h? th?ng.
+/// K? th?a IdentityUser<string> theo SRS.
 /// </summary>
 public class ApplicationUser : IdentityUser
 {
-    /// <summary>
-    /// Constructor private cho EF Core.
-    /// Khởi tạo mặc định các giá trị an toàn.
-    /// </summary>
     private ApplicationUser()
     {
         Id = Guid.NewGuid().ToString();
@@ -20,9 +16,6 @@ public class ApplicationUser : IdentityUser
         IsActive = true;
     }
 
-    /// <summary>
-    /// Tạo người dùng mới với email và tên hiển thị.
-    /// </summary>
     public ApplicationUser(string email, string displayName)
         : this()
     {
@@ -41,8 +34,11 @@ public class ApplicationUser : IdentityUser
         DisplayName = NormalizeRequiredText(displayName, 100, nameof(displayName));
     }
 
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+
     /// <summary>
-    /// Tên hiển thị công khai.
+    /// T�n hi?n th? c�ng khai.
     /// </summary>
     [MaxLength(100)]
     public string DisplayName { get; private set; } = string.Empty;
@@ -54,23 +50,20 @@ public class ApplicationUser : IdentityUser
     public string? AvatarUrl { get; private set; }
 
     /// <summary>
-    /// Tiểu sử ngắn của tác giả, nullable.
+    /// Ti?u s? ng?n c?a t�c gi?, nullable.
     /// </summary>
     public string? Bio { get; private set; }
 
     /// <summary>
-    /// Trạng thái tài khoản.
+    /// Tr?ng th�i t�i kho?n.
     /// </summary>
     public bool IsActive { get; private set; } = true;
 
     /// <summary>
-    /// Ngày tạo tài khoản.
+    /// Ng�y t?o t�i kho?n.
     /// </summary>
     public DateTimeOffset CreatedAt { get; private set; } = DateTimeOffset.UtcNow;
 
-    /// <summary>
-    /// Cập nhật hồ sơ cơ bản.
-    /// </summary>
     public void UpdateProfile(string displayName, string? bio = null, string? avatarUrl = null)
     {
         DisplayName = NormalizeRequiredText(displayName, 100, nameof(displayName));
@@ -78,46 +71,31 @@ public class ApplicationUser : IdentityUser
         AvatarUrl = NormalizeOptionalText(avatarUrl, 500);
     }
 
-    /// <summary>
-    /// Gán avatar.
-    /// </summary>
     public void SetAvatarUrl(string? avatarUrl)
     {
         AvatarUrl = NormalizeOptionalText(avatarUrl, 500);
     }
 
-    /// <summary>
-    /// Gán bio.
-    /// </summary>
     public void SetBio(string? bio)
     {
         Bio = NormalizeOptionalText(bio, int.MaxValue);
     }
 
-    /// <summary>
-    /// Kích hoạt tài khoản.
-    /// </summary>
     public void Activate()
     {
         IsActive = true;
     }
 
-    /// <summary>
-    /// Vô hiệu hóa tài khoản.
-    /// </summary>
     public void Deactivate()
     {
         IsActive = false;
     }
 
-    /// <summary>
-    /// Chuẩn hóa và kiểm tra chuỗi bắt buộc.
-    /// </summary>
     private static string NormalizeRequiredText(string? value, int maxLength, string paramName)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            throw new ArgumentException($"{paramName} cannot be empty.", paramName);
+            throw new ArgumentException($" cannot be empty.", paramName);
         }
 
         var normalized = value.Trim();
@@ -126,15 +104,12 @@ public class ApplicationUser : IdentityUser
         {
             throw new ArgumentOutOfRangeException(
                 paramName,
-                $"The value of {paramName} exceeds the maximum length of {maxLength}.");
+                $"The value of  exceeds the maximum length of .");
         }
 
         return normalized;
     }
 
-    /// <summary>
-    /// Chuẩn hóa và kiểm tra chuỗi tùy chọn.
-    /// </summary>
     private static string? NormalizeOptionalText(string? value, int maxLength)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -148,9 +123,10 @@ public class ApplicationUser : IdentityUser
         {
             throw new ArgumentOutOfRangeException(
                 nameof(value),
-                $"The value exceeds the maximum length of {maxLength}.");
+                $"The value exceeds the maximum length of .");
         }
 
         return normalized;
     }
 }
+

@@ -77,4 +77,14 @@ public interface IRecipeRepository
         RecipeStatus? status = null,
         string? keyword = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Đếm tổng số recipe thỏa mãn điều kiện filter.
+    /// Dùng để tính toán số trang.
+    /// </summary>
+    Task<int> CountAsync(
+        Guid? categoryId = null,
+        RecipeStatus? status = null,
+        string? keyword = null,
+        CancellationToken cancellationToken = default);
 }

@@ -1,0 +1,215 @@
+'use client';
+
+import React, { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
+import { useAuthStore } from '@/stores/auth-store';
+import { authService } from '@/services/authService';
+
+type HeaderProps = {
+  variant?: 'main' | 'auth';
+};
+
+export function Header({ variant = 'main' }: HeaderProps) {
+  const router = useRouter();
+  const { data: session } = useSession();
+  const authStoreUser = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const clearSession = useAuthStore((state) => state.clearSession);
+
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // Tự đóng dropdown khi click ra ngoài hoặc nhấn Esc
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  // Người dùng hiện tại từ NextAuth hoặc Zustand auth-store
+  const currentUser = session?.user || (isAuthenticated && authStoreUser ? {
+    name: authStoreUser.displayName,
+    email: authStoreUser.email,
+    image: authStoreUser.avatarUrl || null,
+  } : null);
+
+  if (variant === 'auth') {
+    return (
+      <header className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-2 group">
+          <span className="text-2xl">🍲</span>
+          <span className="font-bold text-xl tracking-tight text-stone-900 group-hover:text-amber-600 transition-colors">
+            Culinary<span className="text-amber-600">Blog</span>
+          </span>
+        </Link>
+        <Link
+          href="/"
+          className="text-xs font-semibold text-stone-600 hover:text-amber-700 transition-colors flex items-center gap-1"
+        >
+          <span aria-hidden="true">←</span> Quay lại trang chủ
+        </Link>
+      </header>
+    );
+  }
+
+  const handleLogout = async () => {
+    setDropdownOpen(false);
+    try {
+      const state = useAuthStore.getState();
+      await authService.logout(state.refreshToken || undefined, state.accessToken || undefined);
+    } catch {
+      // Bỏ qua lỗi mạng
+    } finally {
+      clearSession();
+      await signOut({ callbackUrl: '/login' });
+    }
+  };
+
+  // Đóng menu trước rồi điều hướng để tránh lỗi click trong dropdown
+  const handleNavigate = (path: string) => {
+    setDropdownOpen(false);
+    router.push(path);
+  };
+
+  return (
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-amber-100 shadow-xs">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        {/* Logo Brand */}
+        <Link href="/" className="flex items-center gap-3 group">
+          <span className="text-2xl transition-transform group-hover:scale-110">🍲</span>
+          <div>
+            <span className="text-lg font-black bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+              Culinary Blog
+            </span>
+            <span className="hidden sm:inline-block ml-2 px-2 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-800 rounded-full">
+              Nhóm 14
+            </span>
+          </div>
+        </Link>
+
+        {/* Navigation Items */}
+        <nav className="flex items-center gap-3 sm:gap-6 text-xs sm:text-sm font-medium text-gray-700">
+          <Link
+            href="/"
+            className="hover:text-amber-600 transition-colors hidden md:inline-block"
+          >
+            Trang Chủ
+          </Link>
+
+          <Link
+            href="/recipes/new"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-semibold transition-all shadow-xs shadow-amber-500/20"
+          >
+            <span>✨</span>
+            <span>Tạo Công Thức</span>
+          </Link>
+
+          {/* User Session Area */}
+          {currentUser ? (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="flex items-center gap-2 py-1 px-2 rounded-lg hover:bg-gray-100 transition-all border border-gray-200"
+              >
+                {currentUser.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={currentUser.image}
+                    alt={currentUser.name || 'User'}
+                    className="w-7 h-7 rounded-full object-cover border border-amber-300"
+                  />
+                ) : (
+                  <div className="w-7 h-7 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold text-xs">
+                    {(currentUser.name || 'U')[0].toUpperCase()}
+                  </div>
+                )}
+                <span className="font-semibold text-xs text-gray-800 max-w-[100px] truncate hidden sm:inline">
+                  {currentUser.name || currentUser.email}
+                </span>
+                <span className="text-[10px] text-gray-400">▾</span>
+              </button>
+
+              {/* User Dropdown */}
+              {dropdownOpen && (
+                <div
+                  className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50 text-xs"
+                  onClick={(e) => e.stopPropagation()} // Tránh lan truyền click không cần thiết
+                >
+                  <div className="px-3.5 py-2.5 border-b border-gray-100 bg-amber-50/50">
+                    <p className="font-bold text-gray-800 truncate">{currentUser.name}</p>
+                    <p className="text-[11px] text-gray-500 truncate">{currentUser.email}</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleNavigate('/dashboard')} // Điều hướng rõ ràng
+                    className="w-full text-left flex items-center gap-2 px-3.5 py-2 hover:bg-gray-50 text-gray-700 font-medium transition-colors"
+                  >
+                    <span>📊</span>
+                    <span>Dashboard & Quản lý</span>
+                  </button>
+
+                  <Link
+                    href="/profile"
+                    onClick={() => setDropdownOpen(false)}
+                    className="flex items-center gap-2 px-3.5 py-2 hover:bg-gray-50 text-gray-700 font-medium transition-colors"
+                  >
+                    <span>👤</span>
+                    <span>Hồ sơ cá nhân</span>
+                  </Link>
+
+                  <Link
+                    href="/dashboard?tab=security"
+                    className="flex items-center gap-2 px-3.5 py-2 hover:bg-gray-50 text-gray-700 font-medium transition-colors"
+                  >
+                    <span>🔒</span>
+                    <span>Đổi mật khẩu</span>
+                  </Link>
+
+                  <div className="border-t border-gray-100 my-1" />
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="w-full text-left flex items-center gap-2 px-3.5 py-2 text-rose-600 hover:bg-rose-50 font-medium transition-colors"
+                  >
+                    <span>🚪</span>
+                    <span>Đăng xuất (Logout)</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="px-3.5 py-1.5 rounded-lg border border-gray-300 hover:border-amber-500 hover:text-amber-600 text-gray-700 font-semibold transition-all"
+            >
+              Đăng Nhập
+            </Link>
+          )}
+        </nav>
+      </div>
+    </header>
+  );
+}
+
+export const Navbar = Header;

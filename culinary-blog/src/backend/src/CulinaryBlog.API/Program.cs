@@ -1,178 +1,197 @@
+using System.Text.Json.Serialization;
 using Amazon.S3;
 using Asp.Versioning;
-using Asp.Versioning.Builder;
+using CulinaryBlog.API.Authorization;
 using CulinaryBlog.API.Endpoints;
-using CulinaryBlog.API.Middlewares;
 using CulinaryBlog.API.Extensions;
+using CulinaryBlog.API.HealthChecks;
+using CulinaryBlog.API.Middlewares;
+using CulinaryBlog.API.OpenApi;
 using CulinaryBlog.Application;
 using CulinaryBlog.Application.Common.Caching;
 using CulinaryBlog.Application.Common.Interfaces;
-using CulinaryBlog.Application.Features.Recipes.Queries.GetRecipesByKeyword;
-using CulinaryBlog.Infrastructure;
+using CulinaryBlog.Infrastructure.Authorization;
 using CulinaryBlog.Infrastructure.Caching;
 using CulinaryBlog.Infrastructure.Persistence;
 using CulinaryBlog.Infrastructure.Persistence.Interceptors;
 using CulinaryBlog.Infrastructure.Services;
 using CulinaryBlog.Infrastructure.Storage;
-using MediatR;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
-using Scalar.AspNetCore; // Cần thêm using này để dùng được Scalar
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+using Scalar.AspNetCore;
+using Serilog;
+using System.Security.Claims;
+using System.Text;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Khai báo cho ứng dụng biết cách kết nối PostgreSQL thông qua DbContext
-builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Host.UseSerilog((context, services, loggerConfiguration) =>
+    loggerConfiguration
+        .ReadFrom.Configuration(context.Configuration)
+        .Enrich.FromLogContext());
 
-
-// Đăng ký Application layer
-builder.Services.AddApplication();
-// Đăng ký Infrastructure layer
-builder.Services.AddInfrastructure(builder.Configuration);
-
-// =====================================================
-// Cấu hình API Versioning cho Minimal APIs
-// =====================================================
-// - Default v1.0
-// - URL segment: /api/v{version:apiVersion}/...
-// - ReportApiVersions: trả header version để client biết
-builder.Services
-    .AddApiVersioning(options =>
-    {
-        options.DefaultApiVersion = new ApiVersion(1, 0);
-        options.AssumeDefaultVersionWhenUnspecified = false;
-        options.ReportApiVersions = true;
-        options.ApiVersionReader = new UrlSegmentApiVersionReader();
-        options.RouteConstraintName = "apiVersion";
-    })
-    .AddApiExplorer(options =>
-    {
-        // Giúp API explorer/Swagger nhóm endpoint theo version
-        options.GroupNameFormat = "'v'VVV";
-        options.SubstituteApiVersionInUrl = true;
-    });
-
-// =====================================================
-// Đăng ký CORS đa môi trường
-// =====================================================
-// Development: cho phép localhost:3000
-// Production: đọc whitelist từ appsettings.json
-var isDevelopment = builder.Environment.IsDevelopment();
-
-//-----------------------------------------------------------------
 // =====================================================
 // Services
 // =====================================================
-// MVC Controllers nếu dự án của bạn còn dùng controller-based API.
+
 builder.Services.AddControllers();
-// Cho Swagger/OpenAPI endpoint discovery.
 builder.Services.AddEndpointsApiExplorer();
-// ProblemDetails để chuẩn hóa lỗi trả về API.
 builder.Services.AddProblemDetails();
 
-// Đăng ký OpenAPI generator cho Minimal APIs. 
-builder.Services.AddOpenApi();
-
-// Cho phép gọi API từ frontend Next.js hoặc các client khác.
-builder.Services.AddCors(options =>
+builder.Services.ConfigureHttpJsonOptions(options =>
 {
-    // -------------------------------------------------
-    // DevelopmentPolicy
-    // -------------------------------------------------
-    // Dùng trực tiếp cho Next.js local dev
-    options.AddPolicy("DevelopmentPolicy", policy =>
-    {
-        policy
-            .WithOrigins("http://localhost:3000")
-            .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-            .WithHeaders("Authorization", "Content-Type", "Accept", "X-Correlation-ID")
-            .AllowCredentials()
-            .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
-    });
-
-    // -------------------------------------------------
-    // ProductionPolicy
-    // -------------------------------------------------
-    // Chỉ đăng ký khi thực sự chạy Production
-    if (!isDevelopment)
-    {
-        var allowedOrigins = builder.Configuration
-            .GetSection("Cors:AllowedOrigins")
-            .Get<string[]>() ?? Array.Empty<string>();
-
-        if (allowedOrigins.Length == 0)
-        {
-            throw new InvalidOperationException(
-                "Cors:AllowedOrigins is empty. Please configure allowed origins in appsettings.json for Production.");
-        }
-
-        options.AddPolicy("ProductionPolicy", policy =>
-        {
-            policy
-                .WithOrigins(allowedOrigins)
-                .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-                .WithHeaders("Authorization", "Content-Type", "Accept", "X-Correlation-ID")
-                .AllowCredentials()
-                .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
-        });
-    }
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.JsonOptions>(options =>
+{
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 
-// =====================================================
-// Đăng ký Rate Limiting
-// =====================================================
+// 1. Phân quyền tập trung (RBAC, Policy-based, Resource-based)
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "CulinaryBlog";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "CulinaryBlogClient";
+var jwtSigningKey = builder.Configuration["Jwt:SigningKey"] 
+    ?? builder.Configuration["Jwt:Secret"] 
+    ?? "super-secret-key-that-is-very-long-for-hmac-sha256-1234567890";
+
+var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSigningKey));
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.MapInboundClaims = false;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = !string.IsNullOrEmpty(builder.Configuration["Jwt:Issuer"]),
+            ValidIssuer = jwtIssuer,
+            ValidateAudience = !string.IsNullOrEmpty(builder.Configuration["Jwt:Audience"]),
+            ValidAudience = jwtAudience,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = signingKey,
+            ValidateLifetime = true,
+            RequireExpirationTime = true,
+            ClockSkew = TimeSpan.FromSeconds(30),
+            NameClaimType = "sub",
+            RoleClaimType = "role",
+            ValidAlgorithms = [SecurityAlgorithms.HmacSha256]
+        };
+    });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("AuthorOrAdmin", policy => policy.RequireRole("Author", "Admin"));
+    options.AddPolicy("CanPublishRecipe", policy => policy.RequireRole("Author", "Admin"));
+    options.AddPolicy(RecipeAuthorizationPolicies.AuthenticatedUser, policy => policy.RequireAuthenticatedUser());
+    options.AddPolicy(RecipeAuthorizationPolicies.OwnerOrAdmin, policy => policy
+        .RequireAuthenticatedUser()
+        .AddRequirements(new RecipeOwnerOrAdminRequirement()));
+});
+
+builder.Services.AddSingleton<IAuthorizationHandler, RecipeAuthorizationHandler>();
+builder.Services.AddSingleton<IAuthorizationHandler, RecipeOwnerOrAdminHandler>();
+
+builder.Services.AddExceptionHandler<CulinaryBlog.API.Infrastructure.GlobalExceptionHandler>();
+
+// 2. CORS Policy đa môi trường (Development & Production)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("DevelopmentPolicy", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000", "http://127.0.0.1:3000")
+              .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+              .WithHeaders("Authorization", "Content-Type", "Accept", "X-Correlation-ID")
+              .AllowCredentials();
+    });
+
+    options.AddPolicy("ProductionPolicy", policy =>
+    {
+        var allowed = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+            ?? ["https://culinaryblog.vn", "https://www.culinaryblog.vn"];
+        policy.WithOrigins(allowed)
+              .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE")
+              .WithHeaders("Authorization", "Content-Type", "Accept", "X-Correlation-ID")
+              .AllowCredentials()
+              .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
+    });
+});
+
+// 3. Rate Limiting nâng cao (.NET 10 - Fixed Window & Token Bucket) (FR-INF-005)
 builder.Services.AddAppRateLimiting();
+
+// 4. API Versioning cho Minimal APIs
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
+    options.ApiVersionReader = new UrlSegmentApiVersionReader();
+});
+
+builder.Services.AddHealthChecks()
+    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("Self check passed."), tags: ["live"])
+    .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Missing connection string: DefaultConnection");
 
-// Đăng ký MediatR cho CQRS handlers trong Application layer. 
-builder.Services.AddMediatR(cfg =>
-{
-    cfg.RegisterServicesFromAssembly(typeof(GetRecipesByKeywordQuery).Assembly);
-});
-
-// Đăng ký SoftDeleteInterceptor để tự động xử lý soft delete. 
-builder.Services.AddScoped<IApplicationDbContext>(sp =>
-    sp.GetRequiredService<CulinaryBlogDbContext>());
-
-builder.Services.AddScoped<IUnitOfWork>(sp =>
-    sp.GetRequiredService<CulinaryBlogDbContext>());
-
-// DbContext chính của hệ thống, dùng PostgreSQL.
-builder.Services.AddDbContext<CulinaryBlogDbContext>((sp, options) =>
+builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
 {
     options.UseNpgsql(connectionString, npgsql =>
     {
-        // Chỉ định assembly chứa migration.
         npgsql.MigrationsAssembly(typeof(CulinaryBlogDbContext).Assembly.FullName);
     });
+    options.ConfigureWarnings(w =>
+        w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 
-    // Gắn interceptor cho DbContext. 
-    options.AddInterceptors(sp.GetRequiredService<SoftDeleteInterceptor>());
+    if (builder.Environment.IsDevelopment())
+    {
+        options.LogTo(
+            Console.WriteLine,
+            new[] { Microsoft.EntityFrameworkCore.DbLoggerCategory.Database.Command.Name },
+            LogLevel.Information);
+    }
 });
 
+builder.Services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<CulinaryBlogDbContext>());
 builder.Services.AddScoped<SoftDeleteInterceptor>();
+
+// 5. OpenAPI 3.1 & Scalar UI
+builder.Services.AddOpenApi(options =>
+{
+    options.OpenApiVersion = OpenApiSpecVersion.OpenApi3_1;
+    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+});
+
+builder.Services.AddApplication();
+builder.Services.AddScoped<IPasswordResetTokenService, PasswordResetTokenService>();
 
 // HttpContext / Current user
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
+builder.Services.AddScoped<IPasswordHasherService, PasswordHasherService>();
+builder.Services.AddScoped<IRecipeRepository, CulinaryBlog.Infrastructure.Persistence.Repositories.RecipeRepository>();
+builder.Services.AddScoped<IUnitOfWork, CulinaryBlog.Infrastructure.Persistence.Repositories.UnitOfWork>();
 
-// Cache (build-safe fallback)
+// Cache
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddScoped<ICacheService, RedisCacheService>();
 
-// MinIO via AWS SDK
+// MinIO via AWS SDK (kèm fallback giá trị mặc định cho môi trường Dev)
 builder.Services.AddSingleton<IAmazonS3>(_ =>
 {
-    var endpoint = builder.Configuration["Minio:Endpoint"]
-        ?? throw new InvalidOperationException("Missing Minio:Endpoint.");
-
-    var accessKey = builder.Configuration["Minio:AccessKey"]
-        ?? throw new InvalidOperationException("Missing Minio:AccessKey.");
-
-    var secretKey = builder.Configuration["Minio:SecretKey"]
-        ?? throw new InvalidOperationException("Missing Minio:SecretKey.");
+    var endpoint = builder.Configuration["Minio:Endpoint"] ?? "http://localhost:9000";
+    var accessKey = builder.Configuration["Minio:AccessKey"] ?? "minioadmin";
+    var secretKey = builder.Configuration["Minio:SecretKey"] ?? "minioadmin";
 
     var normalizedEndpoint = NormalizeServiceUrl(endpoint);
 
@@ -189,222 +208,111 @@ builder.Services.AddScoped<IFileStorageService, MinioStorageService>();
 
 var app = builder.Build();
 
-// =====================================================
-// Middleware
-// =====================================================
-// Middleware xử lý lỗi toàn cục
-app.UseMiddleware<GlobalExceptionMiddleware>();
-// Chuẩn hóa exception trả về dạng ProblemDetails.
-app.UseExceptionHandler();
-// Redirect HTTP -> HTTPS nếu môi trường hỗ trợ.
-app.UseHttpsRedirection();
-// Cho phép frontend gọi API.
-app.UseCors("DefaultCors");
-
-// OpenAPI / Scalar
-app.MapOpenApi();
-
-// Mở Scalar UI tại /scalar/v1.
-app.MapScalarApiReference();
-
-// Thực hiện API Quản lý Nguyên liệu
-app.MapRecipeIngredientsEndpoints();
-
-// Thực hiện API Quản lý Bước thực hiện
-app.MapRecipeStepsEndpoints();
-
-// Thực hiện API Upload và Quản lý Hình ảnh
-app.MapRecipeImagesEndpoints();
-
-// Thực hiện API Category (Danh mục kèm thống kê số bài viết)
-app.MapCategoriesEndpoints();
-
-
-// ======================================================
-// ÁP DỤNG CORS THEO MÔI TRƯỜNG
-// ======================================================
-// Development: chỉ localhost:3000
-// Production: whitelist từ appsettings.json
 if (app.Environment.IsDevelopment())
 {
-    app.UseCors("DevelopmentPolicy");
-}
-else
-{
-    app.UseCors("ProductionPolicy");
+    await using var scope = app.Services.CreateAsyncScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<CulinaryBlogDbContext>();
+    await dbContext.Database.MigrateAsync();
+    if (dbContext.Database.IsRelational())
+    {
+        await dbContext.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "FirstName" text NOT NULL DEFAULT '';
+            ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "LastName" text NOT NULL DEFAULT '';
+            ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "DisplayName" character varying(150) NOT NULL DEFAULT '';
+            ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "Bio" character varying(1000);
+            ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "AvatarUrl" character varying(500);
+            ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "IsActive" boolean NOT NULL DEFAULT TRUE;
+            ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "CreatedAt" timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP;
+            ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "UpdatedAt" timestamp with time zone;
+
+            ALTER TABLE "RecipeImages" ADD COLUMN IF NOT EXISTS "ObjectKey" character varying(500) NOT NULL DEFAULT '';
+            ALTER TABLE "RecipeImages" ADD COLUMN IF NOT EXISTS "ContentType" character varying(100) NOT NULL DEFAULT 'image/jpeg';
+            ALTER TABLE "RecipeImages" ADD COLUMN IF NOT EXISTS "FileSize" bigint NOT NULL DEFAULT 0;
+            ALTER TABLE "RecipeImages" ADD COLUMN IF NOT EXISTS "ChecksumSha256" character varying(64);
+            ALTER TABLE "RecipeImages" ADD COLUMN IF NOT EXISTS "Width" integer;
+            ALTER TABLE "RecipeImages" ADD COLUMN IF NOT EXISTS "Height" integer;
+            ALTER TABLE "RecipeImages" ADD COLUMN IF NOT EXISTS "StorageProvider" character varying(50) NOT NULL DEFAULT 'MinIO';
+            """);
+    }
+    await new CulinaryBlog.Infrastructure.Persistence.RecipeDataSeeder(dbContext).SeedAsync();
 }
 
 // =====================================================
-// Pipeline middleware theo thứ tự yêu cầu
+// Middleware Pipeline (FR-INF-006)
 // =====================================================
-// Correlation ID: gắn mã theo dõi request
 app.UseMiddleware<CorrelationIdMiddleware>();
-
-// Logging: ghi log request/response
 app.UseMiddleware<RequestLoggingMiddleware>();
+app.UseExceptionHandler();
 
-// Exception handler: bắt lỗi và trả RFC7807
-app.UseMiddleware<ExceptionHandlingMiddleware>();
-
-// HSTS: chỉ bật khi không phải Development
 if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
 }
-
-// Security headers: thêm header bảo mật cho response
+app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseMiddleware<SecurityHeadersMiddleware>();
 
+var corsPolicy = app.Environment.IsDevelopment() ? "DevelopmentPolicy" : "ProductionPolicy";
+app.UseCors(corsPolicy);
 
-// Rate limiter chạy trước auth để chặn sớm request xấu
 app.UseRateLimiter();
-
-// Authentication / Authorization phải nằm sau UseCors
 app.UseAuthentication();
 app.UseAuthorization();
 
-// =====================================================
-// Tạo ApiVersionSet v1.0
-// =====================================================
-// Đây là bước bắt buộc để endpoint có "associated API version set"
-var v1Version = new ApiVersion(1, 0);
+// OpenAPI / Scalar UI
+app.MapOpenApi();
+app.MapScalarApiReference(options =>
+{
+    options.WithTitle("Culinary Blog API")
+           .WithTheme(ScalarTheme.Purple);
+});
 
-var versionSet = app.NewApiVersionSet()
-    .HasApiVersion(v1Version)
-    .ReportApiVersions()
-    .Build();
-
-// =====================================================
-// 8. Route root versioned
-// =====================================================
-// Mọi route API đi qua đây sẽ mang prefix /api/v{version:apiVersion}
-var api = app.MapGroup("/api/v{version:apiVersion}")
-    .WithApiVersionSet(versionSet);
-
-// =====================================================
-// 9. Route group Recipes v1
-// =====================================================
-var recipes = api.MapGroup("/recipes");
-
-recipes.MapGet("/", () =>
-    Results.Ok(new { message = "Recipes v1.0" }))
-    .MapToApiVersion(v1Version);
-
-recipes.MapGet("/{id:guid}", (Guid id) =>
-    Results.Ok(new { id, message = "Recipe detail v1.0" }))
-    .MapToApiVersion(v1Version);
-
-// =====================================================
-// 10. Route group Categories v1
-// =====================================================
-var categories = api.MapGroup("/categories");
-
-categories.MapGet("/", () =>
-    Results.Ok(new { message = "Categories v1.0" }))
-    .MapToApiVersion(v1Version);
-
-// =====================================================
-// 11. Route group Auth v1
-// =====================================================
-var auth = api.MapGroup("/auth");
-
-auth.MapPost("/login", () =>
-    Results.Ok(new { message = "Login v1.0" }))
-    .MapToApiVersion(v1Version);
-
-auth.MapPost("/register", () =>
-    Results.Ok(new { message = "Register v1.0" }))
-    .MapToApiVersion(v1Version);
-
-auth.MapPost("/refresh", () =>
-    Results.Ok(new { message = "Refresh v1.0" }))
-    .MapToApiVersion(v1Version);
-
-auth.MapPost("/logout", () =>
-    Results.Ok(new { message = "Logout v1.0" }))
-    .MapToApiVersion(v1Version);
+// Sub-endpoints
+app.MapRecipeIngredientsEndpoints();
+app.MapRecipeStepsEndpoints();
+app.MapRecipeImagesEndpoints();
 
 // =====================================================
 // Routes
 // =====================================================
 app.MapControllers();
+app.MapRecipeEndpoints();
+app.MapCategoryEndpoints();
+app.MapAuthEndpoints();
+app.MapUserEndpoints();
 
-app.MapGet("/", () => Results.Redirect("/scalar/v1"));
+app.MapGet("/", () => Results.Redirect("/scalar/v1"))
+    .WithName("GetApiDocumentation")
+    .WithSummary("Mở giao diện tài liệu API")
+    .WithDescription("Chuyển hướng đến Scalar UI.")
+    .Produces(StatusCodes.Status302Found);
 
-app.MapGet("/health", () => Results.Ok(new
+app.MapHealthChecks("/health")
+    .WithName("HealthCheck")
+    .WithSummary("Kiểm tra tình trạng hệ thống")
+    .WithDescription("Kiểm tra tất cả các health checks đã đăng ký.");
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions
 {
-    status = "Healthy",
-    timestampUtc = DateTime.UtcNow
-}));
+    Predicate = healthCheck => healthCheck.Tags.Contains("live")
+})
+    .WithName("LivenessCheck")
+    .WithSummary("Kiểm tra ứng dụng còn hoạt động")
+    .WithDescription("Chỉ kiểm tra tiến trình ứng dụng, không phụ thuộc dịch vụ bên ngoài.");
 
-app.MapGet("/health/live", () => Results.Ok(new
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {
-    status = "Healthy",
-    probe = "live",
-    timestampUtc = DateTime.UtcNow
-}));
-
-app.MapGet("/health/ready", () => Results.Ok(new
-{
-    status = "Healthy",
-    probe = "ready",
-    timestampUtc = DateTime.UtcNow
-}));
-
-// =====================================================
-// Route groups
-// =====================================================
-
-// Ví dụ endpoint công khai / thông thường
-api.MapGet("/health", () => Results.Ok(new { status = "Healthy" }))
-   .WithName("HealthCheck");
-
-// ===================================================== 
-// Minimal API Endpoints 
-// ===================================================== 
-
-MapRecipeEndpoints(app);
-
-// ===================================================== 
-// App Start 
-// =====================================================
+    Predicate = healthCheck => healthCheck.Tags.Contains("ready")
+})
+    .WithName("ReadinessCheck")
+    .WithSummary("Kiểm tra ứng dụng sẵn sàng phục vụ")
+    .WithDescription("Kiểm tra các phụ thuộc cần thiết để phục vụ request.");
 
 app.Run();
 
-// =====================================================
-// Local functions
-// =====================================================
-
-static void MapRecipeEndpoints(WebApplication app)
-{
-    // Group cho toàn bộ endpoint liên quan Recipe.
-    var recipes = app.MapGroup("/api/recipes")
-        .WithTags("Recipes");
-
-    // GET /api/recipes/search?keyword=abc&take=20
-    recipes.MapGet("/search", async (
-        string? keyword,
-        int take,
-        IMediator mediator,
-        CancellationToken cancellationToken) =>
-    {
-        // Gửi query xuống Application layer theo CQRS.
-        var result = await mediator.Send(
-            new GetRecipesByKeywordQuery(keyword ?? string.Empty, take),
-            cancellationToken);
-
-        return Results.Ok(result);
-    })
-    .WithName("SearchRecipesByKeyword")
-    .WithSummary("Search recipes by keyword")
-    .WithDescription("Search recipes by keyword using PostgreSQL full-text search over SearchVector.")
-    .Produces<IReadOnlyList<RecipeSearchResultDto>>(StatusCodes.Status200OK)
-    .Produces(StatusCodes.Status200OK);
-}
-
 static string NormalizeServiceUrl(string endpoint)
 {
-    // Loại bỏ khoảng trắng dư thừa.
     var value = endpoint.Trim();
 
     if (!value.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
@@ -413,18 +321,10 @@ static string NormalizeServiceUrl(string endpoint)
         value = "http://" + value.TrimStart('/');
     }
 
-    // Bỏ slash cuối để tránh lỗi ghép URL.
     return value.TrimEnd('/');
 }
 
-//-----------------------------------------------------------------
-// var app = builder.Build();
-
-// if (app.Environment.IsDevelopment())
-// {
-//     app.MapOpenApi();
-//     app.MapScalarApiReference(); // Chỉ giữ đúng 1 dòng này!
-
-//     app.MapGet("/", () => "Hello World! Culinary Blog Backend is running on .NET 10.");
-// }
-// app.Run();
+/// <summary>Provides the API entry point for hosting and integration tests.</summary>
+public partial class Program
+{
+}

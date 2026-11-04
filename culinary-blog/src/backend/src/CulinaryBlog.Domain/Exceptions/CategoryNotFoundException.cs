@@ -1,6 +1,6 @@
-namespace CulinaryBlog.Domain.Entities.Categories;
+namespace CulinaryBlog.Domain.Exceptions;
 
-using CulinaryBlog.Domain.Common.Exceptions;
+
 
 public sealed class CategoryNotFoundException : DomainException
 {

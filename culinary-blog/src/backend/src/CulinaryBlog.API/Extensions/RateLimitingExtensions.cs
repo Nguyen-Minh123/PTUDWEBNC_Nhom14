@@ -28,7 +28,6 @@ public static class RateLimitingExtensions
             // -------------------------------------------------
             // 2. Global limiter cho toàn bộ API
             // -------------------------------------------------
-            // Nếu endpoint không gắn policy riêng, nó sẽ dùng api-policy mặc định này.
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
             {
                 var clientKey = GetClientKey(httpContext);
@@ -37,22 +36,11 @@ public static class RateLimitingExtensions
                     partitionKey: clientKey,
                     factory: _ => new TokenBucketRateLimiterOptions
                     {
-                        // Số request tối đa có thể "tích" trong bucket
-                        TokenLimit = 120,
-
-                        // Số token được nạp thêm mỗi chu kỳ
-                        TokensPerPeriod = 120,
-
-                        // Mỗi phút nạp lại bucket
+                        TokenLimit = 200,
+                        TokensPerPeriod = 200,
                         ReplenishmentPeriod = TimeSpan.FromMinutes(1),
-
-                        // Không xếp hàng request chờ
                         QueueLimit = 0,
-
-                        // Nếu queue > 0 thì yêu cầu ưu tiên request cũ hơn
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-
-                        // Tự động nạp token theo chu kỳ
                         AutoReplenishment = true
                     });
             });
@@ -80,7 +68,6 @@ public static class RateLimitingExtensions
             // -------------------------------------------------
             // 4. Policy API nếu muốn gắn explicit ở route group
             // -------------------------------------------------
-            // Token bucket giống global limiter, dùng để gắn rõ ràng cho group endpoint.
             options.AddPolicy("api-policy", httpContext =>
             {
                 var clientKey = GetClientKey(httpContext);
@@ -89,8 +76,8 @@ public static class RateLimitingExtensions
                     partitionKey: clientKey,
                     factory: _ => new TokenBucketRateLimiterOptions
                     {
-                        TokenLimit = 120,
-                        TokensPerPeriod = 120,
+                        TokenLimit = 200,
+                        TokensPerPeriod = 200,
                         ReplenishmentPeriod = TimeSpan.FromMinutes(1),
                         QueueLimit = 0,
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
@@ -116,6 +103,7 @@ public static class RateLimitingExtensions
 
                 var problem = new ProblemDetails
                 {
+                    Type = "https://tools.ietf.org/html/rfc6585#section-4",
                     Title = "Too Many Requests",
                     Status = StatusCodes.Status429TooManyRequests,
                     Detail = "Bạn đã gửi quá nhiều request trong thời gian ngắn. Vui lòng thử lại sau 60 giây.",
@@ -135,8 +123,6 @@ public static class RateLimitingExtensions
     /// </summary>
     private static string GetClientKey(HttpContext context)
     {
-        // Nếu bạn chạy sau Nginx và đã cấu hình Forwarded Headers,
-        // RemoteIpAddress sẽ là IP thật của client.
         var ip = context.Connection.RemoteIpAddress?.ToString();
 
         if (!string.IsNullOrWhiteSpace(ip))

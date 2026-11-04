@@ -9,20 +9,12 @@ export type RecipeStatus = 'Draft' | 'Published' | 'Archived';
  * 6 chỉ số dinh dưỡng chính (FR-DVO-002)
  */
 export interface RecipeNutritionDto {
-  calories: number;
-  proteinGrams: number;
-  fatGrams: number;
-  carbsGrams: number;
-  fiberGrams?: number;
-  sodiumMg?: number;
-  // Bổ sung các trường tùy chọn cho tương thích ngược
-  fat?: number | null;
-  saturatedFat?: number | null;
-  carbohydrates?: number | null;
-  sugar?: number | null;
-  fiber?: number | null;
-  protein?: number | null;
-  sodium?: number | null;
+  calories: number | null;
+  protein: number | null;
+  carbohydrates: number | null;
+  fat: number | null;
+  fiber: number | null;
+  sodium: number | null;
 }
 
 /**

@@ -1,12 +1,8 @@
-namespace CulinaryBlog.Domain.Common.Exceptions;
+namespace CulinaryBlog.Domain.Exceptions;
 
-public abstract class DomainException : Exception
+public class DomainException : Exception
 {
-    protected DomainException(string message) : base(message)
-    {
-    }
-
-    protected DomainException(string message, Exception innerException) : base(message, innerException)
+    public DomainException(string message) : base(message)
     {
     }
 }

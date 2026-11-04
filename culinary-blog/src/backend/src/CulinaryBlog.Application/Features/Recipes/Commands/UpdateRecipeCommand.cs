@@ -1,11 +1,10 @@
 using CulinaryBlog.Domain.Entities;
 using MediatR;
 
-namespace CulinaryBlog.Application.Features.Recipes.Commands.UpdateRecipe;
+namespace CulinaryBlog.Application.Features.Recipes.Commands;
 
 /// <summary>
-/// Command cập nhật Recipe.
-/// RowVersion là token đồng thời để tránh ghi đè dữ liệu cũ.
+/// Command cập nhật Recipe có hỗ trợ Concurrency Token (RowVersion).
 /// </summary>
 public sealed record UpdateRecipeCommand(
     Guid Id,
@@ -18,12 +17,12 @@ public sealed record UpdateRecipeCommand(
     int Servings,
     RecipeDifficulty Difficulty,
     Guid CategoryId,
-    uint RowVersion
-) : IRequest<RecipeDto>;
+    RecipeNutrition? Nutrition = null,
+    uint? RowVersion = null
+) : IRequest<Recipe>;
 
 /// <summary>
-/// DTO trả về sau khi cập nhật.
-/// Client nên giữ RowVersion mới nhất cho lần sửa tiếp theo.
+/// DTO trả về sau khi cập nhật (dành cho client cần RowVersion mới).
 /// </summary>
 public sealed record RecipeDto(
     Guid Id,

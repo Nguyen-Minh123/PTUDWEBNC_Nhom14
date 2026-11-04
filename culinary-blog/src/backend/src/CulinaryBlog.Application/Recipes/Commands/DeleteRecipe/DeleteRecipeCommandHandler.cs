@@ -1,46 +1,39 @@
 using CulinaryBlog.Application.Common.Interfaces;
+using CulinaryBlog.Domain.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace CulinaryBlog.Application.Recipes.Commands.DeleteRecipe;
 
-/// <summary>
-/// Command handler dùng để xóa Recipe.
-/// 
-/// Vì hệ thống đang theo hướng Clean Architecture + EF Core abstraction,
-/// handler sẽ làm việc trực tiếp với IApplicationDbContext thay vì đi qua
-/// IUnitOfWork.Recipes.
-/// </summary>
 public sealed class DeleteRecipeCommandHandler
-    : IRequestHandler<DeleteRecipeCommand, Unit>
+    : IRequestHandler<DeleteRecipeCommand, bool>
 {
-    private readonly IApplicationDbContext _dbContext;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly ICurrentUserService _currentUserService;
 
-    public DeleteRecipeCommandHandler(IApplicationDbContext dbContext)
+    public DeleteRecipeCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService currentUserService)
     {
-        _dbContext = dbContext;
+        _unitOfWork = unitOfWork;
+        _currentUserService = currentUserService;
     }
 
-    public async Task<Unit> Handle(
+    public async Task<bool> Handle(
         DeleteRecipeCommand request,
         CancellationToken cancellationToken)
     {
-        // Tìm recipe theo Id.
-        var recipe = await _dbContext.Recipes
-            .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
+        var recipe = await _unitOfWork.Recipes.GetByIdAsync(request.Id, cancellationToken)
+            ?? throw new RecipeNotFoundException(request.Id);
 
-        if (recipe is null)
+        var currentUserId = _currentUserService.UserId;
+        var isAdmin = _currentUserService.IsInRole("Admin");
+
+        if (!isAdmin && recipe.AuthorId != currentUserId)
         {
-            throw new InvalidOperationException($"Recipe with Id '{request.Id}' was not found.");
+            throw new ForbiddenAccessException("Bạn không có quyền xóa công thức này.");
         }
 
-        // Nếu hệ thống có SoftDeleteInterceptor, Remove() sẽ được interceptor
-        // chuyển thành soft delete thay vì xóa vật lý.
-        _dbContext.Recipes.Remove(recipe);
+        recipe.IsDeleted = true;
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // Lưu thay đổi xuống database.
-        await _dbContext.SaveChangesAsync(cancellationToken);
-
-        return Unit.Value;
+        return true;
     }
 }

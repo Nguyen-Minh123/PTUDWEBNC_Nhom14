@@ -33,7 +33,7 @@ public static class DependencyInjection
                 "Connection string 'DefaultConnection' was not found.");
         }
 
-        services.AddDbContext<ApplicationDbContext>(options =>
+        services.AddDbContext<CulinaryBlogDbContext>(options =>
         {
             options.UseNpgsql(connectionString);
         });
@@ -42,7 +42,7 @@ public static class DependencyInjection
         // 2. Map interface DbContext cho Application layer
         // -------------------------------------------------
         services.AddScoped<IApplicationDbContext>(sp =>
-            sp.GetRequiredService<ApplicationDbContext>());
+            sp.GetRequiredService<CulinaryBlogDbContext>());
 
         // -------------------------------------------------
         // 3. Đăng ký CurrentUserService
