@@ -12,12 +12,13 @@ import { RecipeSteps } from '@/components/recipe-detail/RecipeSteps';
 import { CommentSection } from '@/components/comments/CommentSection';
 import { RecipeDetailSkeleton } from '@/components/recipe/RecipeDetailSkeleton';
 import { RecipeCard } from '@/components/recipe/RecipeCard';
+import { CookingModeModal } from '@/components/recipe-detail/CookingModeModal';
 import { INITIAL_RECIPES } from '@/services/recipeService';
 import { useRecipeDetail } from '@/hooks/queries/useRecipes';
 import { extractErrorMessage } from '@/lib/axios';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb, ChefHat } from 'lucide-react';
 
 interface RecipeDetailPageProps {
   params: Promise<{ id: string }>;
@@ -33,6 +34,16 @@ export default function RecipeDetailPage({ params }: RecipeDetailPageProps) {
     error,
     refetch,
   } = useRecipeDetail(id);
+
+  // Trạng thái cho Chế độ nấu ăn (Cooking Mode) và Khẩu phần (Servings) (FR-FTE-052)
+  const [isCookingModeOpen, setIsCookingModeOpen] = React.useState(false);
+  const [currentServings, setCurrentServings] = React.useState<number>(4);
+
+  React.useEffect(() => {
+    if (fullRecipe?.servings) {
+      setCurrentServings(fullRecipe.servings);
+    }
+  }, [fullRecipe?.servings]);
 
   if (isLoading) {
     return (
@@ -107,7 +118,11 @@ export default function RecipeDetailPage({ params }: RecipeDetailPageProps) {
         />
 
         {/* 1. Recipe Hero Section */}
-        <RecipeHero key={fullRecipe.id} recipe={fullRecipe} />
+        <RecipeHero
+          key={fullRecipe.id}
+          recipe={fullRecipe}
+          onStartCooking={() => setIsCookingModeOpen(true)}
+        />
 
         {/* 2. Quick Stats Grid */}
         <div className="my-8">
@@ -118,14 +133,18 @@ export default function RecipeDetailPage({ params }: RecipeDetailPageProps) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start my-8">
           {/* CỘT CHÍNH (2/3): Nguyên liệu & Các bước làm */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Danh sách nguyên liệu tương tác */}
+            {/* Danh sách nguyên liệu tương tác có bộ tính khẩu phần (FR-FTE-052) */}
             <RecipeIngredients
               initialServings={fullRecipe.servings}
               ingredients={fullRecipe.ingredients}
+              onServingsChange={setCurrentServings}
             />
 
-            {/* Các bước nấu dạng timeline */}
-            <RecipeSteps steps={fullRecipe.steps} />
+            {/* Các bước nấu dạng timeline có nút mở Cooking Mode (FR-FTE-052) */}
+            <RecipeSteps
+              steps={fullRecipe.steps}
+              onStartCooking={() => setIsCookingModeOpen(true)}
+            />
 
             {/* Bảng phân tích dinh dưỡng */}
             <RecipeNutrition nutrition={fullRecipe.nutrition} />
@@ -136,6 +155,25 @@ export default function RecipeDetailPage({ params }: RecipeDetailPageProps) {
 
           {/* CỘT PHỤ (1/3): Mẹo nấu ăn & Thông tin bổ sung */}
           <div className="space-y-6 sticky top-20">
+            {/* Quick Cooking Focus Button Card */}
+            <Card className="border-amber-300 bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-md">
+              <CardContent className="p-5 space-y-3">
+                <div className="flex items-center gap-2">
+                  <ChefHat className="h-6 w-6 text-amber-200" />
+                  <span className="font-bold text-base">Chuẩn Bị Vào Bếp?</span>
+                </div>
+                <p className="text-xs text-amber-100 leading-relaxed">
+                  Bật chế độ nấu ăn rảnh tay toàn màn hình với hướng dẫn từng bước, bộ đếm giờ tự động và màn hình luôn sáng.
+                </p>
+                <Button
+                  onClick={() => setIsCookingModeOpen(true)}
+                  className="w-full bg-white text-amber-900 hover:bg-amber-50 font-bold text-xs shadow-xs"
+                >
+                  <ChefHat className="h-4 w-4 mr-1.5" /> Bắt đầu nấu ăn ngay
+                </Button>
+              </CardContent>
+            </Card>
+
             {/* Chef's Cooking Tip Card */}
             <Card className="border-amber-200/80 bg-gradient-to-br from-amber-50/80 via-white to-amber-50/40 shadow-xs dark:bg-stone-900 dark:border-stone-800">
               <CardHeader className="pb-2">
@@ -197,6 +235,16 @@ export default function RecipeDetailPage({ params }: RecipeDetailPageProps) {
             ))}
           </div>
         </div>
+
+        {/* Cooking Focus Mode Fullscreen Modal (FR-FTE-052) */}
+        <CookingModeModal
+          isOpen={isCookingModeOpen}
+          onClose={() => setIsCookingModeOpen(false)}
+          recipeTitle={fullRecipe.title}
+          steps={fullRecipe.steps}
+          ingredients={fullRecipe.ingredients}
+          servings={currentServings}
+        />
       </MainContainer>
     </div>
   );

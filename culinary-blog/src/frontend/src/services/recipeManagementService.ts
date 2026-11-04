@@ -34,7 +34,34 @@ export interface FullRecipeSubmission {
   ingredients: CreateIngredientPayload[];
   steps: CreateStepPayload[];
   imageUrl?: string;
+  images?: File[];
   publishImmediately?: boolean;
+}
+
+export interface UpdateRecipeSubmission {
+  id: string;
+  title: string;
+  slug?: string;
+  description: string;
+  instructions?: string;
+  prepTime: number;
+  cookTime: number;
+  servings: number;
+  difficulty: 'Easy' | 'Medium' | 'Hard' | 'Expert';
+  categoryId: string;
+  nutrition?: {
+    calories?: number | null;
+    protein?: number | null;
+    carbohydrates?: number | null;
+    fat?: number | null;
+    fiber?: number | null;
+    sodium?: number | null;
+  } | null;
+  rowVersion?: number | string | null;
+  ingredients?: CreateIngredientPayload[];
+  steps?: CreateStepPayload[];
+  images?: File[];
+  existingImageUrls?: string[];
 }
 
 // Key lưu trữ cục bộ cho các công thức tạo mới (fallback)
@@ -61,7 +88,7 @@ function saveStoredRecipes(recipes: RecipeSummaryDto[]) {
 
 export const recipeManagementService = {
   /**
-   * Tạo công thức hoàn chỉnh (FR-FTE-009 & FR-FTE-010)
+   * Tạo công thức hoàn chỉnh (FR-FTE-009 & FR-FTE-010 & FR-FTE-049)
    * Tạo Recipe -> Thêm Ingredients -> Thêm Steps -> Đặt ảnh -> Xuất bản (nếu chọn)
    */
   async submitFullRecipe(
@@ -113,7 +140,14 @@ export const recipeManagementService = {
           });
         }
 
-        // 4. Xuất bản nếu được yêu cầu
+        // 4. Tải lên hình ảnh thực tế nếu có
+        if (data.images && data.images.length > 0) {
+          for (let i = 0; i < data.images.length; i++) {
+            await this.uploadRecipeImage(recipeId, data.images[i], i === 0, token);
+          }
+        }
+
+        // 5. Xuất bản nếu được yêu cầu
         if (data.publishImmediately) {
           await fetch(`${API_BASE_URL}/api/v1/recipes/${recipeId}/publish`, {
             method: 'POST',
@@ -178,7 +212,111 @@ export const recipeManagementService = {
   },
 
   /**
-   * Upload hình ảnh cho công thức (FR-INF-003 / FR-FTE-010)
+   * Cập nhật Recipe kèm Concurrency Token (RowVersion) (FR-FTE-050)
+   */
+  async updateRecipe(
+    id: string,
+    data: UpdateRecipeSubmission,
+    token?: string
+  ): Promise<{ success: boolean; data?: RecipeDetailDto; isConflict?: boolean; message?: string }> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+
+    const rowVersionNumber =
+      data.rowVersion !== null && data.rowVersion !== undefined
+        ? Number(data.rowVersion)
+        : undefined;
+
+    const payload = {
+      id,
+      title: data.title,
+      slug: data.slug || data.title
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)+/g, ''),
+      description: data.description,
+      instructions: data.instructions || '',
+      prepTime: data.prepTime,
+      cookTime: data.cookTime,
+      servings: data.servings,
+      difficulty: data.difficulty,
+      categoryId: data.categoryId,
+      nutrition: data.nutrition,
+      rowVersion: rowVersionNumber,
+    };
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/recipes/${id}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(payload),
+      });
+
+      if (res.status === 409) {
+        return {
+          success: false,
+          isConflict: true,
+          message: 'Xung đột dữ liệu: Công thức đã được sửa đổi bởi người dùng hoặc phiên khác. Vui lòng tải lại dữ liệu mới nhất.',
+        };
+      }
+
+      if (res.ok) {
+        const updated = await res.json();
+
+        // Tải lên thêm hình ảnh mới nếu có
+        if (data.images && data.images.length > 0) {
+          for (let i = 0; i < data.images.length; i++) {
+            await this.uploadRecipeImage(id, data.images[i], false, token);
+          }
+        }
+
+        return {
+          success: true,
+          data: updated,
+          message: 'Cập nhật công thức thành công!',
+        };
+      }
+
+      const errText = await res.text();
+      return {
+        success: false,
+        message: errText || 'Cập nhật công thức thất bại.',
+      };
+    } catch (err: any) {
+      console.warn('[updateRecipe] API offline, updating local cache:', err);
+    }
+
+    // Local fallback update
+    const list = getStoredRecipes();
+    const index = list.findIndex((r) => r.id === id);
+    if (index !== -1) {
+      const updatedItem: RecipeSummaryDto = {
+        ...list[index],
+        title: data.title,
+        description: data.description,
+        prepTime: data.prepTime,
+        cookTime: data.cookTime,
+        totalTime: data.prepTime + data.cookTime,
+        servings: data.servings,
+        difficulty: data.difficulty,
+        categoryId: data.categoryId,
+      };
+      list[index] = updatedItem;
+      saveStoredRecipes(list);
+    }
+
+    return {
+      success: true,
+      message: 'Đã lưu cập nhật công thức thành công (Bộ nhớ cục bộ)!',
+    };
+  },
+
+  /**
+   * Upload hình ảnh cho công thức (FR-INF-003 / FR-FTE-010 / FR-FTE-049)
    */
   async uploadRecipeImage(
     recipeId: string,
@@ -222,7 +360,11 @@ export const recipeManagementService = {
         const data = await res.json();
         const serverItems: RecipeSummaryDto[] = data.items || [];
         const localItems = getStoredRecipes();
-        return [...localItems, ...serverItems];
+        const combined = [...localItems, ...serverItems];
+        if (authorId) {
+          return combined.filter((r) => r.authorId === authorId);
+        }
+        return combined;
       }
     } catch {
       // ignore
@@ -233,7 +375,7 @@ export const recipeManagementService = {
   },
 
   /**
-   * Xuất bản công thức (Publish)
+   * Xuất bản công thức (Publish) (FR-FTE-051)
    */
   async publishRecipe(recipeId: string, token?: string): Promise<boolean> {
     try {
@@ -254,7 +396,7 @@ export const recipeManagementService = {
   },
 
   /**
-   * Lưu trữ công thức (Archive)
+   * Lưu trữ công thức (Archive) (FR-FTE-051)
    */
   async archiveRecipe(recipeId: string, token?: string): Promise<boolean> {
     try {
@@ -274,7 +416,7 @@ export const recipeManagementService = {
   },
 
   /**
-   * Xóa mềm công thức (Delete)
+   * Xóa mềm công thức (Delete) (FR-FTE-051)
    */
   async deleteRecipe(recipeId: string, token?: string): Promise<boolean> {
     try {

@@ -1,4 +1,4 @@
-## 👥 Phân công Nhiệm vụ (Lab 01-07: ✅ Done, Lab 08: 🚀 Đang triển khai)
+## 👥 Phân công Nhiệm vụ (Lab 01-08: ✅ Done)
 
 | Thành viên / Vai trò | Mã Issue | Tên Nhiệm vụ chi tiết | Trạng thái |
 | :--- | :--- | :--- | :--- |
@@ -56,10 +56,10 @@
 | | **FR-FTE-034** | Xây dựng trang xem danh sách tất cả Category (`/categories`) hiển thị dạng lưới (Lab 7) | ✅ Done |
 | | **FR-FTE-035** | Xây dựng Sidebar danh mục cho Trang chủ và Trang Khám phá (`CategorySidebar`) (Lab 7) | ✅ Done |
 | | **FR-FTE-036** | Cài đặt chức năng Tìm kiếm (Search Bar, Debounce, Filter by Category, Query Params) (Lab 7) | ✅ Done |
-| | **FR-INF-007** | Hoàn thiện dịch vụ Upload ảnh thực tế lên MinIO/Local Storage & xử lý ảnh (Lab 8) | ⏳ To Do |
-| | **FR-BKE-018** | Xây dựng API Upload ảnh công thức & ảnh đại diện (`POST /api/v1/media/upload`) (Lab 8) | ⏳ To Do |
-| | **FR-FTE-046** | Xây dựng Component `ImageUploader` kéo thả, xem trước và kiểm tra dung lượng (Lab 8) | ⏳ To Do |
-| | **FR-FTE-047** | Xây dựng Trang Quản trị Danh mục cho Admin (`/dashboard/categories`) (Lab 8) | ⏳ To Do |
+| | **FR-INF-007** | Hoàn thiện dịch vụ Upload ảnh thực tế lên MinIO/Local Storage & xử lý ảnh (Lab 8) | ✅ Done |
+| | **FR-BKE-018** | Xây dựng API Upload ảnh công thức & ảnh đại diện (`POST /api/v1/media/upload`) (Lab 8) | ✅ Done |
+| | **FR-FTE-046** | Xây dựng Component `ImageUploader` kéo thả, xem trước và kiểm tra dung lượng (Lab 8) | ✅ Done |
+| | **FR-FTE-047** | Xây dựng Trang Quản trị Danh mục cho Admin (`/dashboard/categories`) (Lab 8) | ✅ Done |
 | **Phan Thành Huy**<br>*(DevOps & Testing)* | **FR-DVO-001** | Cấu hình docker-compose.yml tổng hợp (Nginx, Postgres, Redis, MinIO) | ✅ Done |
 | | **FR-DVO-002** | Cấu hình 6 chỉ số dinh dưỡng | ✅ Done |
 | | **FR-TST-001** | Kiểm thử API nâng cao | ✅ Done |
@@ -86,10 +86,10 @@
 | | **FR-FTE-038** | Tích hợp hiển thị Nguyên liệu (`Ingredients`), Các bước thực hiện (`Steps`) & Dinh dưỡng (Lab 7) | ✅ Done |
 | | **FR-FTE-039** | Xây dựng tương tác xem ảnh phóng to & Giao diện Đánh giá/Bình luận cơ bản (Lab 7) | ✅ Done |
 | | **FR-TST-009** | Viết kịch bản kiểm thử E2E / Integration cho luồng Auth, Search và Xem chi tiết (Lab 7) | ✅ Done |
-| | **FR-DVO-007** | Bổ sung Middleware & MediatR Pipeline Behavior ghi nhận System Audit & HTTP Logs (Lab 8) | ⏳ To Do |
-| | **FR-BKE-019** | Xây dựng API Truy vấn Nhật ký Hệ thống cho Admin (`GET /api/v1/logs`) (Lab 8) | ⏳ To Do |
-| | **FR-FTE-048** | Xây dựng Trang Xem Nhật ký Hệ thống trên Dashboard Admin (`/dashboard/logs`) (Lab 8) | ⏳ To Do |
-| | **FR-TST-010** | Kiểm thử tích hợp (Integration Tests) cho Upload ảnh, Vòng đời công thức & Audit Log (Lab 8) | ⏳ To Do |
+| | **FR-DVO-007** | Bổ sung Middleware & MediatR Pipeline Behavior ghi nhận System Audit & HTTP Logs (Lab 8) | ✅ Done |
+| | **FR-BKE-019** | Xây dựng API Truy vấn Nhật ký Hệ thống cho Admin (`GET /api/v1/logs`) (Lab 8) | ✅ Done |
+| | **FR-FTE-048** | Xây dựng Trang Xem Nhật ký Hệ thống trên Dashboard Admin (`/dashboard/logs`) (Lab 8) | ✅ Done |
+| | **FR-TST-010** | Kiểm thử tích hợp (Integration Tests) cho Upload ảnh, Vòng đời công thức & Audit Log (Lab 8) | ✅ Done |
 | **Bùi Trung Hiếu**<br>*(Frontend Next.js)* | **FR-FTE-001** | Dựng Frontend Skeleton (Next.js 15 App Router + Tailwind CSS) | ✅ Done |
 | | **FR-FTE-002** | Đồng bộ TypeScript Interfaces | ✅ Done |
 | | **FR-FTE-003** | Chuẩn hóa cú pháp sắp xếp (?sort=-field) | ✅ Done |
@@ -113,7 +113,7 @@
 | | **FR-FTE-041** | Xây dựng Component danh sách thẻ công thức (`RecipeCard`, `RecipeGrid`) với Phân trang (Lab 7) | ✅ Done |
 | | **FR-FTE-042** | Xây dựng Trang hồ sơ cá nhân (`/profile`) xem thông tin tài khoản và danh sách bài viết (Lab 7) | ✅ Done |
 | | **FR-FTE-043** | Hoàn thiện tính năng Cập nhật hồ sơ (Chỉnh sửa tên, avatar, thông tin giới thiệu) (Lab 7) | ✅ Done |
-| | **FR-FTE-049** | Hoàn thiện Trang Thêm mới Công thức (`/recipes/new`) tích hợp Upload ảnh thực tế (Lab 8) | ⏳ To Do |
-| | **FR-FTE-050** | Xây dựng Trang Cập nhật / Chỉnh sửa Công thức (`/recipes/[id]/edit`) kèm RowVersion (Lab 8) | ⏳ To Do |
-| | **FR-FTE-051** | Xây dựng luồng chuyển đổi trạng thái công thức (`Draft` → `Published` → `Archived` / `Deleted`) (Lab 8) | ⏳ To Do |
-| | **FR-FTE-052** | Hoàn thiện các tính năng tương tác theo SRS: Chế độ nấu ăn (`Cooking Mode`) & Khẩu phần (`Servings`) (Lab 8) | ⏳ To Do |
+| | **FR-FTE-049** | Hoàn thiện Trang Thêm mới Công thức (`/recipes/new`) tích hợp Upload ảnh thực tế (Lab 8) | ✅ Done |
+| | **FR-FTE-050** | Xây dựng Trang Cập nhật / Chỉnh sửa Công thức (`/recipes/[id]/edit`) kèm RowVersion (Lab 8) | ✅ Done |
+| | **FR-FTE-051** | Xây dựng luồng chuyển đổi trạng thái công thức (`Draft` → `Published` → `Archived` / `Deleted`) (Lab 8) | ✅ Done |
+| | **FR-FTE-052** | Hoàn thiện các tính năng tương tác theo SRS: Chế độ nấu ăn (`Cooking Mode`) & Khẩu phần (`Servings`) (Lab 8) | ✅ Done |
