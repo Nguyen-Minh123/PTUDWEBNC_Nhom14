@@ -1,5 +1,7 @@
 using Bogus;
+using CulinaryBlog.Application.Common.Security;
 using CulinaryBlog.Domain.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace CulinaryBlog.Infrastructure.Persistence;
@@ -74,6 +76,8 @@ public sealed class RecipeDataSeeder(CulinaryBlogDbContext dbContext)
 
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
+        await EnsureUsersAndRolesAsync(cancellationToken);
+
         if (await dbContext.Recipes.AnyAsync(cancellationToken))
         {
             return;
@@ -81,16 +85,7 @@ public sealed class RecipeDataSeeder(CulinaryBlogDbContext dbContext)
 
         var categories = await EnsureCategoriesAsync(cancellationToken);
         var author = await dbContext.Users
-            .SingleOrDefaultAsync(user => user.Id == SeederUserId, cancellationToken);
-
-        if (author is null)
-        {
-            author = new ApplicationUser("seeder@culinaryblog.local", "Seeder Chef")
-            {
-                Id = SeederUserId
-            };
-            await dbContext.Users.AddAsync(author, cancellationToken);
-        }
+            .SingleAsync(user => user.Id == SeederUserId, cancellationToken);
 
         var faker = new Faker("en");
         var recipes = DishNames
@@ -103,6 +98,92 @@ public sealed class RecipeDataSeeder(CulinaryBlogDbContext dbContext)
 
         await dbContext.Recipes.AddRangeAsync(recipes, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task EnsureUsersAndRolesAsync(CancellationToken cancellationToken)
+    {
+        var hasher = new PasswordHasher<ApplicationUser>();
+
+        var demoUsers = new (string Id, string Email, string DisplayName, string FirstName, string LastName, string Bio, string AvatarUrl, string Role)[]
+        {
+            (
+                SeederUserId,
+                "seeder@culinaryblog.local",
+                "Chef Nguyễn Minh (Master Chef)",
+                "Minh",
+                "Nguyễn",
+                "Đầu bếp trưởng với hơn 12 năm kinh nghiệm nghiên cứu ẩm thực truyền thống Việt Nam và Á Âu.",
+                "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=400&auto=format&fit=crop&q=80",
+                UserRoleHelper.Author
+            ),
+            (
+                "admin-user-id",
+                "admin@culinary.com",
+                "Quản Trị Viên Hệ Thống",
+                "Admin",
+                "Culinary",
+                "Quản trị viên hệ thống Culinary Blog - phụ trách kiểm duyệt nội dung và quản lý cộng đồng đầu bếp.",
+                "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
+                UserRoleHelper.Admin
+            ),
+            (
+                "chef-hieu-id",
+                "chef.hieu@culinary.com",
+                "Chef Bùi Trung Hiếu",
+                "Hiếu",
+                "Bùi Trung",
+                "Chuyên gia các món nước và phở truyền thống Hà Nội, đam mê chia sẻ bí quyết nấu ăn gia đình.",
+                "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=400&auto=format&fit=crop&q=80",
+                UserRoleHelper.Author
+            ),
+            (
+                "chef-khai-id",
+                "chef.khai@culinary.com",
+                "Chef Nguyễn Thế Khải",
+                "Khải",
+                "Nguyễn Thế",
+                "Đầu bếp chuyên món chay thanh đạm và thực dưỡng hiện đại dành cho người bận rộn.",
+                "https://images.unsplash.com/photo-1566554273541-37a9ca77b91f?w=400&auto=format&fit=crop&q=80",
+                UserRoleHelper.Author
+            ),
+            (
+                "member-huy-id",
+                "member.huy@culinary.com",
+                "Phan Thanh Huy",
+                "Huy",
+                "Phan Thanh",
+                "Người yêu ẩm thực đường phố Sài Gòn và thích sưu tầm các công thức bánh ngọt dễ làm.",
+                "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80",
+                UserRoleHelper.User
+            )
+        };
+
+        var anyChanged = false;
+        foreach (var item in demoUsers)
+        {
+            var existing = await dbContext.Users
+                .FirstOrDefaultAsync(u => u.Id == item.Id || u.Email == item.Email, cancellationToken);
+
+            if (existing is null)
+            {
+                existing = new ApplicationUser(item.Email, item.DisplayName, item.Bio, item.AvatarUrl)
+                {
+                    Id = item.Id,
+                    FirstName = item.FirstName,
+                    LastName = item.LastName,
+                    EmailConfirmed = true
+                };
+                existing.PasswordHash = hasher.HashPassword(existing, "Password123!");
+                await dbContext.Users.AddAsync(existing, cancellationToken);
+                await UserRoleHelper.AssignRoleAsync(dbContext, existing.Id, item.Role, cancellationToken);
+                anyChanged = true;
+            }
+        }
+
+        if (anyChanged)
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
     }
 
     private async Task<Dictionary<string, Category>> EnsureCategoriesAsync(

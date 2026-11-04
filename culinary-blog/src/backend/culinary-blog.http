@@ -227,3 +227,41 @@ Accept: application/json
   "newPassword": "NewStrongPassword@2026",
   "confirmPassword": "NewStrongPassword@2026"
 }
+
+
+### 19. Get Public Authors List with Recipe Counts (FR-BKE-016)
+GET {{baseUrl}}/api/v1/users/authors?pageNumber=1&pageSize=12&sort=-publishedRecipeCount
+Accept: application/json
+
+> {%
+client.test("19. Gets public authors list successfully", function () {
+    client.assert(response.status === 200, "Expected HTTP 200");
+});
+%}
+
+### 20. Get Paginated Users List for Admin (FR-BKE-016)
+GET {{baseUrl}}/api/v1/users?pageNumber=1&pageSize=10&role=Author
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### 21. Update User Role as Admin (FR-BKE-017)
+PUT {{baseUrl}}/api/v1/users/member-huy-id/role
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "role": "Author"
+}
+
+### 22. Lock / Unlock User Account and Revoke Active RefreshTokens as Admin (FR-BKE-017)
+PUT {{baseUrl}}/api/v1/users/member-huy-id/status
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "isActive": false,
+  "lockoutDays": 30,
+  "reason": "Vi phạm tiêu chuẩn cộng đồng ẩm thực"
+}
