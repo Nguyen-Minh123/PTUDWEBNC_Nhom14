@@ -1,6 +1,8 @@
 using CulinaryBlog.Application.Common.Interfaces;
+using CulinaryBlog.Application.Common.Security;
 using CulinaryBlog.Application.DTOs;
 using CulinaryBlog.Domain.Entities;
+using CulinaryBlog.Domain.Exceptions;
 using Mapster;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -29,6 +31,7 @@ public class GoogleLoginCommandHandler : IRequestHandler<GoogleLoginCommand, Aut
         var user = await _dbContext.Users
             .FirstOrDefaultAsync(u => u.Email == payload.Email, cancellationToken);
 
+        List<string> roles;
         if (user == null)
         {
             // 3. Create new user
@@ -37,18 +40,24 @@ public class GoogleLoginCommandHandler : IRequestHandler<GoogleLoginCommand, Aut
             user.EmailConfirmed = true; // Social login means email is verified
 
             _dbContext.Users.Add(user);
+            roles = await UserRoleHelper.AssignRoleAsync(_dbContext, user.Id, UserRoleHelper.Author, cancellationToken);
         }
         else
         {
-            // Optional: update avatar if not set
+            if (user.IsLockedOut)
+            {
+                throw new ForbiddenAccessException("Tài khoản của bạn đã bị khóa hoặc vô hiệu hóa bởi Quản trị viên.");
+            }
+
             if (string.IsNullOrEmpty(user.AvatarUrl))
             {
                 user.SetAvatarUrl(payload.Picture);
             }
+
+            roles = await UserRoleHelper.GetUserRolesAsync(_dbContext, user, cancellationToken);
         }
 
         // 4. Generate Tokens
-        var roles = new List<string> { "User" }; // Add default role or fetch from db
         var accessToken = _jwtService.GenerateAccessToken(user, roles);
         var refreshToken = _jwtService.GenerateRefreshToken();
 
@@ -62,12 +71,16 @@ public class GoogleLoginCommandHandler : IRequestHandler<GoogleLoginCommand, Aut
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
+        var profileDto = user.Adapt<UserProfileDto>();
+        profileDto.Roles = roles;
+        profileDto.IsActive = user.IsActive;
+
         // 5. Return Response
         return new AuthResponseDto
         {
             AccessToken = accessToken,
             RefreshToken = refreshToken,
-            User = user.Adapt<UserProfileDto>()
+            User = profileDto
         };
     }
 }

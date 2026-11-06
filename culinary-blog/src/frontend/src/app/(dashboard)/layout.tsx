@@ -14,6 +14,10 @@ import {
   Bookmark,
   Lock,
   LogOut,
+  Users,
+  FolderKanban,
+  ScrollText,
+  type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -26,7 +30,14 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-const navItems = [
+type DashboardNavItem = {
+  title: string;
+  href: string;
+  icon: LucideIcon;
+  adminOnly?: boolean;
+};
+
+const navItems: DashboardNavItem[] = [
   {
     title: 'Tổng Quan & Bài Viết',
     href: '/dashboard',
@@ -51,6 +62,24 @@ const navItems = [
     title: 'Đổi Mật Khẩu & Bảo Mật',
     href: '/dashboard?tab=security',
     icon: Lock,
+  },
+];
+
+const adminNavItems: DashboardNavItem[] = [
+  {
+    title: 'Quản Lý Người Dùng',
+    href: '/dashboard/users',
+    icon: Users,
+  },
+  {
+    title: 'Quản Trị Danh Mục',
+    href: '/dashboard/categories',
+    icon: FolderKanban,
+  },
+  {
+    title: 'Nhật Ký Hệ Thống',
+    href: '/dashboard/logs',
+    icon: ScrollText,
   },
 ];
 
@@ -150,7 +179,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
 
         {/* Nav Links */}
-        <nav className="flex-1 px-3 py-2 space-y-1">
+        <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
@@ -171,6 +200,32 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </Link>
             );
           })}
+
+          <div className="pt-3 mt-3 border-t border-stone-100 dark:border-stone-800">
+            <p className="px-3.5 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-stone-400">
+              Quản trị hệ thống (Admin)
+            </p>
+            {adminNavItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={cn(
+                    'flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-amber-600 text-white shadow-xs font-semibold'
+                      : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900 dark:text-stone-300 dark:hover:bg-stone-800'
+                  )}
+                >
+                  <Icon className={cn('h-4 w-4', isActive ? 'text-white' : 'text-stone-500')} />
+                  <span>{item.title}</span>
+                </Link>
+              );
+            })}
+          </div>
         </nav>
 
         {/* Return to Blog button & Logout */}

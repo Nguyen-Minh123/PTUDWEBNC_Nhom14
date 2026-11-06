@@ -78,10 +78,10 @@ function LoginFormContent() {
     setLoading(true);
     setErrorMessage(null);
     setEmail(demoEmail);
-    setPassword('Demo@123');
+    setPassword('Password123!');
 
     try {
-      const authResult = await authService.login(demoEmail, 'Demo@123');
+      const authResult = await authService.login(demoEmail, 'Password123!');
 
       setSession({
         accessToken: authResult.accessToken,
@@ -98,7 +98,7 @@ function LoginFormContent() {
 
       await signIn('credentials', {
         email: demoEmail,
-        password: 'Demo@123',
+        password: 'Password123!',
         redirect: false,
         callbackUrl,
       });

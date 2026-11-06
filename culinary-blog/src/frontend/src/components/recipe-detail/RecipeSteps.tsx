@@ -4,10 +4,17 @@ import * as React from 'react';
 import Image from 'next/image';
 import { RecipeStepDto } from '@/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { ChefHat, Timer, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export function RecipeSteps({ steps }: { steps: RecipeStepDto[] }) {
+export function RecipeSteps({
+  steps,
+  onStartCooking,
+}: {
+  steps: RecipeStepDto[];
+  onStartCooking?: () => void;
+}) {
   const [completedSteps, setCompletedSteps] = React.useState<Record<number, boolean>>({});
   const orderedSteps = [...steps].sort((first, second) => first.stepNumber - second.stepNumber);
 
@@ -21,9 +28,22 @@ export function RecipeSteps({ steps }: { steps: RecipeStepDto[] }) {
   return (
     <Card className="border-stone-200/80 shadow-xs dark:border-stone-800">
       <CardHeader className="pb-3 border-b border-stone-100 dark:border-stone-800">
-        <div className="flex items-center gap-2">
-          <ChefHat className="h-5 w-5 text-amber-600" />
-          <CardTitle className="text-lg font-bold">Các Bước Thực Hiện</CardTitle>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ChefHat className="h-5 w-5 text-amber-600" />
+            <CardTitle className="text-lg font-bold">Các Bước Thực Hiện</CardTitle>
+          </div>
+
+          {onStartCooking && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onStartCooking}
+              className="text-xs gap-1.5 text-amber-700 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30 font-semibold"
+            >
+              <ChefHat className="h-3.5 w-3.5" /> Chế độ nấu ăn (Focus Mode)
+            </Button>
+          )}
         </div>
       </CardHeader>
 
@@ -73,7 +93,7 @@ export function RecipeSteps({ steps }: { steps: RecipeStepDto[] }) {
                     </h4>
                     {step.timerMinutes != null && (
                       <span className="inline-flex items-center gap-1 text-xs text-stone-500">
-                        <Timer className="h-3.5 w-3.5" />
+                        <Timer className="h-3.5 w-3.5 text-amber-500" />
                         {step.timerMinutes} phút
                       </span>
                     )}

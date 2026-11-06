@@ -11,6 +11,7 @@ import {
   recipeManagementService,
   FullRecipeSubmission,
 } from '@/services/recipeManagementService';
+import ImageUploader from '@/components/upload/ImageUploader';
 
 // Schema validation Zod cho toàn bộ 4 bước
 const recipeWizardSchema = z.object({
@@ -42,6 +43,14 @@ const recipeWizardSchema = z.object({
     .min(1, 'Khẩu phần ăn tối thiểu 1 người.')
     .max(100, 'Tối đa 100 người.'),
   difficulty: z.enum(['Easy', 'Medium', 'Hard', 'Expert']),
+
+  // Dinh dưỡng tùy chọn (FR-DVO-002)
+  calories: z.number().min(0).optional().nullable(),
+  protein: z.number().min(0).optional().nullable(),
+  carbohydrates: z.number().min(0).optional().nullable(),
+  fat: z.number().min(0).optional().nullable(),
+  fiber: z.number().min(0).optional().nullable(),
+  sodium: z.number().min(0).optional().nullable(),
 
   // Bước 2: Nguyên liệu (Ít nhất 1 nguyên liệu theo SRS rule RECIPE_PUBLISH_INCOMPLETE)
   ingredients: z
@@ -87,6 +96,8 @@ export function CreateRecipeWizard() {
   const { data: session } = useSession();
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [primaryImageId, setPrimaryImageId] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string>(
     'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80'
   );
@@ -111,6 +122,12 @@ export function CreateRecipeWizard() {
       cookTime: 30,
       servings: 4,
       difficulty: 'Medium',
+      calories: 350,
+      protein: 25,
+      carbohydrates: 30,
+      fat: 12,
+      fiber: 4,
+      sodium: 480,
       ingredients: [
         { name: 'Thịt bò phi lê', quantity: 300, unit: 'g', notes: 'thái mỏng' },
         { name: 'Hành hoa & rau mùi', quantity: 50, unit: 'g', notes: 'rửa sạch cắt khúc' },
@@ -174,16 +191,6 @@ export function CreateRecipeWizard() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Xử lý upload ảnh từ máy tính (FR-INF-003 / FR-FTE-010)
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const objectUrl = URL.createObjectURL(file);
-      setPreviewImage(objectUrl);
-      setValue('imageUrl', objectUrl);
-    }
-  };
-
   // Gửi tạo công thức (Draft hoặc Publish)
   const onSubmit = async (values: RecipeWizardFormValues, publishImmediately: boolean) => {
     setSubmitting(true);
@@ -214,6 +221,7 @@ export function CreateRecipeWizard() {
         timerMinutes: st.timerMinutes,
       })),
       imageUrl: previewImage || values.imageUrl,
+      images: uploadedFiles,
       publishImmediately,
     };
 
@@ -259,19 +267,19 @@ export function CreateRecipeWizard() {
                 onClick={() => {
                   if (item.step < currentStep) setCurrentStep(item.step);
                 }}
-                className={`w-9 h-9 sm:w-11 sm:h-11 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm transition-all ${
-                  currentStep === item.step
-                    ? 'bg-amber-600 text-white ring-4 ring-amber-100 shadow-md'
+                className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
+                  item.step === currentStep
+                    ? 'bg-amber-600 text-white ring-4 ring-amber-100 scale-110 shadow-md shadow-amber-600/30'
                     : item.step < currentStep
-                    ? 'bg-emerald-600 text-white cursor-pointer'
+                    ? 'bg-emerald-600 text-white cursor-pointer hover:bg-emerald-700'
                     : 'bg-white border-2 border-gray-200 text-gray-400'
                 }`}
               >
                 {item.step < currentStep ? '✓' : item.step}
               </button>
               <span
-                className={`mt-2 text-[11px] sm:text-xs font-semibold text-center hidden sm:block ${
-                  currentStep === item.step ? 'text-amber-800' : 'text-gray-400'
+                className={`text-[11px] font-semibold mt-2 hidden sm:block ${
+                  item.step === currentStep ? 'text-amber-700' : 'text-gray-400'
                 }`}
               >
                 {item.label}
@@ -281,25 +289,20 @@ export function CreateRecipeWizard() {
         </div>
       </div>
 
-      {/* Thông báo Alert */}
+      {/* Thông báo kết quả / lỗi */}
       {submitError && (
-        <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-sm text-rose-800 flex items-start gap-3">
-          <span className="text-xl">⚠️</span>
-          <div>
-            <p className="font-bold">Lỗi quy tắc nghiệp vụ (Domain Exception):</p>
-            <p className="text-xs mt-0.5">{submitError}</p>
-          </div>
+        <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium flex items-center gap-2">
+          <span>⚠️</span> {submitError}
         </div>
       )}
 
       {submitSuccess && (
-        <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 flex items-center gap-3">
-          <span className="text-xl">🎉</span>
-          <p className="font-bold">{submitSuccess}</p>
+        <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
+          <span>🎉</span> {submitSuccess} Đang chuyển hướng về Bảng điều khiển...
         </div>
       )}
 
-      <form onSubmit={(e) => e.preventDefault()} noValidate>
+      <form onSubmit={(e) => e.preventDefault()}>
         {/* ========================================================== */}
         {/* BƯỚC 1: THÔNG TIN CƠ BẢN (FR-FTE-009) */}
         {/* ========================================================== */}
@@ -308,123 +311,183 @@ export function CreateRecipeWizard() {
             <div>
               <h2 className="text-lg font-bold text-gray-900">Bước 1: Thông tin cơ bản về món ăn</h2>
               <p className="text-xs text-gray-500 mt-1">
-                Nhập tên món, mô tả, thời lượng chuẩn bị và độ khó phù hợp.
+                Cung cấp tên món, mô tả hấp dẫn và các chỉ số thời gian nấu nướng.
               </p>
             </div>
 
-            <div>
-              <label htmlFor="title" className="block text-xs font-semibold text-gray-800 mb-1.5">
-                Tên công thức món ăn *
-              </label>
-              <input
-                id="title"
-                placeholder="Ví dụ: Bò Kho Tiêu Xanh Nước Dừa"
-                className={inputClass}
-                {...register('title')}
-              />
-              {errors.title && (
-                <p className="mt-1.5 text-xs text-rose-600 font-medium">{errors.title.message}</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="description" className="block text-xs font-semibold text-gray-800 mb-1.5">
-                Mô tả chi tiết món ăn *
-              </label>
-              <textarea
-                id="description"
-                rows={3}
-                placeholder="Mô tả hương vị đặc trưng, nguồn gốc món ăn hoặc kỷ niệm ấm cúng..."
-                className={inputClass}
-                {...register('description')}
-              />
-              {errors.description && (
-                <p className="mt-1.5 text-xs text-rose-600 font-medium">{errors.description.message}</p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="space-y-4">
               <div>
-                <label htmlFor="categoryId" className="block text-xs font-semibold text-gray-800 mb-1.5">
-                  Danh mục ẩm thực *
-                </label>
-                <select id="categoryId" className={inputClass} {...register('categoryId')}>
-                  {CATEGORIES.filter((c) => c.id !== 'all').map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="difficulty" className="block text-xs font-semibold text-gray-800 mb-1.5">
-                  Độ khó thực hiện *
-                </label>
-                <select id="difficulty" className={inputClass} {...register('difficulty')}>
-                  {Object.entries(difficultyLabels).map(([val, label]) => (
-                    <option key={val} value={val}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-              <div>
-                <label htmlFor="prepTime" className="block text-xs font-semibold text-gray-800 mb-1.5">
-                  Chuẩn bị (phút) *
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Tên công thức <span className="text-red-500">*</span>
                 </label>
                 <input
-                  id="prepTime"
-                  type="number"
-                  min={1}
+                  {...register('title')}
+                  placeholder="Ví dụ: Phở Bò Tái Lăn Hà Nội Chuẩn Vị"
                   className={inputClass}
-                  {...register('prepTime', { valueAsNumber: true })}
                 />
-                {errors.prepTime && (
-                  <p className="mt-1 text-xs text-rose-600 font-medium">{errors.prepTime.message}</p>
+                {errors.title && <p className="text-red-500 text-[11px] mt-1">{errors.title.message}</p>}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Mô tả ngắn món ăn <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  {...register('description')}
+                  rows={3}
+                  placeholder="Mô tả hương vị, nguồn gốc hoặc cảm hứng của món ăn này..."
+                  className={inputClass}
+                />
+                {errors.description && (
+                  <p className="text-red-500 text-[11px] mt-1">{errors.description.message}</p>
                 )}
               </div>
 
-              <div>
-                <label htmlFor="cookTime" className="block text-xs font-semibold text-gray-800 mb-1.5">
-                  Nấu chín (phút) *
-                </label>
-                <input
-                  id="cookTime"
-                  type="number"
-                  min={0}
-                  className={inputClass}
-                  {...register('cookTime', { valueAsNumber: true })}
-                />
-                {errors.cookTime && (
-                  <p className="mt-1 text-xs text-rose-600 font-medium">{errors.cookTime.message}</p>
-                )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Danh mục ẩm thực <span className="text-red-500">*</span>
+                  </label>
+                  <select {...register('categoryId')} className={inputClass}>
+                    {CATEGORIES.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.categoryId && (
+                    <p className="text-red-500 text-[11px] mt-1">{errors.categoryId.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Độ khó thực hiện <span className="text-red-500">*</span>
+                  </label>
+                  <select {...register('difficulty')} className={inputClass}>
+                    <option value="Easy">{difficultyLabels.Easy}</option>
+                    <option value="Medium">{difficultyLabels.Medium}</option>
+                    <option value="Hard">{difficultyLabels.Hard}</option>
+                    <option value="Expert">{difficultyLabels.Expert}</option>
+                  </select>
+                  {errors.difficulty && (
+                    <p className="text-red-500 text-[11px] mt-1">{errors.difficulty.message}</p>
+                  )}
+                </div>
               </div>
 
-              <div>
-                <label htmlFor="servings" className="block text-xs font-semibold text-gray-800 mb-1.5">
-                  Khẩu phần (người) *
-                </label>
-                <input
-                  id="servings"
-                  type="number"
-                  min={1}
-                  className={inputClass}
-                  {...register('servings', { valueAsNumber: true })}
-                />
-                {errors.servings && (
-                  <p className="mt-1 text-xs text-rose-600 font-medium">{errors.servings.message}</p>
-                )}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Chuẩn bị (phút) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    {...register('prepTime', { valueAsNumber: true })}
+                    className={inputClass}
+                  />
+                  {errors.prepTime && (
+                    <p className="text-red-500 text-[11px] mt-1">{errors.prepTime.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Nấu chín (phút) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    {...register('cookTime', { valueAsNumber: true })}
+                    className={inputClass}
+                  />
+                  {errors.cookTime && (
+                    <p className="text-red-500 text-[11px] mt-1">{errors.cookTime.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Khẩu phần (người) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    {...register('servings', { valueAsNumber: true })}
+                    className={inputClass}
+                  />
+                  {errors.servings && (
+                    <p className="text-red-500 text-[11px] mt-1">{errors.servings.message}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Thông tin dinh dưỡng mở rộng (FR-DVO-002) */}
+              <div className="p-4 rounded-xl bg-stone-50 border border-stone-200 space-y-3">
+                <span className="text-xs font-bold text-stone-700 block">
+                  🥗 Chỉ số dinh dưỡng mỗi khẩu phần (Tuỳ chọn)
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[11px] text-stone-600 block mb-1">Calories (kcal)</label>
+                    <input
+                      type="number"
+                      {...register('calories', { valueAsNumber: true })}
+                      placeholder="350"
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-stone-600 block mb-1">Chất đạm / Protein (g)</label>
+                    <input
+                      type="number"
+                      {...register('protein', { valueAsNumber: true })}
+                      placeholder="25"
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-stone-600 block mb-1">Tinh bột / Carbs (g)</label>
+                    <input
+                      type="number"
+                      {...register('carbohydrates', { valueAsNumber: true })}
+                      placeholder="30"
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-stone-600 block mb-1">Chất béo / Fat (g)</label>
+                    <input
+                      type="number"
+                      {...register('fat', { valueAsNumber: true })}
+                      placeholder="12"
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-stone-600 block mb-1">Chất xơ / Fiber (g)</label>
+                    <input
+                      type="number"
+                      {...register('fiber', { valueAsNumber: true })}
+                      placeholder="4"
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-stone-600 block mb-1">Natri / Sodium (mg)</label>
+                    <input
+                      type="number"
+                      {...register('sodium', { valueAsNumber: true })}
+                      placeholder="480"
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         )}
 
         {/* ========================================================== */}
-        {/* BƯỚC 2: NGUYÊN LIỆU (FR-DB-007 / FR-FTE-010) */}
+        {/* BƯỚC 2: NGUYÊN LIỆU (FR-FTE-010) */}
         {/* ========================================================== */}
         {currentStep === 2 && (
           <div className="space-y-6 animate-fadeIn">
@@ -432,78 +495,77 @@ export function CreateRecipeWizard() {
               <div>
                 <h2 className="text-lg font-bold text-gray-900">Bước 2: Danh sách nguyên liệu cần chuẩn bị</h2>
                 <p className="text-xs text-gray-500 mt-1">
-                  Quy tắc nghiệp vụ: Công thức phải có ít nhất 1 nguyên liệu mới được phép xuất bản.
+                  Quy tắc nghiệp vụ: Cần ít nhất 1 nguyên liệu hợp lệ để được phép xuất bản.
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() =>
-                  appendIngredient({ name: '', quantity: 1, unit: 'g', notes: '' })
-                }
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold hover:bg-amber-100 transition-all"
+                onClick={() => appendIngredient({ name: '', quantity: 100, unit: 'g', notes: '' })}
+                className="px-3 py-1.5 text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-300 rounded-lg hover:bg-amber-100 transition-all flex items-center gap-1"
               >
-                <span>➕</span> Thêm nguyên liệu
+                + Thêm nguyên liệu
               </button>
             </div>
 
-            {errors.ingredients?.message && (
-              <p className="p-3 bg-rose-50 text-rose-700 text-xs rounded-lg font-medium border border-rose-200">
-                ⚠️ {errors.ingredients.message}
-              </p>
+            {errors.ingredients && (
+              <p className="text-red-500 text-xs font-medium">{errors.ingredients.message}</p>
             )}
 
             <div className="space-y-3">
-              {ingredientFields.map((field, idx) => (
+              {ingredientFields.map((field, index) => (
                 <div
                   key={field.id}
-                  className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3.5 bg-gray-50/70 rounded-xl border border-gray-200"
+                  className="p-3.5 rounded-xl border border-gray-200 bg-gray-50/50 flex flex-col sm:flex-row items-center gap-2.5"
                 >
-                  <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-800 font-bold text-xs flex items-center justify-center shrink-0">
-                    {idx + 1}
-                  </span>
+                  <span className="text-xs font-bold text-gray-400 w-6 text-center">#{index + 1}</span>
 
-                  <div className="flex-1 w-full sm:w-auto">
+                  <div className="flex-1 w-full">
                     <input
-                      placeholder="Tên nguyên liệu (vd: Bột năng)"
+                      {...register(`ingredients.${index}.name` as const)}
+                      placeholder="Tên nguyên liệu (VD: Thịt ba chỉ)"
                       className={inputClass}
-                      {...register(`ingredients.${idx}.name`)}
                     />
+                    {errors.ingredients?.[index]?.name && (
+                      <p className="text-red-500 text-[10px] mt-0.5">
+                        {errors.ingredients[index]?.name?.message}
+                      </p>
+                    )}
                   </div>
 
-                  <div className="w-full sm:w-28">
+                  <div className="w-24">
                     <input
                       type="number"
-                      step="any"
-                      placeholder="Định lượng"
+                      step="0.1"
+                      {...register(`ingredients.${index}.quantity` as const, { valueAsNumber: true })}
+                      placeholder="Số lượng"
                       className={inputClass}
-                      {...register(`ingredients.${idx}.quantity`, { valueAsNumber: true })}
                     />
                   </div>
 
-                  <div className="w-full sm:w-28">
+                  <div className="w-24">
                     <input
-                      placeholder="Đơn vị (g, ml...)"
+                      {...register(`ingredients.${index}.unit` as const)}
+                      placeholder="Đơn vị (g, ml)"
                       className={inputClass}
-                      {...register(`ingredients.${idx}.unit`)}
                     />
                   </div>
 
-                  <div className="w-full sm:w-44">
+                  <div className="flex-1 w-full">
                     <input
+                      {...register(`ingredients.${index}.notes` as const)}
                       placeholder="Ghi chú (tùy chọn)"
                       className={inputClass}
-                      {...register(`ingredients.${idx}.notes`)}
                     />
                   </div>
 
                   {ingredientFields.length > 1 && (
                     <button
                       type="button"
-                      onClick={() => removeIngredient(idx)}
-                      className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-all"
+                      onClick={() => removeIngredient(index)}
+                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors text-xs"
                       title="Xóa nguyên liệu"
                     >
-                      🗑️
+                      ✕
                     </button>
                   )}
                 </div>
@@ -513,15 +575,15 @@ export function CreateRecipeWizard() {
         )}
 
         {/* ========================================================== */}
-        {/* BƯỚC 3: CÁC BƯỚC THỰC HIỆN (FR-DB-008 / FR-FTE-010) */}
+        {/* BƯỚC 3: CÁC BƯỚC THỰC HIỆN (FR-FTE-010) */}
         {/* ========================================================== */}
         {currentStep === 3 && (
           <div className="space-y-6 animate-fadeIn">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Bước 3: Các bước nấu nướng & Hướng dẫn</h2>
+                <h2 className="text-lg font-bold text-gray-900">Bước 3: Hướng dẫn các bước nấu nướng</h2>
                 <p className="text-xs text-gray-500 mt-1">
-                  Hệ thống tự động đánh số thứ tự tuần tự (Step 1, Step 2...). Cần tối thiểu 1 bước.
+                  Đánh số tuần tự theo StepNumber tự động để hỗ trợ Chế độ nấu ăn (Cooking Mode).
                 </p>
               </div>
               <button
@@ -533,74 +595,71 @@ export function CreateRecipeWizard() {
                     timerMinutes: 5,
                   })
                 }
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold hover:bg-amber-100 transition-all"
+                className="px-3 py-1.5 text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-300 rounded-lg hover:bg-amber-100 transition-all flex items-center gap-1"
               >
-                <span>➕</span> Thêm bước thực hiện
+                + Thêm bước nấu
               </button>
             </div>
 
-            {errors.steps?.message && (
-              <p className="p-3 bg-rose-50 text-rose-700 text-xs rounded-lg font-medium border border-rose-200">
-                ⚠️ {errors.steps.message}
-              </p>
-            )}
+            {errors.steps && <p className="text-red-500 text-xs font-medium">{errors.steps.message}</p>}
 
-            <div className="space-y-5">
-              {stepFields.map((field, idx) => (
+            <div className="space-y-4">
+              {stepFields.map((field, index) => (
                 <div
                   key={field.id}
-                  className="p-4 sm:p-5 bg-stone-50/80 rounded-xl border border-stone-200 relative"
+                  className="p-4 rounded-xl border border-gray-200 bg-gray-50/50 space-y-3 relative"
                 >
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500 text-white font-bold text-xs">
-                      🔥 Bước {idx + 1}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">
+                      Bước {index + 1}
                     </span>
                     {stepFields.length > 1 && (
                       <button
                         type="button"
-                        onClick={() => removeStep(idx)}
-                        className="text-xs text-rose-600 hover:text-rose-800 font-semibold"
+                        onClick={() => removeStep(index)}
+                        className="text-red-500 text-xs hover:underline"
                       >
                         Xóa bước này
                       </button>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-3">
-                    <div className="sm:col-span-3">
-                      <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                        Tiêu đề bước
-                      </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="sm:col-span-2">
                       <input
-                        placeholder="Ví dụ: Ướp gia vị thịt nướng"
+                        {...register(`steps.${index}.title` as const)}
+                        placeholder={`Tiêu đề bước ${index + 1} (VD: Luộc thịt sơ)`}
                         className={inputClass}
-                        {...register(`steps.${idx}.title`)}
                       />
+                      {errors.steps?.[index]?.title && (
+                        <p className="text-red-500 text-[10px] mt-0.5">
+                          {errors.steps[index]?.title?.message}
+                        </p>
+                      )}
                     </div>
+
                     <div>
-                      <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                        Thời gian hẹn giờ (phút)
-                      </label>
                       <input
                         type="number"
-                        min={0}
-                        placeholder="Phút"
+                        {...register(`steps.${index}.timerMinutes` as const, { valueAsNumber: true })}
+                        placeholder="Hẹn giờ (phút)"
                         className={inputClass}
-                        {...register(`steps.${idx}.timerMinutes`, { valueAsNumber: true })}
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                      Nội dung hướng dẫn chi tiết *
-                    </label>
                     <textarea
+                      {...register(`steps.${index}.description` as const)}
                       rows={2}
-                      placeholder="Mô tả cụ thể nhiệt độ, độ lửa, thao tác đảo khuấy hoặc mẹo nấu..."
+                      placeholder="Hướng dẫn chi tiết nhiệt độ, thời gian và bí quyết..."
                       className={inputClass}
-                      {...register(`steps.${idx}.description`)}
                     />
+                    {errors.steps?.[index]?.description && (
+                      <p className="text-red-500 text-[10px] mt-0.5">
+                        {errors.steps[index]?.description?.message}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -609,31 +668,40 @@ export function CreateRecipeWizard() {
         )}
 
         {/* ========================================================== */}
-        {/* BƯỚC 4: HÌNH ẢNH & XÁC NHẬN (FR-INF-003 / FR-FTE-010) */}
+        {/* BƯỚC 4: HÌNH ẢNH & XÁC NHẬN (FR-FTE-049) */}
         {/* ========================================================== */}
         {currentStep === 4 && (
           <div className="space-y-6 animate-fadeIn">
             <div>
-              <h2 className="text-lg font-bold text-gray-900">Bước 4: Hình ảnh món ăn & Xem lại trước khi lưu</h2>
+              <h2 className="text-lg font-bold text-gray-900">Bước 4: Tải lên hình ảnh thực tế & Hoàn tất</h2>
               <p className="text-xs text-gray-500 mt-1">
-                Tải lên hình ảnh đại diện qua MinIO (FR-INF-003) và lựa chọn Lưu bản nháp hoặc Xuất bản ngay.
+                Tải lên nhiều hình ảnh chất lượng cao (kéo thả, kiểm tra dung lượng) và lựa chọn Lưu bản nháp hoặc Xuất bản ngay.
               </p>
             </div>
 
-            {/* Upload ảnh & Preview */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-5 bg-amber-50/40 rounded-xl border border-amber-200">
-              <div>
-                <label className="block text-xs font-semibold text-gray-800 mb-1.5">
-                  Tải lên ảnh món ăn từ thiết bị
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="block w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-600 file:text-white hover:file:bg-amber-700 cursor-pointer"
-                />
-                <p className="text-[11px] text-gray-500 mt-2">
-                  Hoặc nhập đường dẫn ảnh trực tiếp (URL Unsplash / Web):
+            {/* Upload ảnh thực tế với ImageUploader (FR-INF-003 & FR-FTE-046 & FR-FTE-049) */}
+            <div className="p-5 bg-amber-50/40 rounded-xl border border-amber-200 space-y-4">
+              <ImageUploader
+                label="Tải lên ảnh món ăn từ máy tính"
+                description="Kéo thả hoặc duyệt ảnh món ăn (Hỗ trợ JPEG, PNG, WEBP, tối đa 5MB/ảnh)."
+                multiple={true}
+                maxFiles={10}
+                maxSizeMB={5}
+                primaryImageId={primaryImageId || undefined}
+                onSetPrimaryImage={(id) => setPrimaryImageId(id)}
+                onFilesChange={(files) => {
+                  setUploadedFiles(files);
+                  if (files.length > 0) {
+                    const firstUrl = URL.createObjectURL(files[0]);
+                    setPreviewImage(firstUrl);
+                    setValue('imageUrl', firstUrl);
+                  }
+                }}
+              />
+
+              <div className="pt-3 border-t border-amber-200/60">
+                <p className="text-[11px] text-gray-500 mb-1.5">
+                  Hoặc sử dụng ảnh mẫu/đường dẫn ảnh web (Unsplash):
                 </p>
                 <input
                   placeholder="https://images.unsplash.com/..."
@@ -642,22 +710,8 @@ export function CreateRecipeWizard() {
                     setValue('imageUrl', e.target.value);
                     setPreviewImage(e.target.value);
                   }}
-                  className={`mt-1.5 ${inputClass}`}
+                  className={inputClass}
                 />
-              </div>
-
-              <div>
-                <span className="block text-xs font-semibold text-gray-800 mb-1.5">
-                  Xem trước ảnh đại diện món ăn
-                </span>
-                <div className="relative w-full h-44 rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={previewImage}
-                    alt="Preview món ăn"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
               </div>
             </div>
 
@@ -684,11 +738,11 @@ export function CreateRecipeWizard() {
                 </div>
                 <div>
                   <span className="text-gray-400">Độ khó:</span>{' '}
-                  <strong className="text-gray-800">{difficultyLabels[formValues.difficulty]}</strong>
+                  <strong className="text-amber-700">{formValues.difficulty}</strong>
                 </div>
               </div>
 
-              <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div className="mt-4 pt-4 border-t border-gray-100 text-xs grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <span className="font-semibold text-gray-700">Nguyên liệu ({formValues.ingredients.length}):</span>
                   <ul className="mt-1 space-y-1 list-disc list-inside text-gray-600">

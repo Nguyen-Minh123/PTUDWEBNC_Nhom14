@@ -1,4 +1,4 @@
-@baseUrl = http://localhost:5075
+﻿@baseUrl = http://localhost:5075
 # REST Client reads the token from the local environment; never paste a secret into this tracked file.
 @accessToken = {{$processEnv CULINARY_BLOG_ACCESS_TOKEN}}
 # These values are extracted from request 1, so subsequent requests use actual seeded identifiers.
@@ -227,3 +227,53 @@ Accept: application/json
   "newPassword": "NewStrongPassword@2026",
   "confirmPassword": "NewStrongPassword@2026"
 }
+
+
+### 19. Get Public Authors List with Recipe Counts (FR-BKE-016)
+GET {{baseUrl}}/api/v1/users/authors?pageNumber=1&pageSize=12&sort=-publishedRecipeCount
+Accept: application/json
+
+> {%
+client.test("19. Gets public authors list successfully", function () {
+    client.assert(response.status === 200, "Expected HTTP 200");
+});
+%}
+
+### 20. Get Paginated Users List for Admin (FR-BKE-016)
+GET {{baseUrl}}/api/v1/users?pageNumber=1&pageSize=10&role=Author
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### 21. Update User Role as Admin (FR-BKE-017)
+PUT {{baseUrl}}/api/v1/users/member-huy-id/role
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "role": "Author"
+}
+
+### 22. Lock / Unlock User Account and Revoke Active RefreshTokens as Admin (FR-BKE-017)
+PUT {{baseUrl}}/api/v1/users/member-huy-id/status
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "isActive": false,
+  "lockoutDays": 30,
+  "reason": "Vi phạm tiêu chuẩn cộng đồng ẩm thực"
+}
+
+### 23. Query system audit logs (Admin only) (FR-BKE-019)
+GET {{baseUrl}}/api/v1/audit-logs?page=1&pageSize=20&action=Modified&entityName=Recipe
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+> {%
+client.test("19. Queries audit logs with pagination and filters", function () {
+    client.assert(response.status === 200, "Expected HTTP 200");
+    client.assert(Array.isArray(response.body.items), "Expected a paginated items array");
+});
+%}

@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import {
   Star,
   Bookmark,
@@ -11,6 +12,8 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Edit,
+  ChefHat,
 } from 'lucide-react';
 import { RecipeDetailDto } from '@/types';
 import { Badge } from '@/components/ui/badge';
@@ -19,7 +22,13 @@ import { Avatar } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
-export function RecipeHero({ recipe }: { recipe: RecipeDetailDto }) {
+export function RecipeHero({
+  recipe,
+  onStartCooking,
+}: {
+  recipe: RecipeDetailDto;
+  onStartCooking?: () => void;
+}) {
   const [isBookmarked, setIsBookmarked] = React.useState(false);
   const [isCopied, setIsCopied] = React.useState(false);
   const [isFollowing, setIsFollowing] = React.useState(false);
@@ -111,6 +120,22 @@ export function RecipeHero({ recipe }: { recipe: RecipeDetailDto }) {
         <Badge variant={recipe.difficulty === 'Easy' ? 'success' : recipe.difficulty === 'Hard' ? 'destructive' : 'secondary'}>
           Độ khó: {recipe.difficulty === 'Easy' ? 'Dễ làm' : recipe.difficulty === 'Hard' ? 'Kỳ công' : 'Trung bình'}
         </Badge>
+
+        {/* Trạng thái (FR-FTE-051) */}
+        {recipe.status && recipe.status !== 'Published' && (
+          <Badge
+            variant="outline"
+            className={cn(
+              'px-2.5 py-0.5 text-xs font-bold',
+              recipe.status === 'Draft'
+                ? 'bg-amber-100 text-amber-800 border-amber-300'
+                : 'bg-stone-200 text-stone-700 border-stone-300'
+            )}
+          >
+            {recipe.status === 'Draft' ? 'Bản Nháp' : 'Lưu Trữ'}
+          </Badge>
+        )}
+
         <span className="text-xs text-stone-400">•</span>
         <div className="flex items-center gap-1 text-xs text-stone-500">
           <Calendar className="h-3.5 w-3.5" />
@@ -140,8 +165,8 @@ export function RecipeHero({ recipe }: { recipe: RecipeDetailDto }) {
           />
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-stone-900 dark:text-stone-100 text-sm sm:text-base">
-                {recipe.authorName || 'Bếp Trưởng'}
+              <span className="font-bold text-sm text-stone-900 dark:text-stone-100">
+                {recipe.authorName || 'Bùi Trung Hiếu'}
               </span>
               <button
                 type="button"
@@ -160,8 +185,29 @@ export function RecipeHero({ recipe }: { recipe: RecipeDetailDto }) {
           </div>
         </div>
 
-        {/* Action Buttons: Bookmark, Share, Print */}
-        <div className="flex items-center gap-2">
+        {/* Action Buttons: Cooking Mode, Edit, Bookmark, Share, Print */}
+        <div className="flex flex-wrap items-center gap-2">
+          {onStartCooking && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={onStartCooking}
+              className="bg-amber-600 hover:bg-amber-700 text-white font-bold gap-1.5 text-xs shadow-md shadow-amber-600/20"
+            >
+              <ChefHat className="h-4 w-4" /> Bắt đầu nấu
+            </Button>
+          )}
+
+          <Link href={`/recipes/${recipe.id}/edit`}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs text-amber-900 border-amber-300 bg-amber-50 hover:bg-amber-100"
+            >
+              <Edit className="h-3.5 w-3.5" /> Chỉnh sửa
+            </Button>
+          </Link>
+
           <Button
             variant="outline"
             size="sm"
@@ -258,11 +304,6 @@ export function RecipeHero({ recipe }: { recipe: RecipeDetailDto }) {
             </>
           )}
         </div>
-        {galleryImages.length > 1 && (
-          <p className="text-center text-xs text-stone-300" aria-live="polite">
-            Ảnh {activeImageIndex + 1} / {galleryImages.length}
-          </p>
-        )}
       </DialogContent>
     </Dialog>
   );

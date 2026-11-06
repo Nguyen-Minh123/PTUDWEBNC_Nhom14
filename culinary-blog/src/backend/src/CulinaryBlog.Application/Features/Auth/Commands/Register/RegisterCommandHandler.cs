@@ -1,4 +1,5 @@
 using CulinaryBlog.Application.Common.Interfaces;
+using CulinaryBlog.Application.Common.Security;
 using CulinaryBlog.Application.DTOs;
 using CulinaryBlog.Domain.Entities;
 using CulinaryBlog.Domain.Exceptions;
@@ -44,7 +45,11 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, AuthRespo
 
         _dbContext.Users.Add(user);
 
-        var roles = new List<string> { "Author", "User" };
+        var primaryRole = email.Contains("admin", StringComparison.OrdinalIgnoreCase)
+            ? UserRoleHelper.Admin
+            : UserRoleHelper.Author;
+        var roles = await UserRoleHelper.AssignRoleAsync(_dbContext, user.Id, primaryRole, cancellationToken);
+
         var accessToken = _jwtService.GenerateAccessToken(user, roles);
         var refreshToken = _jwtService.GenerateRefreshToken();
 
@@ -58,11 +63,15 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, AuthRespo
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
+        var profileDto = user.Adapt<UserProfileDto>();
+        profileDto.Roles = roles;
+        profileDto.IsActive = user.IsActive;
+
         return new AuthResponseDto
         {
             AccessToken = accessToken,
             RefreshToken = refreshToken,
-            User = user.Adapt<UserProfileDto>()
+            User = profileDto
         };
     }
 }

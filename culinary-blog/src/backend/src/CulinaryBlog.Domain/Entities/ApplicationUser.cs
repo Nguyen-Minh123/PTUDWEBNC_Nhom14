@@ -1,132 +1,147 @@
-using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Identity;
 
 namespace CulinaryBlog.Domain.Entities;
 
 /// <summary>
-/// Ngu?i d�ng h? th?ng.
-/// K? th?a IdentityUser<string> theo SRS.
+/// Thực thể người dùng kế thừa từ ASP.NET Core IdentityUser với khóa chính kiểu string (GUID).
+/// Chứa các thông tin hồ sơ mở rộng của tác giả / đầu bếp / quản trị viên trong hệ thống Culinary Blog.
 /// </summary>
-public class ApplicationUser : IdentityUser
+public class ApplicationUser : IdentityUser<string>
 {
-    private ApplicationUser()
+    public const int MaxDisplayNameLength = 150;
+    public const int MaxBioLength = 1000;
+    public const int MaxAvatarUrlLength = 500;
+
+    protected ApplicationUser()
     {
         Id = Guid.NewGuid().ToString();
+        DisplayName = string.Empty;
+        FirstName = string.Empty;
+        LastName = string.Empty;
         CreatedAt = DateTimeOffset.UtcNow;
         IsActive = true;
+        SecurityStamp = Guid.NewGuid().ToString();
     }
 
-    public ApplicationUser(string email, string displayName)
+    public ApplicationUser(
+        string email,
+        string displayName,
+        string? bio = null,
+        string? avatarUrl = null)
         : this()
     {
-        if (string.IsNullOrWhiteSpace(email))
-        {
-            throw new ArgumentException("Email cannot be empty.", nameof(email));
-        }
-
-        if (string.IsNullOrWhiteSpace(displayName))
-        {
-            throw new ArgumentException("DisplayName cannot be empty.", nameof(displayName));
-        }
-
-        Email = email.Trim();
-        UserName = email.Trim();
-        DisplayName = NormalizeRequiredText(displayName, 100, nameof(displayName));
+        SetEmail(email);
+        SetDisplayName(displayName);
+        SetBio(bio);
+        SetAvatarUrl(avatarUrl);
     }
 
-    public string FirstName { get; set; } = string.Empty;
-    public string LastName { get; set; } = string.Empty;
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+    public string DisplayName { get; set; }
+    public string? Bio { get; set; }
+    public string? AvatarUrl { get; set; }
+    public bool IsActive { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; set; }
 
     /// <summary>
-    /// T�n hi?n th? c�ng khai.
+    /// Cho biết tài khoản hiện tại có đang bị khóa hoặc vô hiệu hóa hay không.
     /// </summary>
-    [MaxLength(100)]
-    public string DisplayName { get; private set; } = string.Empty;
-
-    /// <summary>
-    /// URL avatar, nullable.
-    /// </summary>
-    [MaxLength(500)]
-    public string? AvatarUrl { get; private set; }
-
-    /// <summary>
-    /// Ti?u s? ng?n c?a t�c gi?, nullable.
-    /// </summary>
-    public string? Bio { get; private set; }
-
-    /// <summary>
-    /// Tr?ng th�i t�i kho?n.
-    /// </summary>
-    public bool IsActive { get; private set; } = true;
-
-    /// <summary>
-    /// Ng�y t?o t�i kho?n.
-    /// </summary>
-    public DateTimeOffset CreatedAt { get; private set; } = DateTimeOffset.UtcNow;
+    public bool IsLockedOut =>
+        !IsActive || (LockoutEnd.HasValue && LockoutEnd.Value > DateTimeOffset.UtcNow);
 
     public void UpdateProfile(string displayName, string? bio = null, string? avatarUrl = null)
     {
-        DisplayName = NormalizeRequiredText(displayName, 100, nameof(displayName));
-        Bio = NormalizeOptionalText(bio, int.MaxValue);
-        AvatarUrl = NormalizeOptionalText(avatarUrl, 500);
+        SetDisplayName(displayName);
+        SetBio(bio);
+        SetAvatarUrl(avatarUrl);
+        Touch();
     }
 
-    public void SetAvatarUrl(string? avatarUrl)
+    public void SetEmail(string email)
     {
-        AvatarUrl = NormalizeOptionalText(avatarUrl, 500);
+        var normalized = NormalizeRequiredText(email, nameof(email), 256);
+
+        Email = normalized;
+        NormalizedEmail = normalized.ToUpperInvariant();
+        UserName = normalized;
+        NormalizedUserName = NormalizedEmail;
+    }
+
+    public void SetDisplayName(string displayName)
+    {
+        DisplayName = NormalizeRequiredText(displayName, nameof(displayName), MaxDisplayNameLength);
     }
 
     public void SetBio(string? bio)
     {
-        Bio = NormalizeOptionalText(bio, int.MaxValue);
+        Bio = NormalizeOptionalText(bio, nameof(bio), MaxBioLength);
+    }
+
+    public void SetAvatarUrl(string? avatarUrl)
+    {
+        AvatarUrl = NormalizeOptionalText(avatarUrl, nameof(avatarUrl), MaxAvatarUrlLength);
+    }
+
+    public void Deactivate(DateTimeOffset? lockoutEnd = null)
+    {
+        IsActive = false;
+        LockoutEnabled = true;
+        LockoutEnd = lockoutEnd ?? DateTimeOffset.UtcNow.AddYears(100);
+        SecurityStamp = Guid.NewGuid().ToString();
+        Touch();
     }
 
     public void Activate()
     {
         IsActive = true;
+        LockoutEnd = null;
+        AccessFailedCount = 0;
+        SecurityStamp = Guid.NewGuid().ToString();
+        Touch();
     }
 
-    public void Deactivate()
+    private void Touch()
     {
-        IsActive = false;
+        UpdatedAt = DateTimeOffset.UtcNow;
     }
 
-    private static string NormalizeRequiredText(string? value, int maxLength, string paramName)
+    private static string NormalizeRequiredText(string value, string paramName, int maxLength)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            throw new ArgumentException($" cannot be empty.", paramName);
+            throw new ArgumentException($"{paramName} cannot be empty.", paramName);
         }
 
-        var normalized = value.Trim();
+        var trimmed = value.Trim();
 
-        if (normalized.Length > maxLength)
+        if (trimmed.Length > maxLength)
         {
             throw new ArgumentOutOfRangeException(
                 paramName,
-                $"The value of  exceeds the maximum length of .");
+                $"The value of {paramName} exceeds the maximum length of {maxLength}.");
         }
 
-        return normalized;
+        return trimmed;
     }
 
-    private static string? NormalizeOptionalText(string? value, int maxLength)
+    private static string? NormalizeOptionalText(string? value, string paramName, int maxLength)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
             return null;
         }
 
-        var normalized = value.Trim();
+        var trimmed = value.Trim();
 
-        if (normalized.Length > maxLength)
+        if (trimmed.Length > maxLength)
         {
             throw new ArgumentOutOfRangeException(
-                nameof(value),
-                $"The value exceeds the maximum length of .");
+                paramName,
+                $"The value of {paramName} exceeds the maximum length of {maxLength}.");
         }
 
-        return normalized;
+        return trimmed;
     }
 }
-

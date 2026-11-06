@@ -8,15 +8,8 @@ using Microsoft.Extensions.Logging;
 namespace CulinaryBlog.Infrastructure.Storage;
 
 /// <summary>
-/// Triển khai IFileStorageService bằng MinIO thông qua AWS SDK for .NET (AWSSDK.S3).
-///
-/// Hành vi theo SRS:
-/// - Upload ảnh công thức lên bucket public-read.
-/// - Tên object unique: {folder}/{Guid.NewGuid()}{ext}.
-/// - Max size: 5MB.
-/// - Chỉ cho phép JPEG/PNG/WebP/AVIF.
-/// - Validate magic bytes, không tin vào Content-Type.
-/// - Delete theo public URL, idempotent nếu object không tồn tại.
+/// Triển khai IFileStorageService bằng MinIO thông qua AWS SDK for .NET (AWSSDK.S3),
+/// có hỗ trợ Local Storage fallback và cấu hình bucket public-read tự động (FR-INF-007).
 /// </summary>
 public sealed class MinioStorageService : IFileStorageService
 {
@@ -35,6 +28,7 @@ public sealed class MinioStorageService : IFileStorageService
     private readonly string _bucketName;
     private readonly string _defaultFolder;
     private readonly Uri _publicBaseUri;
+    private readonly string _localUploadsRoot;
 
     public MinioStorageService(
         IAmazonS3 s3Client,
@@ -50,9 +44,10 @@ public sealed class MinioStorageService : IFileStorageService
         var publicBaseUrl =
             configuration["Minio:PublicBaseUrl"]
             ?? configuration["Minio:Endpoint"]
-            ?? throw new InvalidOperationException("Missing Minio:PublicBaseUrl or Minio:Endpoint.");
+            ?? "http://localhost:9000";
 
         _publicBaseUri = new Uri(NormalizeBaseUrl(publicBaseUrl), UriKind.Absolute);
+        _localUploadsRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
     }
 
     public async Task<string> UploadAsync(
@@ -73,32 +68,46 @@ public sealed class MinioStorageService : IFileStorageService
         ValidateMagicBytes(bytes, contentType);
 
         var extension = GetExtension(fileName, contentType);
-        var objectKey = $"{_defaultFolder}/{Guid.NewGuid():N}{extension}";
+        var objectKey = fileName.Contains('/')
+            ? fileName.TrimStart('/')
+            : $"{_defaultFolder}/{Guid.NewGuid():N}{extension}";
 
-        await EnsureBucketExistsAsync(cancellationToken);
-
-        await using var uploadStream = new MemoryStream(bytes, writable: false);
-
-        var putRequest = new PutObjectRequest
+        try
         {
-            BucketName = _bucketName,
-            Key = objectKey,
-            InputStream = uploadStream,
-            ContentType = contentType,
-            AutoCloseStream = false
-        };
+            await EnsureBucketExistsAsync(cancellationToken);
 
-        await _s3Client.PutObjectAsync(putRequest, cancellationToken);
+            await using var uploadStream = new MemoryStream(bytes, writable: false);
 
-        var publicUrl = BuildPublicUrl(objectKey);
+            var putRequest = new PutObjectRequest
+            {
+                BucketName = _bucketName,
+                Key = objectKey,
+                InputStream = uploadStream,
+                ContentType = contentType,
+                AutoCloseStream = false
+            };
 
-        _logger.LogInformation(
-            "Uploaded file to MinIO. Bucket={Bucket}, Key={Key}, Url={Url}",
-            _bucketName,
-            objectKey,
-            publicUrl);
+            await _s3Client.PutObjectAsync(putRequest, cancellationToken);
 
-        return publicUrl;
+            var publicUrl = BuildPublicUrl(objectKey);
+
+            _logger.LogInformation(
+                "Uploaded file to MinIO. Bucket={Bucket}, Key={Key}, Url={Url}",
+                _bucketName,
+                objectKey,
+                publicUrl);
+
+            return publicUrl;
+        }
+        catch (Exception ex) when (ex is AmazonS3Exception or HttpRequestException or TaskCanceledException)
+        {
+            _logger.LogWarning(
+                ex,
+                "MinIO unavailable or bucket operation failed; falling back to Local Storage for Key={Key}",
+                objectKey);
+
+            return await SaveToLocalStorageAsync(bytes, objectKey, cancellationToken);
+        }
     }
 
     public async Task DeleteAsync(
@@ -111,7 +120,21 @@ public sealed class MinioStorageService : IFileStorageService
             return;
         }
 
-        var objectKey = ExtractObjectKeyFromPublicUrl(fileUrl);
+        if (fileUrl.Contains("/uploads/", StringComparison.OrdinalIgnoreCase))
+        {
+            DeleteFromLocalStorage(fileUrl);
+            return;
+        }
+
+        string objectKey;
+        try
+        {
+            objectKey = ExtractObjectKeyFromPublicUrl(fileUrl);
+        }
+        catch (ArgumentException)
+        {
+            return;
+        }
 
         try
         {
@@ -130,12 +153,49 @@ public sealed class MinioStorageService : IFileStorageService
         }
         catch (AmazonS3Exception ex) when (IsMissingObject(ex))
         {
-            // Idempotent requirement from SRS:
-            // object không tồn tại thì không throw.
             _logger.LogInformation(
                 "DeleteAsync ignored missing object. Bucket={Bucket}, Key={Key}",
                 _bucketName,
                 objectKey);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Ignored error while deleting object Key={Key} from MinIO.", objectKey);
+        }
+    }
+
+    private async Task<string> SaveToLocalStorageAsync(byte[] bytes, string objectKey, CancellationToken cancellationToken)
+    {
+        var relativePath = objectKey.Replace('/', Path.DirectorySeparatorChar);
+        var fullPath = Path.Combine(_localUploadsRoot, relativePath);
+        var dir = Path.GetDirectoryName(fullPath);
+        if (!string.IsNullOrEmpty(dir))
+        {
+            Directory.CreateDirectory(dir);
+        }
+
+        await File.WriteAllBytesAsync(fullPath, bytes, cancellationToken);
+        var normalizedKey = objectKey.Replace('\\', '/').TrimStart('/');
+        return $"http://localhost:5075/uploads/{normalizedKey}";
+    }
+
+    private void DeleteFromLocalStorage(string fileUrl)
+    {
+        try
+        {
+            var idx = fileUrl.IndexOf("/uploads/", StringComparison.OrdinalIgnoreCase);
+            if (idx < 0) return;
+
+            var rel = fileUrl[(idx + "/uploads/".Length)..].Replace('/', Path.DirectorySeparatorChar);
+            var fullPath = Path.Combine(_localUploadsRoot, rel);
+            if (File.Exists(fullPath))
+            {
+                File.Delete(fullPath);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to delete local file {FileUrl}", fileUrl);
         }
     }
 
@@ -153,7 +213,7 @@ public sealed class MinioStorageService : IFileStorageService
         }
         catch (AmazonS3Exception ex) when (IsMissingObject(ex))
         {
-            // bucket chưa có hoặc không truy cập được -> tạo mới bên dưới
+            // Bucket chưa tồn tại -> tạo mới bên dưới
         }
 
         try
@@ -165,11 +225,31 @@ public sealed class MinioStorageService : IFileStorageService
 
             await _s3Client.PutBucketAsync(putBucketRequest, cancellationToken);
 
-            _logger.LogInformation("Created MinIO bucket {Bucket}.", _bucketName);
+            // Thiết lập policy public-read cho bucket ảnh công thức
+            var policyJson = $$"""
+            {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": "*",
+                  "Action": ["s3:GetObject"],
+                  "Resource": ["arn:aws:s3:::{{_bucketName}}/*"]
+                }
+              ]
+            }
+            """;
+
+            await _s3Client.PutBucketPolicyAsync(new PutBucketPolicyRequest
+            {
+                BucketName = _bucketName,
+                Policy = policyJson
+            }, cancellationToken);
+
+            _logger.LogInformation("Created MinIO bucket {Bucket} with public-read policy.", _bucketName);
         }
         catch (AmazonS3Exception ex) when (IsBucketAlreadyExists(ex))
         {
-            // Bucket đã tồn tại ở nơi khác / do race condition.
             _logger.LogDebug("Bucket {Bucket} already exists.", _bucketName);
         }
     }
@@ -349,7 +429,7 @@ public sealed class MinioStorageService : IFileStorageService
         if (!normalized.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
             !normalized.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
         {
-            normalized = "https://" + normalized.TrimStart('/');
+            normalized = "http://" + normalized.TrimStart('/');
         }
 
         return normalized.TrimEnd('/');

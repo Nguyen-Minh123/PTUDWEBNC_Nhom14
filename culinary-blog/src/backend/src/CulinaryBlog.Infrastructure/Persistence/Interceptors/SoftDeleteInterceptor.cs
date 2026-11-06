@@ -1,4 +1,3 @@
-using CulinaryBlog.Domain.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
@@ -37,8 +36,9 @@ public sealed class SoftDeleteInterceptor : SaveChangesInterceptor
         var utcNow = DateTime.UtcNow;
 
         var entries = context.ChangeTracker
-            .Entries<BaseEntity>()
-            .Where(entry => entry.State == EntityState.Deleted)
+            .Entries()
+            .Where(entry => entry.State == EntityState.Deleted
+                && entry.Metadata.FindProperty(nameof(Domain.Entities.BaseEntity.IsDeleted)) is not null)
             .ToList();
 
         foreach (var entry in entries)
@@ -47,10 +47,27 @@ public sealed class SoftDeleteInterceptor : SaveChangesInterceptor
             entry.State = EntityState.Modified;
 
             // Đánh dấu xóa mềm
-            entry.Entity.IsDeleted = true;
+            entry.Property(nameof(Domain.Entities.BaseEntity.IsDeleted)).CurrentValue = true;
 
-            // Nếu BaseEntity có UpdatedAt thì cập nhật thời gian sửa gần nhất
-            entry.Entity.UpdatedAt = utcNow;
+            SetTimestampIfPresent(entry, nameof(Domain.Entities.BaseEntity.UpdatedAt), utcNow);
+            SetTimestampIfPresent(entry, "DeletedAt", utcNow);
         }
+    }
+
+    private static void SetTimestampIfPresent(
+        Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry,
+        string propertyName,
+        DateTime utcNow)
+    {
+        var property = entry.Metadata.FindProperty(propertyName);
+        if (property is null)
+        {
+            return;
+        }
+
+        entry.Property(propertyName).CurrentValue = property.ClrType == typeof(DateTimeOffset?)
+            || property.ClrType == typeof(DateTimeOffset)
+                ? new DateTimeOffset(utcNow, TimeSpan.Zero)
+                : utcNow;
     }
 }

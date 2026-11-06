@@ -66,7 +66,6 @@ builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        // Tắt auto-mapping claim names, bảo toàn nguyên vẹn sub, role, email
         options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -143,12 +142,17 @@ builder.Services.AddHealthChecks()
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Missing connection string: DefaultConnection");
 
-builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
+builder.Services.AddDbContext<CulinaryBlogDbContext>((serviceProvider, options) =>
 {
     options.UseNpgsql(connectionString, npgsql =>
     {
         npgsql.MigrationsAssembly(typeof(CulinaryBlogDbContext).Assembly.FullName);
     });
+    options.ConfigureWarnings(w =>
+        w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+    options.AddInterceptors(
+        serviceProvider.GetRequiredService<SoftDeleteInterceptor>(),
+        serviceProvider.GetRequiredService<AuditLogInterceptor>());
 
     if (builder.Environment.IsDevelopment())
     {
@@ -161,6 +165,7 @@ builder.Services.AddDbContext<CulinaryBlogDbContext>(options =>
 
 builder.Services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<CulinaryBlogDbContext>());
 builder.Services.AddScoped<SoftDeleteInterceptor>();
+builder.Services.AddScoped<AuditLogInterceptor>();
 
 // 5. OpenAPI 3.1 & Scalar UI
 builder.Services.AddOpenApi(options =>
@@ -185,17 +190,12 @@ builder.Services.AddScoped<IUnitOfWork, CulinaryBlog.Infrastructure.Persistence.
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddScoped<ICacheService, RedisCacheService>();
 
-// MinIO via AWS SDK
+// MinIO via AWS SDK (kèm fallback giá trị mặc định cho môi trường Dev)
 builder.Services.AddSingleton<IAmazonS3>(_ =>
 {
-    var endpoint = builder.Configuration["Minio:Endpoint"]
-        ?? throw new InvalidOperationException("Missing Minio:Endpoint.");
-
-    var accessKey = builder.Configuration["Minio:AccessKey"]
-        ?? throw new InvalidOperationException("Missing Minio:AccessKey.");
-
-    var secretKey = builder.Configuration["Minio:SecretKey"]
-        ?? throw new InvalidOperationException("Missing Minio:SecretKey.");
+    var endpoint = builder.Configuration["Minio:Endpoint"] ?? "http://localhost:9000";
+    var accessKey = builder.Configuration["Minio:AccessKey"] ?? "admin";
+    var secretKey = builder.Configuration["Minio:SecretKey"] ?? "password123";
 
     var normalizedEndpoint = NormalizeServiceUrl(endpoint);
 
@@ -217,39 +217,50 @@ if (app.Environment.IsDevelopment())
     await using var scope = app.Services.CreateAsyncScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<CulinaryBlogDbContext>();
     await dbContext.Database.MigrateAsync();
+    if (dbContext.Database.IsRelational())
+    {
+        await dbContext.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "FirstName" text NOT NULL DEFAULT '';
+            ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "LastName" text NOT NULL DEFAULT '';
+            ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "DisplayName" character varying(150) NOT NULL DEFAULT '';
+            ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "Bio" character varying(1000);
+            ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "AvatarUrl" character varying(500);
+            ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "IsActive" boolean NOT NULL DEFAULT TRUE;
+            ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "CreatedAt" timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP;
+            ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "UpdatedAt" timestamp with time zone;
+
+            ALTER TABLE "RecipeImages" ADD COLUMN IF NOT EXISTS "ObjectKey" character varying(500) NOT NULL DEFAULT '';
+            ALTER TABLE "RecipeImages" ADD COLUMN IF NOT EXISTS "ContentType" character varying(100) NOT NULL DEFAULT 'image/jpeg';
+            ALTER TABLE "RecipeImages" ADD COLUMN IF NOT EXISTS "FileSize" bigint NOT NULL DEFAULT 0;
+            ALTER TABLE "RecipeImages" ADD COLUMN IF NOT EXISTS "ChecksumSha256" character varying(64);
+            ALTER TABLE "RecipeImages" ADD COLUMN IF NOT EXISTS "Width" integer;
+            ALTER TABLE "RecipeImages" ADD COLUMN IF NOT EXISTS "Height" integer;
+            ALTER TABLE "RecipeImages" ADD COLUMN IF NOT EXISTS "StorageProvider" character varying(50) NOT NULL DEFAULT 'MinIO';
+            """);
+    }
     await new CulinaryBlog.Infrastructure.Persistence.RecipeDataSeeder(dbContext).SeedAsync();
 }
 
 // =====================================================
 // Middleware Pipeline (FR-INF-006)
 // =====================================================
-// 1. Correlation ID: gắn mã theo dõi request và bổ sung vào logger scope
 app.UseMiddleware<CorrelationIdMiddleware>();
-
-// 2. Logging: ghi log request/response với elapsed time và correlation ID
 app.UseMiddleware<RequestLoggingMiddleware>();
-
-// 3. Global Exception Handler: bắt lỗi và chuyển đổi RFC7807 ProblemDetails
 app.UseExceptionHandler();
 
-// 4. HTTPS Redirection / HSTS
 if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
 }
 app.UseHttpsRedirection();
-
-// 5. Security Headers: gắn HTTP security headers chống XSS, Clickjacking, MIME-sniffing, CSP
+app.UseStaticFiles();
 app.UseMiddleware<SecurityHeadersMiddleware>();
 
-// 6. CORS Policy đa môi trường (FR-INF-004) - phải đứng trước RateLimiter và Authentication
 var corsPolicy = app.Environment.IsDevelopment() ? "DevelopmentPolicy" : "ProductionPolicy";
 app.UseCors(corsPolicy);
 
-// 7. Rate Limiter (FR-INF-005)
 app.UseRateLimiter();
-
-// 8. Authentication & Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -272,6 +283,7 @@ app.MapRecipeImagesEndpoints();
 app.MapControllers();
 app.MapRecipeEndpoints();
 app.MapCategoryEndpoints();
+app.MapAuditLogEndpoints();
 app.MapAuthEndpoints();
 app.MapUserEndpoints();
 

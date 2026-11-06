@@ -1,50 +1,28 @@
 using CulinaryBlog.Domain.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace CulinaryBlog.Application.Common.Interfaces;
 
 /// <summary>
-/// Abstraction của DbContext ở tầng Application.
-/// 
-/// Mục đích:
-/// - Tách Application layer khỏi EF Core implementation cụ thể.
-/// - Giúp handler/query/service chỉ phụ thuộc vào interface.
-/// - Dễ test bằng mock/fake khi viết unit test.
+/// Giao diện trừu tượng của DbContext cho tầng Application, tuân thủ nguyên tắc Dependency Inversion (DIP)
+/// trong Clean Architecture để các Query/Command Handlers có thể truy vấn trực tiếp với AsNoTracking() và Projection.
 /// </summary>
 public interface IApplicationDbContext
 {
-    /// <summary>
-    /// Tập hợp Category để truy vấn và thao tác dữ liệu.
-    /// </summary>
-    DbSet<Category> Categories { get; }
-
-    /// <summary>
-    /// Tập hợp Recipe để truy vấn và thao tác dữ liệu.
-    /// </summary>
     DbSet<Recipe> Recipes { get; }
-
-    /// <summary>
-    /// Tập hợp RecipeStep để truy vấn và thao tác dữ liệu.
-    /// </summary>
-    DbSet<RecipeStep> RecipeSteps { get; }
-
-    /// <summary>
-    /// Tập hợp RecipeIngredient để truy vấn và thao tác dữ liệu.
-    /// </summary>
+    DbSet<Category> Categories { get; }
     DbSet<RecipeIngredient> RecipeIngredients { get; }
-
-    /// <summary>
-    /// Tập hợp RecipeImage để truy vấn và thao tác dữ liệu.
-    /// </summary>
+    DbSet<RecipeStep> RecipeSteps { get; }
     DbSet<RecipeImage> RecipeImages { get; }
-    DbSet<RefreshToken> RefreshTokens { get; }
+    DbSet<RecipeFavorite> RecipeFavorites { get; }
+    DbSet<RecipeCollection> RecipeCollections { get; }
+    DbSet<RecipeCollectionItem> RecipeCollectionItems { get; }
+    DbSet<AuditLog> AuditLogs { get; }
     DbSet<ApplicationUser> Users { get; }
+    DbSet<IdentityRole<string>> Roles { get; }
+    DbSet<IdentityUserRole<string>> UserRoles { get; }
+    DbSet<RefreshToken> RefreshTokens { get; }
 
-    /// <summary>
-    /// Lưu toàn bộ thay đổi đang được tracking xuống database bất đồng bộ.
-    /// </summary>
-    /// <param name="cancellationToken">Token hủy tác vụ từ HTTP request hoặc pipeline.</param>
-    /// <returns>Số lượng bản ghi bị ảnh hưởng.</returns>
-    // Chuẩn hóa lại contract lưu dữ liệu cho toàn bộ Application layer.
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
