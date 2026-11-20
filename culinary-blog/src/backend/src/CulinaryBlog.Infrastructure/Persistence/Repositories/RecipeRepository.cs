@@ -23,6 +23,7 @@ public class RecipeRepository : IRecipeRepository
         return await _db.Recipes
             .AsSplitQuery()
             .Include(r => r.Category)
+            .Include(r => r.Author)
             .Include(r => r.Steps.OrderBy(s => s.StepNumber))
             .Include(r => r.Ingredients.OrderBy(i => i.OrderIndex))
             .Include(r => r.Images)
@@ -39,6 +40,7 @@ public class RecipeRepository : IRecipeRepository
         return await _db.Recipes
             .AsSplitQuery()
             .Include(r => r.Category)
+            .Include(r => r.Author)
             .Include(r => r.Steps.OrderBy(s => s.StepNumber))
             .Include(r => r.Ingredients.OrderBy(i => i.OrderIndex))
             .Include(r => r.Images)
@@ -101,6 +103,7 @@ public class RecipeRepository : IRecipeRepository
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Include(r => r.Category)
+            .Include(r => r.Author)
             .Include(r => r.Images)
             .ToListAsync(cancellationToken);
     }

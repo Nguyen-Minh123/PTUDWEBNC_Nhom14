@@ -117,7 +117,7 @@ export function CreateRecipeWizard() {
     defaultValues: {
       title: '',
       description: '',
-      categoryId: 'cat-1',
+      categoryId: '11111111-1111-4111-8111-000000000001',
       prepTime: 15,
       cookTime: 30,
       servings: 4,
@@ -349,7 +349,7 @@ export function CreateRecipeWizard() {
                     Danh mục ẩm thực <span className="text-red-500">*</span>
                   </label>
                   <select {...register('categoryId')} className={inputClass}>
-                    {CATEGORIES.map((cat) => (
+                    {CATEGORIES.filter((cat) => cat.id !== 'all').map((cat) => (
                       <option key={cat.id} value={cat.id}>
                         {cat.name}
                       </option>

@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useUIStore } from '@/stores/useUIStore';
 import ImageUploader from '@/components/upload/ImageUploader';
+import { REAL_CATEGORIES } from '@/services/recipeService';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5075';
 
@@ -95,18 +96,20 @@ export default function AdminCategoriesPage() {
         const items: AdminCategoryItem[] = Array.isArray(data)
           ? data
           : data.items || [];
-        setCategories(items);
+        setCategories(
+          items.length > 0
+            ? items
+            : (REAL_CATEGORIES as unknown as AdminCategoryItem[])
+        );
+      } else {
+        setCategories(REAL_CATEGORIES as unknown as AdminCategoryItem[]);
       }
     } catch {
-      toast({
-        title: 'Không thể tải danh mục',
-        description: 'Vui lòng kiểm tra kết nối tới máy chủ Backend API.',
-        variant: 'destructive',
-      });
+      setCategories(REAL_CATEGORIES as unknown as AdminCategoryItem[]);
     } finally {
       setLoading(false);
     }
-  }, [token, toast]);
+  }, [token]);
 
   useEffect(() => {
     fetchCategories();

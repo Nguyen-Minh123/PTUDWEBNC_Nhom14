@@ -1,4 +1,5 @@
 import { RecipeDetailDto, RecipeSummaryDto } from '../types';
+import { INITIAL_RECIPES, CATEGORIES, saveUserRecipeDetailLocal } from './recipeService';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5075';
 
@@ -172,8 +173,11 @@ export const recipeManagementService = {
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)+/g, '');
+
+    const catObj = CATEGORIES.find((c) => c.id === data.basics.categoryId) || CATEGORIES[1];
 
     const newRecipeSummary: RecipeSummaryDto = {
       id: fallbackId,
@@ -186,20 +190,52 @@ export const recipeManagementService = {
       servings: data.basics.servings,
       difficulty: data.basics.difficulty,
       status: data.publishImmediately ? 'Published' : 'Draft',
-      categoryId: data.basics.categoryId || 'cat-1',
-      categoryName: 'Món Tự Nấu',
-      authorId: 'chef-hieu-lab4',
-      authorName: 'Bùi Trung Hiếu',
+      categoryId: catObj.id,
+      categoryName: catObj.name,
+      authorId: 'chef-hieu-id',
+      authorName: 'Chef Bùi Trung Hiếu',
       coverImageUrl:
         data.imageUrl ||
         'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80',
       createdAt: new Date().toISOString(),
       averageRating: 5.0,
-      reviewCount: 0,
+      reviewCount: 1,
     };
 
     const currentList = getStoredRecipes();
     saveStoredRecipes([newRecipeSummary, ...currentList]);
+
+    saveUserRecipeDetailLocal({
+      ...newRecipeSummary,
+      instructions: data.steps.map((s) => `Bước ${s.stepNumber}: ${s.description}`).join('\n'),
+      ingredients: data.ingredients.map((ing, i) => ({
+        id: `${fallbackId}-ing-${i + 1}`,
+        name: ing.name,
+        quantity: ing.quantity,
+        unit: ing.unit,
+        notes: ing.notes,
+        orderIndex: ing.orderIndex || i + 1,
+      })),
+      steps: data.steps.map((st, i) => ({
+        id: `${fallbackId}-step-${i + 1}`,
+        stepNumber: st.stepNumber || i + 1,
+        title: st.title,
+        description: st.description,
+        timerMinutes: st.timerMinutes,
+        imageUrl: st.imageUrl || newRecipeSummary.coverImageUrl,
+      })),
+      images: [
+        {
+          id: `${fallbackId}-img-1`,
+          originalUrl: newRecipeSummary.coverImageUrl || '',
+          mediumUrl: newRecipeSummary.coverImageUrl || '',
+          thumbnailUrl: newRecipeSummary.coverImageUrl || '',
+          altText: newRecipeSummary.title,
+          isPrimary: true,
+          orderIndex: 0,
+        },
+      ],
+    });
 
     return {
       success: true,
@@ -354,15 +390,23 @@ export const recipeManagementService = {
    * Lấy danh sách công thức của người dùng hiện tại (FR-FTE-008)
    */
   async getUserRecipes(authorId?: string): Promise<RecipeSummaryDto[]> {
+    const normalizedAuthorId =
+      authorId === 'user-hieu-02' || authorId === 'chef-hieu-lab4'
+        ? 'chef-hieu-id'
+        : authorId === 'user-admin-01'
+        ? 'admin-user-id'
+        : authorId;
+
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/recipes?page=1&pageSize=50`);
+      const res = await fetch(`${API_BASE_URL}/api/v1/recipes?page=1&pageSize=100`);
       if (res.ok) {
         const data = await res.json();
         const serverItems: RecipeSummaryDto[] = data.items || [];
         const localItems = getStoredRecipes();
         const combined = [...localItems, ...serverItems];
-        if (authorId) {
-          return combined.filter((r) => r.authorId === authorId);
+        if (normalizedAuthorId) {
+          const filtered = combined.filter((r) => r.authorId === normalizedAuthorId);
+          if (filtered.length > 0) return filtered;
         }
         return combined;
       }
@@ -371,7 +415,11 @@ export const recipeManagementService = {
     }
 
     const localItems = getStoredRecipes();
-    return localItems.length > 0 ? localItems : getInitialChefRecipes();
+    const fallbackItems = normalizedAuthorId
+      ? INITIAL_RECIPES.filter((r) => r.authorId === normalizedAuthorId)
+      : getInitialChefRecipes();
+    const seen = new Set(localItems.map((r) => r.id));
+    return [...localItems, ...fallbackItems.filter((r) => !seen.has(r.id))];
   },
 
   /**
@@ -437,46 +485,5 @@ export const recipeManagementService = {
 };
 
 function getInitialChefRecipes(): RecipeSummaryDto[] {
-  return [
-    {
-      id: 'demo-recipe-01',
-      title: 'Phở Cuốn Ngũ Sắc Hà Thành',
-      slug: 'pho-cuon-ngu-sac-ha-thanh',
-      description: 'Món ăn thanh mát cho mùa hè với bánh phở dẻo mềm, thịt bò xào lăn thơm phức và các loại rau gia vị xanh tươi.',
-      prepTime: 20,
-      cookTime: 15,
-      totalTime: 35,
-      servings: 4,
-      difficulty: 'Easy',
-      status: 'Published',
-      categoryId: 'cat-5',
-      categoryName: 'Món Khai Vị & Ăn Vặt',
-      authorId: 'chef-hieu-lab4',
-      authorName: 'Bùi Trung Hiếu',
-      coverImageUrl: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&auto=format&fit=crop&q=80',
-      createdAt: '2026-03-29T10:00:00Z',
-      averageRating: 5.0,
-      reviewCount: 12,
-    },
-    {
-      id: 'demo-recipe-02',
-      title: 'Chả Cá Lã Vọng Thì Là Giòn Rụm',
-      slug: 'cha-ca-la-vong-thi-la',
-      description: 'Cá lăng tẩm ướp riềng, mẻ, nghệ thơm nức mũi nướng than hoa rồi xào chảo mỡ cùng hành hoa và thì là xanh ngát.',
-      prepTime: 30,
-      cookTime: 25,
-      totalTime: 55,
-      servings: 3,
-      difficulty: 'Medium',
-      status: 'Draft',
-      categoryId: 'cat-3',
-      categoryName: 'Món Kho & Rim',
-      authorId: 'chef-hieu-lab4',
-      authorName: 'Bùi Trung Hiếu',
-      coverImageUrl: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=800&auto=format&fit=crop&q=80',
-      createdAt: '2026-04-01T08:30:00Z',
-      averageRating: 4.8,
-      reviewCount: 5,
-    },
-  ];
+  return INITIAL_RECIPES.filter((r) => r.authorId === 'chef-hieu-id');
 }

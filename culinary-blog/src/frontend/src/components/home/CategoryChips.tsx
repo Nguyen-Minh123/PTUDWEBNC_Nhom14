@@ -32,7 +32,7 @@ export function CategoryChips({
       <div className="flex items-center gap-2 sm:gap-3 min-w-max px-1">
         {CATEGORIES.map((cat) => {
           const isActive = activeCategory === cat.id;
-          const emoji = categoryIcons[cat.id] || '🍽️';
+          const emoji = cat.icon || categoryIcons[cat.id] || '🍽️';
 
           if (asLinks) {
             return (

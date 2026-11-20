@@ -30,31 +30,31 @@ const CATEGORY_ICONS: Record<string, string> = {
   'cat-6': '🍧',
 };
 
-// Dữ liệu bếp trưởng nổi bật
+// Dữ liệu bếp trưởng nổi bật thực tế của hệ thống
 const TOP_CHEFS = [
   {
-    id: 'chef-01',
-    name: 'Đầu Bếp Hoàng Tuấn',
-    role: 'Chuyên gia Món Bắc',
-    recipesCount: 12,
-    avatar: null,
+    id: 'seeder-user-id',
+    name: 'Chef Nguyễn Nhất Minh',
+    role: 'Master Chef Ẩm thực Việt',
+    recipesCount: 25,
+    avatar: 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=400&auto=format&fit=crop&q=80',
     rating: 4.9,
   },
   {
-    id: 'chef-02',
-    name: 'Mẹ Hạnh Cố Đô',
-    role: 'Nghệ nhân Món Huế',
-    recipesCount: 9,
-    avatar: null,
-    rating: 4.8,
-  },
-  {
-    id: 'chef-03',
-    name: 'Bếp Nhà Sài Gòn',
-    role: 'Ẩm thực Nam Bộ',
+    id: 'chef-hieu-id',
+    name: 'Chef Bùi Trung Hiếu',
+    role: 'Chuyên gia Món Nước & Nướng',
     recipesCount: 15,
-    avatar: null,
+    avatar: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=400&auto=format&fit=crop&q=80',
     rating: 4.9,
+  },
+  {
+    id: 'chef-khai-id',
+    name: 'Chef Nguyễn Thế Khải',
+    role: 'Ẩm thực Chay & Thanh Đạm',
+    recipesCount: 10,
+    avatar: 'https://images.unsplash.com/photo-1566554273541-37a9ca77b91f?w=400&auto=format&fit=crop&q=80',
+    rating: 4.8,
   },
 ];
 
@@ -163,8 +163,8 @@ export function HomeSidebar({
 
             {CATEGORIES.filter((c) => c.id !== 'all').map((cat) => {
               const isSelected = selectedCategory === cat.id;
-              const count = categoryCounts[cat.id] ?? 2;
-              const emoji = CATEGORY_ICONS[cat.id] || '🍳';
+              const count = categoryCounts[cat.id] ?? cat.recipeCount ?? 4;
+              const emoji = cat.icon || CATEGORY_ICONS[cat.id] || '🍳';
 
               return (
                 <button

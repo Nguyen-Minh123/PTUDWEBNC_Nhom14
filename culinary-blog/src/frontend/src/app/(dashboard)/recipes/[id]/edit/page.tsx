@@ -52,7 +52,7 @@ export default function EditRecipePage({ params }: EditRecipePageProps) {
   const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
   const [instructions, setInstructions] = useState('');
-  const [categoryId, setCategoryId] = useState('cat-1');
+  const [categoryId, setCategoryId] = useState('11111111-1111-4111-8111-000000000001');
   const [difficulty, setDifficulty] = useState<'Easy' | 'Medium' | 'Hard' | 'Expert'>('Medium');
   const [prepTime, setPrepTime] = useState(15);
   const [cookTime, setCookTime] = useState(30);
@@ -91,7 +91,7 @@ export default function EditRecipePage({ params }: EditRecipePageProps) {
       setSlug(recipe.slug || '');
       setDescription(recipe.description || '');
       setInstructions(recipe.instructions || '');
-      setCategoryId(recipe.categoryId || 'cat-1');
+      setCategoryId(recipe.categoryId || '11111111-1111-4111-8111-000000000001');
       setDifficulty((recipe.difficulty as any) || 'Medium');
       setPrepTime(recipe.prepTime || 15);
       setCookTime(recipe.cookTime || 30);
@@ -484,7 +484,7 @@ export default function EditRecipePage({ params }: EditRecipePageProps) {
                     onChange={(e) => setCategoryId(e.target.value)}
                     className={inputClass}
                   >
-                    {CATEGORIES.map((cat) => (
+                    {CATEGORIES.filter((cat) => cat.id !== 'all').map((cat) => (
                       <option key={cat.id} value={cat.id}>
                         {cat.name}
                       </option>

@@ -28,8 +28,8 @@ let fallbackUsersStore: UserListItemDto[] = [
     isActive: true,
     isLockedOut: false,
     lockoutEnd: null,
-    recipeCount: 8,
-    publishedRecipeCount: 7,
+    recipeCount: 5,
+    publishedRecipeCount: 5,
     createdAt: '2026-01-10T08:00:00Z',
     updatedAt: null,
   },
@@ -64,8 +64,8 @@ let fallbackUsersStore: UserListItemDto[] = [
     isActive: true,
     isLockedOut: false,
     lockoutEnd: null,
-    recipeCount: 16,
-    publishedRecipeCount: 14,
+    recipeCount: 15,
+    publishedRecipeCount: 15,
     createdAt: '2026-02-01T10:15:00Z',
     updatedAt: null,
   },
@@ -82,26 +82,26 @@ let fallbackUsersStore: UserListItemDto[] = [
     isActive: true,
     isLockedOut: false,
     lockoutEnd: null,
-    recipeCount: 12,
-    publishedRecipeCount: 11,
+    recipeCount: 10,
+    publishedRecipeCount: 10,
     createdAt: '2026-02-12T14:20:00Z',
     updatedAt: null,
   },
   {
-    id: 'chef-huy-id',
-    email: 'chef.huy@culinary.com',
-    displayName: 'Chef Phan Thanh Huy',
+    id: 'member-huy-id',
+    email: 'member.huy@culinary.com',
+    displayName: 'Phan Thanh Huy',
     firstName: 'Huy',
     lastName: 'Phan Thanh',
-    bio: 'Đam mê nghệ thuật làm bánh ngọt Pháp và các món tráng miệng nhiệt đới sáng tạo.',
+    bio: 'Người yêu ẩm thực đường phố Sài Gòn và thích sưu tầm các công thức bánh ngọt dễ làm.',
     avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
-    primaryRole: 'Author',
-    roles: ['Author', 'User'],
+    primaryRole: 'User',
+    roles: ['User'],
     isActive: true,
     isLockedOut: false,
     lockoutEnd: null,
-    recipeCount: 9,
-    publishedRecipeCount: 9,
+    recipeCount: 0,
+    publishedRecipeCount: 0,
     createdAt: '2026-02-20T11:00:00Z',
     updatedAt: null,
   },
@@ -124,19 +124,19 @@ let fallbackUsersStore: UserListItemDto[] = [
     updatedAt: null,
   },
   {
-    id: 'locked-spammer-id',
-    email: 'spam.account@culinary.com',
-    displayName: 'Tài Khoản Vi Phạm',
-    firstName: 'Spam',
-    lastName: 'User',
-    bio: 'Tài khoản đã bị khóa do đăng tải nội dung quảng cáo không phù hợp.',
-    avatarUrl: null,
+    id: 'member-nam-id',
+    email: 'hoang.nam@culinary.com',
+    displayName: 'Lê Hoàng Nam',
+    firstName: 'Nam',
+    lastName: 'Lê Hoàng',
+    bio: 'Thành viên cộng đồng yêu thích các món nướng cuối tuần và lẩu gia đình.',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
     primaryRole: 'User',
     roles: ['User'],
     isActive: false,
     isLockedOut: true,
     lockoutEnd: '2027-01-01T00:00:00Z',
-    recipeCount: 1,
+    recipeCount: 0,
     publishedRecipeCount: 0,
     createdAt: '2026-03-18T07:10:00Z',
     updatedAt: '2026-04-01T09:00:00Z',
@@ -157,7 +157,7 @@ export const userService = {
     accessToken?: string
   ): Promise<PagedResult<UserListItemDto>> {
     try {
-      const response = await apiClient.get<PagedResult<UserListItemDto>>('/v1/users', {
+      const response = await apiClient.get<PagedResult<UserListItemDto>>('/api/v1/users', {
         params: {
           searchTerm: params.searchTerm || undefined,
           role: params.role || undefined,
@@ -229,7 +229,7 @@ export const userService = {
    */
   async getAuthors(params: GetAuthorsQueryParams = {}): Promise<PagedResult<AuthorSummaryDto>> {
     try {
-      const response = await apiClient.get<PagedResult<AuthorSummaryDto>>('/v1/users/authors', {
+      const response = await apiClient.get<PagedResult<AuthorSummaryDto>>('/api/v1/users/authors', {
         params: {
           searchTerm: params.searchTerm || undefined,
           pageNumber: params.pageNumber ?? 1,
@@ -299,7 +299,7 @@ export const userService = {
    */
   async getUserById(id: string): Promise<UserListItemDto | null> {
     try {
-      const response = await apiClient.get<UserListItemDto>(`/v1/users/${id}`);
+      const response = await apiClient.get<UserListItemDto>(`/api/v1/users/${id}`);
       return response.data;
     } catch {
       return fallbackUsersStore.find((u) => u.id === id) || null;
@@ -315,7 +315,7 @@ export const userService = {
     accessToken?: string
   ): Promise<UserListItemDto> {
     try {
-      const response = await apiClient.put<UserListItemDto>(`/v1/users/${id}/role`, payload, {
+      const response = await apiClient.put<UserListItemDto>(`/api/v1/users/${id}/role`, payload, {
         headers: buildAuthHeaders(accessToken),
       });
       return response.data;
@@ -358,7 +358,7 @@ export const userService = {
     accessToken?: string
   ): Promise<UserListItemDto> {
     try {
-      const response = await apiClient.put<UserListItemDto>(`/v1/users/${id}/status`, payload, {
+      const response = await apiClient.put<UserListItemDto>(`/api/v1/users/${id}/status`, payload, {
         headers: buildAuthHeaders(accessToken),
       });
       return response.data;

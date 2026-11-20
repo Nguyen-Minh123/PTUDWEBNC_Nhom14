@@ -1,6 +1,7 @@
 import { RecipeIngredientDto } from './ingredient.dto';
 import { RecipeStepDto } from './step.dto';
 import { RecipeImageDto } from './image.dto';
+import { CategoryDto } from './category.dto';
 
 export type RecipeDifficulty = 'Easy' | 'Medium' | 'Hard' | 'Expert';
 export type RecipeStatus = 'Draft' | 'Published' | 'Archived';
@@ -48,6 +49,7 @@ export interface RecipeSummaryDto {
  */
 export interface RecipeDetailDto extends RecipeSummaryDto {
   instructions?: string;
+  category?: CategoryDto | null;
   ingredients: RecipeIngredientDto[];
   steps: RecipeStepDto[];
   images: RecipeImageDto[];
