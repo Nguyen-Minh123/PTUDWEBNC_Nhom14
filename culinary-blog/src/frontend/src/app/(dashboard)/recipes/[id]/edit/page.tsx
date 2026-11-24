@@ -808,11 +808,11 @@ export default function EditRecipePage({ params }: EditRecipePageProps) {
               maxSizeMB={5}
               existingImages={existingImages}
               primaryImageId={primaryImageId || undefined}
-              onSetPrimaryImage={(imgId) => setPrimaryImageId(imgId)}
+              onSetPrimaryImage={setPrimaryImageId}
               onRemoveExistingImage={(imgId) => {
                 setExistingImages((prev) => prev.filter((item) => item.id !== imgId));
               }}
-              onFilesChange={(files) => setNewImageFiles(files)}
+              onFilesChange={setNewImageFiles}
             />
           </div>
 

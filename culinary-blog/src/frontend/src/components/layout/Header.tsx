@@ -90,9 +90,9 @@ export function Header({ variant = 'default' }: HeaderProps = {}) {
             Trang Chủ
           </Link>
           <Link
-            href="/recipes/search"
+            href="/recipes"
             className={`text-sm font-medium transition-colors ${
-              pathname?.startsWith('/recipes/search')
+              pathname?.startsWith('/recipes') && !pathname?.startsWith('/recipes/new')
                 ? 'text-amber-600 font-semibold'
                 : 'text-stone-600 hover:text-amber-600'
             }`}

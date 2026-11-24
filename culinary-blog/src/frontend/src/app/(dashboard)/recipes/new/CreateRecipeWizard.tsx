@@ -45,12 +45,12 @@ const recipeWizardSchema = z.object({
   difficulty: z.enum(['Easy', 'Medium', 'Hard', 'Expert']),
 
   // Dinh dưỡng tùy chọn (FR-DVO-002)
-  calories: z.number().min(0).optional().nullable(),
-  protein: z.number().min(0).optional().nullable(),
-  carbohydrates: z.number().min(0).optional().nullable(),
-  fat: z.number().min(0).optional().nullable(),
-  fiber: z.number().min(0).optional().nullable(),
-  sodium: z.number().min(0).optional().nullable(),
+  calories: z.number().min(0).or(z.nan()).optional().nullable(),
+  protein: z.number().min(0).or(z.nan()).optional().nullable(),
+  carbohydrates: z.number().min(0).or(z.nan()).optional().nullable(),
+  fat: z.number().min(0).or(z.nan()).optional().nullable(),
+  fiber: z.number().min(0).or(z.nan()).optional().nullable(),
+  sodium: z.number().min(0).or(z.nan()).optional().nullable(),
 
   // Bước 2: Nguyên liệu (Ít nhất 1 nguyên liệu theo SRS rule RECIPE_PUBLISH_INCOMPLETE)
   ingredients: z
@@ -70,13 +70,13 @@ const recipeWizardSchema = z.object({
       z.object({
         title: z.string().trim().min(3, 'Tiêu đề bước ít nhất 3 ký tự.'),
         description: z.string().trim().min(10, 'Nội dung hướng dẫn ít nhất 10 ký tự.'),
-        timerMinutes: z.number().min(0).optional(),
+        timerMinutes: z.number().min(0).or(z.nan()).optional(),
       })
     )
     .min(1, 'Công thức bắt buộc phải có ít nhất 1 bước thực hiện.'),
 
   // Bước 4: Hình ảnh
-  imageUrl: z.string().url('URL hình ảnh không hợp lệ.').or(z.string().length(0)).optional(),
+  imageUrl: z.string().optional(),
 });
 
 type RecipeWizardFormValues = z.infer<typeof recipeWizardSchema>;
@@ -190,6 +190,18 @@ export function CreateRecipeWizard() {
     setCurrentStep((prev) => Math.max(prev - 1, 1));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const handleFilesChange = React.useCallback(
+    (files: File[]) => {
+      setUploadedFiles(files);
+      if (files.length > 0) {
+        const firstUrl = URL.createObjectURL(files[0]);
+        setPreviewImage(firstUrl);
+        setValue('imageUrl', firstUrl);
+      }
+    },
+    [setValue]
+  );
 
   // Gửi tạo công thức (Draft hoặc Publish)
   const onSubmit = async (values: RecipeWizardFormValues, publishImmediately: boolean) => {
@@ -688,15 +700,8 @@ export function CreateRecipeWizard() {
                 maxFiles={10}
                 maxSizeMB={5}
                 primaryImageId={primaryImageId || undefined}
-                onSetPrimaryImage={(id) => setPrimaryImageId(id)}
-                onFilesChange={(files) => {
-                  setUploadedFiles(files);
-                  if (files.length > 0) {
-                    const firstUrl = URL.createObjectURL(files[0]);
-                    setPreviewImage(firstUrl);
-                    setValue('imageUrl', firstUrl);
-                  }
-                }}
+                onSetPrimaryImage={setPrimaryImageId}
+                onFilesChange={handleFilesChange}
               />
 
               <div className="pt-3 border-t border-amber-200/60">

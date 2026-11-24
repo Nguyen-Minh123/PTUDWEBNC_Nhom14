@@ -285,7 +285,7 @@ function AuthorsDirectoryContent() {
                     </button>
 
                     <Link
-                      href={`/recipes/search?q=${encodeURIComponent(
+                      href={`/recipes?q=${encodeURIComponent(
                         author.displayName.replace(/^Chef\s+/i, '')
                       )}`}
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-xs"
@@ -398,7 +398,7 @@ function AuthorsDirectoryContent() {
                 Đóng
               </button>
               <Link
-                href="/recipes/search"
+                href="/recipes"
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-md"
               >
                 <span>Khám phá Kho Công Thức</span>

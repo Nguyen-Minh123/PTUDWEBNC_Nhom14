@@ -43,7 +43,7 @@ export function useRecipeDetail(idOrSlug: string) {
   return useQuery<RecipeDetailDto | null, Error>({
     queryKey: [RECIPE_DETAIL_QUERY_KEY, idOrSlug],
     queryFn: async () => {
-      if (!idOrSlug) return null;
+      if (!idOrSlug || idOrSlug === 'search') return null;
       try {
         const response = await apiClient.get<RecipeDetailDto>(`/api/v1/recipes/${idOrSlug}`);
         if (response.data) {
@@ -61,7 +61,7 @@ export function useRecipeDetail(idOrSlug: string) {
       }
       return getRecipeDetailByIdOrSlug(idOrSlug);
     },
-    enabled: Boolean(idOrSlug),
+    enabled: Boolean(idOrSlug) && idOrSlug !== 'search',
   });
 }
 

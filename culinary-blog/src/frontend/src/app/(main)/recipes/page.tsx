@@ -25,24 +25,63 @@ import {
   Flame,
 } from 'lucide-react';
 
-export default function RecipesDiscoveryPage() {
+function RecipesDiscoveryContent() {
   const searchParams = useSearchParams();
-  const initialSearch = searchParams.get('search') || '';
-  const initialCategory = searchParams.get('category') || 'all';
+  const initialSearch = searchParams.get('q') || searchParams.get('search') || '';
+  const rawCategoryParam = searchParams.get('category') || searchParams.get('categoryId') || 'all';
+  const resolvedInitialCategory = React.useMemo(() => {
+    if (!rawCategoryParam || rawCategoryParam === 'all') return 'all';
+    const found = CATEGORIES.find(
+      (c) => c.id === rawCategoryParam || c.slug === rawCategoryParam
+    );
+    return found ? found.id : rawCategoryParam;
+  }, [rawCategoryParam]);
+  const initialDifficulty = searchParams.get('difficulty') || 'all';
+  const initialSort = searchParams.get('sort') || '-createdAt';
 
   const [keyword, setKeyword] = React.useState(initialSearch);
-  const [selectedCategory, setSelectedCategory] = React.useState(initialCategory);
-  const [selectedDifficulty, setSelectedDifficulty] = React.useState('all');
+  const [selectedCategory, setSelectedCategory] = React.useState(resolvedInitialCategory);
+  const [selectedDifficulty, setSelectedDifficulty] = React.useState(initialDifficulty);
   const [maxCookTime, setMaxCookTime] = React.useState<number | null>(null);
-  const [selectedSort, setSelectedSort] = React.useState('-createdAt');
+  const [selectedSort, setSelectedSort] = React.useState(initialSort);
   const [page, setPage] = React.useState(1);
   const [selectedRecipe, setSelectedRecipe] = React.useState<RecipeSummaryDto | null>(null);
+  const [refreshTick, setRefreshTick] = React.useState(0);
 
-  // Đồng bộ search param nếu có thay đổi
+  // Đồng bộ lại kho công thức local ngay khi client mount hoặc khi có công thức mới được tạo
   React.useEffect(() => {
-    if (initialSearch) setKeyword(initialSearch);
-    if (initialCategory) setSelectedCategory(initialCategory);
-  }, [initialSearch, initialCategory]);
+    setRefreshTick((t) => t + 1);
+    const handleRefresh = () => setRefreshTick((t) => t + 1);
+    window.addEventListener('culinary-recipes-updated', handleRefresh);
+    window.addEventListener('storage', handleRefresh);
+    window.addEventListener('focus', handleRefresh);
+    return () => {
+      window.removeEventListener('culinary-recipes-updated', handleRefresh);
+      window.removeEventListener('storage', handleRefresh);
+      window.removeEventListener('focus', handleRefresh);
+    };
+  }, []);
+
+  // Đồng bộ search param nếu URL thay đổi (ví dụ chuyển từ trang Tác giả / Danh mục / Footer sang)
+  React.useEffect(() => {
+    setKeyword(initialSearch);
+    setPage(1);
+  }, [initialSearch]);
+
+  React.useEffect(() => {
+    setSelectedCategory(resolvedInitialCategory);
+    setPage(1);
+  }, [resolvedInitialCategory]);
+
+  React.useEffect(() => {
+    setSelectedDifficulty(initialDifficulty || 'all');
+    setPage(1);
+  }, [initialDifficulty]);
+
+  React.useEffect(() => {
+    setSelectedSort(initialSort || '-createdAt');
+    setPage(1);
+  }, [initialSort]);
 
   // Tìm kiếm và lọc
   const pagedResult = React.useMemo(() => {
@@ -65,7 +104,7 @@ export default function RecipesDiscoveryPage() {
     }
 
     return res;
-  }, [keyword, selectedCategory, selectedDifficulty, selectedSort, page, maxCookTime]);
+  }, [keyword, selectedCategory, selectedDifficulty, selectedSort, page, maxCookTime, refreshTick]);
 
   const handleResetFilters = () => {
     setKeyword('');
@@ -372,5 +411,19 @@ export default function RecipesDiscoveryPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function RecipesDiscoveryPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center text-sm text-stone-500">
+          Đang tải kho công thức ẩm thực...
+        </div>
+      }
+    >
+      <RecipesDiscoveryContent />
+    </React.Suspense>
   );
 }

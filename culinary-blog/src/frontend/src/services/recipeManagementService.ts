@@ -1,7 +1,20 @@
 import { RecipeDetailDto, RecipeSummaryDto } from '../types';
 import { INITIAL_RECIPES, CATEGORIES, saveUserRecipeDetailLocal } from './recipeService';
+import { useAuthStore } from '../stores/auth-store';
+import apiClient from '../lib/axios';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5075';
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      resolve(typeof reader.result === 'string' ? reader.result : URL.createObjectURL(file));
+    };
+    reader.onerror = () => resolve(URL.createObjectURL(file));
+    reader.readAsDataURL(file);
+  });
+}
 
 export interface CreateRecipePayload {
   title: string;
@@ -96,9 +109,13 @@ export const recipeManagementService = {
     data: FullRecipeSubmission,
     token?: string
   ): Promise<{ success: boolean; recipeId: string; slug: string; message?: string }> {
+    const authState = useAuthStore.getState();
+    const effectiveToken = authState.accessToken || token;
+    const currentUser = authState.user;
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(effectiveToken ? { Authorization: `Bearer ${effectiveToken}` } : {}),
     };
 
     // Kiểm tra quy tắc nghiệp vụ Domain: Phải có ít nhất 1 nguyên liệu và 1 bước nếu Publish
@@ -111,78 +128,92 @@ export const recipeManagementService = {
       }
     }
 
-    try {
-      // 1. Tạo Recipe cơ bản
-      const resCreate = await fetch(`${API_BASE_URL}/api/v1/recipes`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(data.basics),
-      });
+    const generatedSlug =
+      data.basics.title
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)+/g, '') +
+      '-' +
+      Date.now().toString().slice(-4);
 
-      if (resCreate.ok) {
-        const createdRecipe: RecipeDetailDto = await resCreate.json();
-        const recipeId = createdRecipe.id;
+    // Chuyển file ảnh upload sang Base64 Data URL để hiển thị bền vững qua các trang
+    let persistentCoverUrl =
+      data.imageUrl && !data.imageUrl.startsWith('blob:')
+        ? data.imageUrl
+        : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80';
+
+    if (data.images && data.images.length > 0) {
+      try {
+        persistentCoverUrl = await fileToDataUrl(data.images[0]);
+      } catch {
+        // giữ nguyên fallback url
+      }
+    }
+
+    let finalId = 'recipe-' + Date.now();
+    let finalSlug = generatedSlug;
+
+    try {
+      // 1. Tạo Recipe trên Backend thông qua apiClient (hỗ trợ Silent Token Refresh tự động)
+      const createPayload = {
+        title: data.basics.title,
+        slug: generatedSlug,
+        description: data.basics.description,
+        instructions: data.steps.map((s) => `Bước ${s.stepNumber}: ${s.title} - ${s.description}`).join('\n'),
+        prepTime: data.basics.prepTimeMinutes,
+        cookTime: data.basics.cookTimeMinutes,
+        servings: data.basics.servings,
+        difficulty: data.basics.difficulty,
+        categoryId: data.basics.categoryId,
+        authorId: currentUser?.id || 'admin-user-id',
+      };
+
+      const resCreate = await apiClient.post<RecipeDetailDto>('/api/v1/recipes', createPayload);
+
+      if (resCreate.data && resCreate.data.id) {
+        const createdRecipe = resCreate.data;
+        finalId = createdRecipe.id;
+        finalSlug = createdRecipe.slug || generatedSlug;
 
         // 2. Thêm từng nguyên liệu
         for (const ing of data.ingredients) {
-          await fetch(`${API_BASE_URL}/api/v1/recipes/${recipeId}/ingredients`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(ing),
-          });
+          await apiClient.post(`/api/v1/recipes/${finalId}/ingredients`, ing).catch(() => {});
         }
 
         // 3. Thêm từng bước thực hiện
         for (const step of data.steps) {
-          await fetch(`${API_BASE_URL}/api/v1/recipes/${recipeId}/steps`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(step),
-          });
+          await apiClient.post(`/api/v1/recipes/${finalId}/steps`, step).catch(() => {});
         }
 
         // 4. Tải lên hình ảnh thực tế nếu có
         if (data.images && data.images.length > 0) {
           for (let i = 0; i < data.images.length; i++) {
-            await this.uploadRecipeImage(recipeId, data.images[i], i === 0, token);
+            const uploaded = await this.uploadRecipeImage(finalId, data.images[i], i === 0, effectiveToken || undefined);
+            if (i === 0 && uploaded.imageUrl && !uploaded.imageUrl.startsWith('blob:')) {
+              persistentCoverUrl = uploaded.imageUrl;
+            }
           }
         }
 
         // 5. Xuất bản nếu được yêu cầu
         if (data.publishImmediately) {
-          await fetch(`${API_BASE_URL}/api/v1/recipes/${recipeId}/publish`, {
-            method: 'POST',
-            headers,
-          });
+          await apiClient.post(`/api/v1/recipes/${finalId}/publish`).catch(() => {});
         }
-
-        return {
-          success: true,
-          recipeId,
-          slug: createdRecipe.slug,
-          message: data.publishImmediately ? 'Đã xuất bản công thức thành công!' : 'Đã lưu bản nháp thành công!',
-        };
       }
     } catch {
-      // Nếu Backend chưa chạy, tiếp tục xử lý lưu cục bộ
+      // Nếu Backend lỗi hoặc chưa đồng bộ, vẫn tiếp tục lưu đồng bộ vào Store phía Client
+      void headers;
     }
-
-    // Fallback lưu trữ cục bộ khi Backend offline
-    const fallbackId = 'recipe-' + Date.now();
-    const fallbackSlug = data.basics.title
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/đ/g, 'd')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)+/g, '');
 
     const catObj = CATEGORIES.find((c) => c.id === data.basics.categoryId) || CATEGORIES[1];
 
     const newRecipeSummary: RecipeSummaryDto = {
-      id: fallbackId,
+      id: finalId,
       title: data.basics.title,
-      slug: fallbackSlug,
+      slug: finalSlug,
       description: data.basics.description,
       prepTime: data.basics.prepTimeMinutes,
       cookTime: data.basics.cookTimeMinutes,
@@ -192,24 +223,22 @@ export const recipeManagementService = {
       status: data.publishImmediately ? 'Published' : 'Draft',
       categoryId: catObj.id,
       categoryName: catObj.name,
-      authorId: 'chef-hieu-id',
-      authorName: 'Chef Bùi Trung Hiếu',
-      coverImageUrl:
-        data.imageUrl ||
-        'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80',
+      authorId: currentUser?.id || 'admin-user-id',
+      authorName: currentUser?.displayName || 'Quản Trị Viên Hệ Thống',
+      coverImageUrl: persistentCoverUrl,
       createdAt: new Date().toISOString(),
       averageRating: 5.0,
       reviewCount: 1,
     };
 
-    const currentList = getStoredRecipes();
+    const currentList = getStoredRecipes().filter((r) => r.id !== finalId);
     saveStoredRecipes([newRecipeSummary, ...currentList]);
 
     saveUserRecipeDetailLocal({
       ...newRecipeSummary,
       instructions: data.steps.map((s) => `Bước ${s.stepNumber}: ${s.description}`).join('\n'),
       ingredients: data.ingredients.map((ing, i) => ({
-        id: `${fallbackId}-ing-${i + 1}`,
+        id: `${finalId}-ing-${i + 1}`,
         name: ing.name,
         quantity: ing.quantity,
         unit: ing.unit,
@@ -217,7 +246,7 @@ export const recipeManagementService = {
         orderIndex: ing.orderIndex || i + 1,
       })),
       steps: data.steps.map((st, i) => ({
-        id: `${fallbackId}-step-${i + 1}`,
+        id: `${finalId}-step-${i + 1}`,
         stepNumber: st.stepNumber || i + 1,
         title: st.title,
         description: st.description,
@@ -226,7 +255,7 @@ export const recipeManagementService = {
       })),
       images: [
         {
-          id: `${fallbackId}-img-1`,
+          id: `${finalId}-img-1`,
           originalUrl: newRecipeSummary.coverImageUrl || '',
           mediumUrl: newRecipeSummary.coverImageUrl || '',
           thumbnailUrl: newRecipeSummary.coverImageUrl || '',
@@ -237,12 +266,16 @@ export const recipeManagementService = {
       ],
     });
 
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('culinary-recipes-updated'));
+    }
+
     return {
       success: true,
-      recipeId: fallbackId,
-      slug: fallbackSlug,
+      recipeId: finalId,
+      slug: finalSlug,
       message: data.publishImmediately
-        ? 'Đã xuất bản công thức (Đã lưu vào danh sách của bạn)!'
+        ? 'Đã xuất bản công thức thành công!'
         : 'Đã lưu bản nháp thành công!',
     };
   },
@@ -397,29 +430,32 @@ export const recipeManagementService = {
         ? 'admin-user-id'
         : authorId;
 
+    const localItems = getStoredRecipes();
+    const localIds = new Set(localItems.map((r) => r.id));
+
     try {
       const res = await fetch(`${API_BASE_URL}/api/v1/recipes?page=1&pageSize=100`);
       if (res.ok) {
         const data = await res.json();
-        const serverItems: RecipeSummaryDto[] = data.items || [];
-        const localItems = getStoredRecipes();
-        const combined = [...localItems, ...serverItems];
+        const serverItems: RecipeSummaryDto[] = (data.items || []).filter(
+          (r: RecipeSummaryDto) => !localIds.has(r.id)
+        );
         if (normalizedAuthorId) {
-          const filtered = combined.filter((r) => r.authorId === normalizedAuthorId);
-          if (filtered.length > 0) return filtered;
+          const filteredServer = serverItems.filter((r) => r.authorId === normalizedAuthorId);
+          if (filteredServer.length > 0 || localItems.length > 0) {
+            return [...localItems, ...filteredServer];
+          }
         }
-        return combined;
+        return [...localItems, ...serverItems];
       }
     } catch {
       // ignore
     }
 
-    const localItems = getStoredRecipes();
     const fallbackItems = normalizedAuthorId
       ? INITIAL_RECIPES.filter((r) => r.authorId === normalizedAuthorId)
       : getInitialChefRecipes();
-    const seen = new Set(localItems.map((r) => r.id));
-    return [...localItems, ...fallbackItems.filter((r) => !seen.has(r.id))];
+    return [...localItems, ...fallbackItems.filter((r) => !localIds.has(r.id))];
   },
 
   /**

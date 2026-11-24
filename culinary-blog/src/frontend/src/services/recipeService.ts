@@ -17644,12 +17644,14 @@ export function searchRecipes(params: RecipeSearchParams): PagedResult<RecipeSum
       const matchRaw =
         r.title.toLowerCase().includes(rawTerm) ||
         r.description.toLowerCase().includes(rawTerm) ||
-        (r.categoryName && r.categoryName.toLowerCase().includes(rawTerm));
+        (r.categoryName && r.categoryName.toLowerCase().includes(rawTerm)) ||
+        (r.authorName && r.authorName.toLowerCase().includes(rawTerm));
       if (matchRaw) return true;
       return (
         normalizeVi(r.title).includes(normTerm) ||
         normalizeVi(r.description).includes(normTerm) ||
-        normalizeVi(r.categoryName || '').includes(normTerm)
+        normalizeVi(r.categoryName || '').includes(normTerm) ||
+        normalizeVi(r.authorName || '').includes(normTerm)
       );
     });
   }
@@ -17673,12 +17675,24 @@ export function searchRecipes(params: RecipeSearchParams): PagedResult<RecipeSum
     );
   }
 
-  // 4. Sắp xếp
+  // 4. Sắp xếp (Ưu tiên các công thức vừa tạo mới lên đầu danh sách khi chọn Mới nhất)
   if (sort) {
     const isDesc = sort.startsWith('-');
     const field = sort.replace(/^[-+]/, '');
+    const localRecipes = getStoredUserRecipes();
+    const localOrderMap = new Map(localRecipes.map((r, idx) => [r.id, idx]));
 
     filtered.sort((a, b) => {
+      if (field === 'createdAt' && isDesc) {
+        const aIsLocal = localOrderMap.has(a.id);
+        const bIsLocal = localOrderMap.has(b.id);
+        if (aIsLocal && !bIsLocal) return -1;
+        if (!aIsLocal && bIsLocal) return 1;
+        if (aIsLocal && bIsLocal) {
+          return (localOrderMap.get(a.id) ?? 0) - (localOrderMap.get(b.id) ?? 0);
+        }
+      }
+
       let valA: any = (a as any)[field];
       let valB: any = (b as any)[field];
 

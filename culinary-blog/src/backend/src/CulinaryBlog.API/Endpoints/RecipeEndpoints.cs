@@ -280,7 +280,7 @@ public static class RecipeEndpoints
 
         group.MapGet("/search", async (
             [FromServices] ISender sender,
-            [FromQuery] string q,
+            [FromQuery] string? q = null,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
             CancellationToken ct = default) =>
@@ -297,7 +297,7 @@ public static class RecipeEndpoints
                 return Results.ValidationProblem(validationErrors);
             }
 
-            var result = await sender.Send(new SearchRecipesQuery(q.Trim(), page, pageSize), ct);
+            var result = await sender.Send(new SearchRecipesQuery(q?.Trim() ?? string.Empty, page, pageSize), ct);
             return Results.Ok(result);
         })
         .WithName("SearchRecipes")

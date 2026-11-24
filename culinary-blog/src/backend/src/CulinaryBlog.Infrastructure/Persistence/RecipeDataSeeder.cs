@@ -1344,13 +1344,16 @@ public sealed class RecipeDataSeeder(CulinaryBlogDbContext dbContext)
         {
             foreach (var oldCat in legacyCategories)
             {
-                var hasAnyRecipe = await dbContext.Recipes.AnyAsync(r => r.CategoryId == oldCat.Id, cancellationToken);
+                var hasAnyRecipe = await dbContext.Recipes.IgnoreQueryFilters().AnyAsync(r => r.CategoryId == oldCat.Id, cancellationToken);
                 if (!hasAnyRecipe)
                 {
-                    dbContext.Categories.Remove(oldCat);
+                    await dbContext.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM \"Categories\" WHERE \"Id\" = {oldCat.Id}", cancellationToken);
+                }
+                else
+                {
+                    await dbContext.Database.ExecuteSqlInterpolatedAsync($"UPDATE \"Categories\" SET \"IsDeleted\" = TRUE WHERE \"Id\" = {oldCat.Id}", cancellationToken);
                 }
             }
-            await dbContext.SaveChangesAsync(cancellationToken);
         }
     }
 
