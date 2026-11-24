@@ -154,17 +154,33 @@ export default function ImageUploader({
     const totalCount = existingImages.length + localImages.length;
     const isLimitReached = totalCount >= maxFiles;
 
-    /** Đồng bộ danh sách file local ra ngoài cho parent. */
+    const onFilesChangeRef = useRef(onFilesChange);
     useEffect(() => {
-        onFilesChange?.(localImages.map((item) => item.file));
-    }, [localImages, onFilesChange]);
+        onFilesChangeRef.current = onFilesChange;
+    }, [onFilesChange]);
+
+    const isInitialMount = useRef(true);
+
+    /** Đồng bộ danh sách file local ra ngoài cho parent khi danh sách file thực sự thay đổi. */
+    useEffect(() => {
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            return;
+        }
+        onFilesChangeRef.current?.(localImages.map((item) => item.file));
+    }, [localImages]);
+
+    const localImagesRef = useRef<LocalImage[]>(localImages);
+    useEffect(() => {
+        localImagesRef.current = localImages;
+    }, [localImages]);
 
     /** Dọn object URL khi component unmount để tránh rò rỉ bộ nhớ. */
     useEffect(() => {
         return () => {
-            localImages.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+            localImagesRef.current.forEach((item) => URL.revokeObjectURL(item.previewUrl));
         };
-    }, [localImages]);
+    }, []);
 
     /** Mở hộp thoại chọn file. */
     const openFilePicker = () => {

@@ -18,12 +18,30 @@ public sealed class RecipeDataSeederTests
         var recipes = await dbContext.Recipes.ToListAsync();
         var ingredients = await dbContext.RecipeIngredients.ToListAsync();
         var steps = await dbContext.RecipeSteps.ToListAsync();
+        var images = await dbContext.RecipeImages.ToListAsync();
 
-        Assert.Equal(4, categories.Count);
-        Assert.Equal(25, recipes.Count);
+        Assert.Equal(12, categories.Count);
+        Assert.Equal(55, recipes.Count);
         Assert.NotEmpty(ingredients);
         Assert.NotEmpty(steps);
+        Assert.NotEmpty(images);
         Assert.Contains(await dbContext.Users.ToListAsync(), user => user.Id == "seeder-user-id");
+
+        var validAuthorIds = new HashSet<string>
+        {
+            "seeder-user-id",
+            "chef-hieu-id",
+            "chef-khai-id",
+            "admin-user-id"
+        };
+
+        Assert.All(categories, category =>
+        {
+            Assert.False(string.IsNullOrWhiteSpace(category.Name));
+            Assert.False(string.IsNullOrWhiteSpace(category.Slug));
+            Assert.False(string.IsNullOrWhiteSpace(category.Description));
+            Assert.False(string.IsNullOrWhiteSpace(category.ImageUrl));
+        });
 
         Assert.All(recipes, recipe =>
         {
@@ -34,9 +52,10 @@ public sealed class RecipeDataSeederTests
             Assert.True(recipe.CookTime >= 0);
             Assert.True(recipe.Servings > 0);
             Assert.NotEqual(Guid.Empty, recipe.CategoryId);
-            Assert.Equal("seeder-user-id", recipe.AuthorId);
+            Assert.Contains(recipe.AuthorId, validAuthorIds);
             Assert.NotEmpty(recipe.Ingredients);
             Assert.NotEmpty(recipe.Steps);
+            Assert.NotEmpty(recipe.Images);
             Assert.NotNull(recipe.Nutrition);
             Assert.Equal(RecipeStatus.Published, recipe.Status);
         });
@@ -55,7 +74,7 @@ public sealed class RecipeDataSeederTests
         await seeder.SeedAsync();
 
         // Lần seed thứ hai không được tạo thêm category hoặc recipe trùng.
-        Assert.Equal(4, await dbContext.Categories.CountAsync());
+        Assert.Equal(12, await dbContext.Categories.CountAsync());
         Assert.Equal(recipeCount, await dbContext.Recipes.CountAsync());
         Assert.Equal(ingredientCount, await dbContext.RecipeIngredients.CountAsync());
         Assert.Equal(stepCount, await dbContext.RecipeSteps.CountAsync());

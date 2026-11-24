@@ -23,6 +23,7 @@ public class RecipeRepository : IRecipeRepository
         return await _db.Recipes
             .AsSplitQuery()
             .Include(r => r.Category)
+            .Include(r => r.Author)
             .Include(r => r.Steps.OrderBy(s => s.StepNumber))
             .Include(r => r.Ingredients.OrderBy(i => i.OrderIndex))
             .Include(r => r.Images)
@@ -39,6 +40,7 @@ public class RecipeRepository : IRecipeRepository
         return await _db.Recipes
             .AsSplitQuery()
             .Include(r => r.Category)
+            .Include(r => r.Author)
             .Include(r => r.Steps.OrderBy(s => s.StepNumber))
             .Include(r => r.Ingredients.OrderBy(i => i.OrderIndex))
             .Include(r => r.Images)
@@ -88,9 +90,13 @@ public class RecipeRepository : IRecipeRepository
 
         if (!string.IsNullOrWhiteSpace(keyword))
         {
-            var tsQuery = EF.Functions.PlainToTsQuery("simple", keyword);
-            query = query.Where(r => r.SearchVector!.Matches(tsQuery))
-                         .OrderByDescending(r => r.SearchVector!.Rank(tsQuery));
+            var cleanKeyword = keyword.Trim();
+            query = query.Where(r =>
+                (r.SearchVector != null && r.SearchVector.Matches(EF.Functions.PlainToTsQuery("simple", cleanKeyword))) ||
+                EF.Functions.ILike(r.Title, $"%{cleanKeyword}%") ||
+                EF.Functions.ILike(r.Description, $"%{cleanKeyword}%") ||
+                (r.Author != null && EF.Functions.ILike(r.Author.DisplayName, $"%{cleanKeyword}%")));
+            query = query.OrderByDescending(r => r.CreatedAt);
         }
         else
         {
@@ -101,6 +107,7 @@ public class RecipeRepository : IRecipeRepository
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Include(r => r.Category)
+            .Include(r => r.Author)
             .Include(r => r.Images)
             .ToListAsync(cancellationToken);
     }
@@ -121,8 +128,12 @@ public class RecipeRepository : IRecipeRepository
 
         if (!string.IsNullOrWhiteSpace(keyword))
         {
-            var tsQuery = EF.Functions.PlainToTsQuery("simple", keyword);
-            query = query.Where(r => r.SearchVector!.Matches(tsQuery));
+            var cleanKeyword = keyword.Trim();
+            query = query.Where(r =>
+                (r.SearchVector != null && r.SearchVector.Matches(EF.Functions.PlainToTsQuery("simple", cleanKeyword))) ||
+                EF.Functions.ILike(r.Title, $"%{cleanKeyword}%") ||
+                EF.Functions.ILike(r.Description, $"%{cleanKeyword}%") ||
+                (r.Author != null && EF.Functions.ILike(r.Author.DisplayName, $"%{cleanKeyword}%")));
         }
 
         return await query.CountAsync(cancellationToken);

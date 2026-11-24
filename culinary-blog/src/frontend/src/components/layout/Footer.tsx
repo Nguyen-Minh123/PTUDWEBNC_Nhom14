@@ -91,23 +91,23 @@ export function Footer({ variant = 'main' }: FooterProps) {
             </h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/recipes?category=mon-viet" className="hover:text-amber-400 transition-colors">
-                  Món Việt Truyền Thống
+                <Link href="/recipes?category=mon-nuoc-bun-pho" className="hover:text-amber-400 transition-colors">
+                  Món Nước & Bún Phở
                 </Link>
               </li>
               <li>
-                <Link href="/recipes?category=mon-chay" className="hover:text-amber-400 transition-colors">
-                  Món Ăn Chay Thanh Đạm
+                <Link href="/recipes?category=mon-chay-thanh-dam" className="hover:text-amber-400 transition-colors">
+                  Món Chay Thanh Đạm
                 </Link>
               </li>
               <li>
-                <Link href="/recipes?category=trang-mieng" className="hover:text-amber-400 transition-colors">
-                  Bánh & Tráng Miệng
+                <Link href="/recipes?category=banh-ngot-trang-mieng" className="hover:text-amber-400 transition-colors">
+                  Bánh Ngọt & Tráng Miệng
                 </Link>
               </li>
               <li>
-                <Link href="/recipes?category=thuc-uong" className="hover:text-amber-400 transition-colors">
-                  Đồ Uống & Nước Ép
+                <Link href="/recipes?category=thuc-uong-sinh-to" className="hover:text-amber-400 transition-colors">
+                  Thức Uống & Sinh Tố
                 </Link>
               </li>
             </ul>

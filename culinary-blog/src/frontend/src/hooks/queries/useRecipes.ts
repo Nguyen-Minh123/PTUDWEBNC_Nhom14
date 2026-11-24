@@ -2,7 +2,7 @@ import axios from 'axios';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { RecipeSearchParams, RecipeSummaryDto, RecipeDetailDto } from '@/types/recipe.dto';
 import { PagedResult } from '@/types/paged-result.dto';
-import { searchRecipes } from '@/services/recipeService';
+import { searchRecipes, getRecipeDetailByIdOrSlug } from '@/services/recipeService';
 import { recipeManagementService } from '@/services/recipeManagementService';
 import apiClient, { extractErrorMessage } from '@/lib/axios';
 
@@ -43,19 +43,25 @@ export function useRecipeDetail(idOrSlug: string) {
   return useQuery<RecipeDetailDto | null, Error>({
     queryKey: [RECIPE_DETAIL_QUERY_KEY, idOrSlug],
     queryFn: async () => {
-      if (!idOrSlug) return null;
+      if (!idOrSlug || idOrSlug === 'search') return null;
       try {
         const response = await apiClient.get<RecipeDetailDto>(`/api/v1/recipes/${idOrSlug}`);
-        return response.data;
+        if (response.data) {
+          return response.data;
+        }
       } catch (err) {
+        const localDetail = getRecipeDetailByIdOrSlug(idOrSlug);
+        if (localDetail) {
+          return localDetail;
+        }
         if (axios.isAxiosError(err) && err.response?.status === 404) {
           return null;
         }
-
         throw err;
       }
+      return getRecipeDetailByIdOrSlug(idOrSlug);
     },
-    enabled: Boolean(idOrSlug),
+    enabled: Boolean(idOrSlug) && idOrSlug !== 'search',
   });
 }
 

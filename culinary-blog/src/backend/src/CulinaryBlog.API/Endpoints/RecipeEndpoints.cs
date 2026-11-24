@@ -280,7 +280,7 @@ public static class RecipeEndpoints
 
         group.MapGet("/search", async (
             [FromServices] ISender sender,
-            [FromQuery] string q,
+            [FromQuery] string? q = null,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
             CancellationToken ct = default) =>
@@ -297,7 +297,7 @@ public static class RecipeEndpoints
                 return Results.ValidationProblem(validationErrors);
             }
 
-            var result = await sender.Send(new SearchRecipesQuery(q.Trim(), page, pageSize), ct);
+            var result = await sender.Send(new SearchRecipesQuery(q?.Trim() ?? string.Empty, page, pageSize), ct);
             return Results.Ok(result);
         })
         .WithName("SearchRecipes")
@@ -339,6 +339,16 @@ public static class RecipeEndpoints
         return errors;
     }
 
+    private static string? ResolveCoverImageUrl(Recipe recipe) =>
+        recipe.Images
+            .Where(i => i.IsPrimary)
+            .Select(i => i.MediumUrl ?? i.OriginalUrl)
+            .FirstOrDefault()
+        ?? recipe.Images
+            .OrderBy(i => i.OrderIndex)
+            .Select(i => i.MediumUrl ?? i.OriginalUrl)
+            .FirstOrDefault();
+
     private static RecipeSummaryDto MapToSummaryDto(Recipe recipe) => new(
         recipe.Id,
         recipe.Title,
@@ -352,7 +362,22 @@ public static class RecipeEndpoints
         recipe.CategoryId,
         recipe.AuthorId,
         recipe.CreatedAt.UtcDateTime,
-        recipe.UpdatedAt?.UtcDateTime);
+        recipe.UpdatedAt?.UtcDateTime,
+        recipe.Category?.Name,
+        recipe.Author?.DisplayName ?? recipe.Author?.UserName,
+        ResolveCoverImageUrl(recipe),
+        recipe.PrepTime + recipe.CookTime,
+        4.9,
+        24,
+        recipe.Nutrition is null
+            ? null
+            : new RecipeNutritionDto(
+                recipe.Nutrition.Calories,
+                recipe.Nutrition.Protein,
+                recipe.Nutrition.Carbohydrates,
+                recipe.Nutrition.Fat,
+                recipe.Nutrition.Fiber,
+                recipe.Nutrition.Sodium));
 
     private static RecipeDetailDto MapToDetailDto(Recipe recipe) => new(
         recipe.Id,
@@ -370,9 +395,9 @@ public static class RecipeEndpoints
         recipe.CreatedAt.UtcDateTime,
         recipe.UpdatedAt?.UtcDateTime,
         recipe.Category is null ? null : new CategoryDto(recipe.Category.Id, recipe.Category.Name, recipe.Category.Slug, recipe.Category.Description ?? string.Empty),
-        recipe.Steps.Select(step => new RecipeStepDto(step.Id, step.StepNumber, step.Title, step.Description, step.TimerMinutes, step.ImageUrl)).ToList(),
-        recipe.Ingredients.Select(ingredient => new RecipeIngredientDto(ingredient.Id, ingredient.Name, ingredient.Quantity, ingredient.Unit, ingredient.Notes, ingredient.OrderIndex)).ToList(),
-        recipe.Images.Select(image => new RecipeImageDto(image.Id, image.OriginalUrl, image.MediumUrl, image.ThumbnailUrl, image.AltText, image.IsPrimary, image.OrderIndex)).ToList(),
+        recipe.Steps.OrderBy(s => s.StepNumber).Select(step => new RecipeStepDto(step.Id, step.StepNumber, step.Title, step.Description, step.TimerMinutes, step.ImageUrl)).ToList(),
+        recipe.Ingredients.OrderBy(i => i.OrderIndex).Select(ingredient => new RecipeIngredientDto(ingredient.Id, ingredient.Name, ingredient.Quantity, ingredient.Unit, ingredient.Notes, ingredient.OrderIndex)).ToList(),
+        recipe.Images.OrderBy(img => img.OrderIndex).Select(image => new RecipeImageDto(image.Id, image.OriginalUrl, image.MediumUrl, image.ThumbnailUrl, image.AltText, image.IsPrimary, image.OrderIndex)).ToList(),
         recipe.Nutrition is null
             ? null
             : new RecipeNutritionDto(
@@ -381,5 +406,11 @@ public static class RecipeEndpoints
                 recipe.Nutrition.Carbohydrates,
                 recipe.Nutrition.Fat,
                 recipe.Nutrition.Fiber,
-                recipe.Nutrition.Sodium));
+                recipe.Nutrition.Sodium),
+        recipe.Category?.Name,
+        recipe.Author?.DisplayName ?? recipe.Author?.UserName,
+        ResolveCoverImageUrl(recipe),
+        recipe.PrepTime + recipe.CookTime,
+        4.9,
+        24);
 }

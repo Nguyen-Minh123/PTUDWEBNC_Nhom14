@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
+import Link from 'next/link';
 import { RecipeSummaryDto } from '../../types';
 import { CommentSection } from '../comments/CommentSection';
 import { useRecipeDetail } from '@/hooks/queries/useRecipes';
@@ -91,11 +92,66 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({ recipe, on
 
             {/* Mô tả món ăn */}
             <div>
-              <h4 className="text-base font-bold text-gray-900 mb-2">Giới thiệu món ăn</h4>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-base font-bold text-gray-900">Giới thiệu món ăn</h4>
+                <Link
+                  href={`/recipes/${displayedRecipe.id}`}
+                  onClick={onClose}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-xs"
+                >
+                  <span>Xem đầy đủ & Chế độ nấu ăn →</span>
+                </Link>
+              </div>
               <p className="text-sm text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">
                 {displayedRecipe.description}
               </p>
             </div>
+
+            {/* Nguyên liệu & Các bước chế biến tóm tắt */}
+            {recipeDetail && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {recipeDetail.ingredients && recipeDetail.ingredients.length > 0 && (
+                  <div className="bg-amber-50/40 p-4 rounded-2xl border border-amber-100">
+                    <h4 className="text-sm font-bold text-gray-900 mb-3">
+                      🛒 Nguyên liệu ({recipeDetail.ingredients.length})
+                    </h4>
+                    <ul className="space-y-2 text-xs text-gray-700">
+                      {recipeDetail.ingredients.map((ing, idx) => (
+                        <li key={ing.id || idx} className="flex items-center justify-between border-b border-amber-100/60 pb-1.5">
+                          <span className="font-medium text-gray-800">{ing.name}</span>
+                          <span className="font-bold text-amber-700">
+                            {ing.quantity} {ing.unit}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {recipeDetail.steps && recipeDetail.steps.length > 0 && (
+                  <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200/80">
+                    <h4 className="text-sm font-bold text-gray-900 mb-3">
+                      👨‍🍳 Các bước chế biến ({recipeDetail.steps.length} bước)
+                    </h4>
+                    <ol className="space-y-2.5 text-xs text-gray-700">
+                      {recipeDetail.steps.map((st) => (
+                        <li key={st.id || st.stepNumber} className="space-y-0.5">
+                          <div className="font-bold text-stone-900">
+                            Bước {st.stepNumber}: {st.title}
+                            {st.timerMinutes ? (
+                              <span className="ml-1.5 text-[11px] font-semibold text-amber-600">
+                                ({st.timerMinutes} phút)
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="text-stone-600 line-clamp-2 leading-relaxed">{st.description}</p>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Tích hợp trực tiếp Comment Section */}
             <CommentSection recipeId={displayedRecipe.id} recipeTitle={displayedRecipe.title} />

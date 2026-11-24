@@ -15,7 +15,14 @@ public record RecipeSummaryDto(
     Guid CategoryId,
     string AuthorId,
     DateTime CreatedAt,
-    DateTime? UpdatedAt
+    DateTime? UpdatedAt,
+    string? CategoryName = null,
+    string? AuthorName = null,
+    string? CoverImageUrl = null,
+    int TotalTime = 0,
+    double AverageRating = 4.9,
+    int ReviewCount = 24,
+    RecipeNutritionDto? Nutrition = null
 );
 
 public record RecipeDetailDto(
@@ -37,7 +44,13 @@ public record RecipeDetailDto(
     List<RecipeStepDto> Steps,
     List<RecipeIngredientDto> Ingredients,
     List<RecipeImageDto> Images,
-    RecipeNutritionDto? Nutrition
+    RecipeNutritionDto? Nutrition,
+    string? CategoryName = null,
+    string? AuthorName = null,
+    string? CoverImageUrl = null,
+    int TotalTime = 0,
+    double AverageRating = 4.9,
+    int ReviewCount = 24
 );
 
 public record RecipeNutritionDto(

@@ -56,6 +56,7 @@ builder.Services.Configure<Microsoft.AspNetCore.Mvc.JsonOptions>(options =>
 // 1. Phân quyền tập trung (RBAC, Policy-based, Resource-based)
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "CulinaryBlog";
 var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "CulinaryBlogClient";
+
 var jwtSigningKey = builder.Configuration["Jwt:SigningKey"] 
     ?? builder.Configuration["Jwt:Secret"] 
     ?? "super-secret-key-that-is-very-long-for-hmac-sha256-1234567890";

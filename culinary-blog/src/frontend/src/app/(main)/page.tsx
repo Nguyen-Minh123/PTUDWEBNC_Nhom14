@@ -10,7 +10,7 @@ import { RecipeGrid } from '@/components/recipe/RecipeGrid';
 import { RecipeDetailModal } from '@/components/recipe/RecipeDetailModal';
 import { MainContainer } from '@/components/layout/MainContainer';
 import { SectionContainer } from '@/components/layout/SectionContainer';
-import { searchRecipes, INITIAL_RECIPES } from '@/services/recipeService';
+import { searchRecipes, INITIAL_RECIPES, CATEGORIES, getAllRecipesCombined } from '@/services/recipeService';
 import { RecipeSummaryDto } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,13 +29,14 @@ export default function HomePage() {
   const [selectedDifficulty, setSelectedDifficulty] = React.useState('all');
   const [selectedSort, setSelectedSort] = React.useState('-createdAt');
   const [page, setPage] = React.useState(1);
-  const [pageSize] = React.useState(4);
+  const [pageSize] = React.useState(9);
   const [selectedRecipe, setSelectedRecipe] = React.useState<RecipeSummaryDto | null>(null);
 
   // Thống kê số lượng bài viết theo categoryId thực tế
   const categoryCounts = React.useMemo(() => {
-    const counts: Record<string, number> = { all: INITIAL_RECIPES.length };
-    INITIAL_RECIPES.forEach((r) => {
+    const allRecipes = getAllRecipesCombined();
+    const counts: Record<string, number> = { all: allRecipes.length };
+    allRecipes.forEach((r) => {
       if (r.categoryId) {
         counts[r.categoryId] = (counts[r.categoryId] || 0) + 1;
       }
@@ -201,7 +202,7 @@ export default function HomePage() {
                   variant="secondary"
                   className="bg-white text-amber-900 gap-1.5 pr-1.5 border border-amber-200 shadow-2xs font-medium"
                 >
-                  <span>Chuyên mục: {selectedCategory}</span>
+                  <span>Chuyên mục: {CATEGORIES.find((c) => c.id === selectedCategory)?.name || selectedCategory}</span>
                   <button
                     type="button"
                     onClick={() => handleSelectCategory('all')}

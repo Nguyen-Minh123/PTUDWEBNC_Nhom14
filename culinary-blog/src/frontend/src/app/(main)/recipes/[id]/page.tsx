@@ -19,6 +19,7 @@ import { extractErrorMessage } from '@/lib/axios';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Lightbulb, ChefHat } from 'lucide-react';
+import RecipesDiscoveryPage from '../page';
 
 interface RecipeDetailPageProps {
   params: Promise<{ id: string }>;
@@ -27,13 +28,14 @@ interface RecipeDetailPageProps {
 export default function RecipeDetailPage({ params }: RecipeDetailPageProps) {
   const unwrappedParams = React.use(params);
   const { id } = unwrappedParams;
+  const isSearchParam = id === 'search';
   const {
     data: fullRecipe,
     isLoading,
     isError,
     error,
     refetch,
-  } = useRecipeDetail(id);
+  } = useRecipeDetail(isSearchParam ? '' : id);
 
   // Trạng thái cho Chế độ nấu ăn (Cooking Mode) và Khẩu phần (Servings) (FR-FTE-052)
   const [isCookingModeOpen, setIsCookingModeOpen] = React.useState(false);
@@ -44,6 +46,10 @@ export default function RecipeDetailPage({ params }: RecipeDetailPageProps) {
       setCurrentServings(fullRecipe.servings);
     }
   }, [fullRecipe?.servings]);
+
+  if (isSearchParam) {
+    return <RecipesDiscoveryPage />;
+  }
 
   if (isLoading) {
     return (
